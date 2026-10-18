@@ -14,11 +14,7 @@ class LinUCBSFCH(LinUCBSF):
     label = 'LinUCB-SF×CH（比較用拡張）'
     description = '実験共通のSF×CHを腕として個別に学習します。SNRゲートと6次元Contextは原手法を継承。TP・CRは共通設定で固定します。'
     def __init__(self,rng,action_space,**options):
-        values = Settings.model_validate(options).model_dump()
-        actions = action_space.radios()
-        initial = next(a for a in actions if a.sf == max(action_space.spreading_factors))
-        o = OriginalSettings(initial=initial,frequencies_hz=action_space.frequencies_hz,**values)
-        self._initialize(rng,o,actions=actions)
+        super().__init__(rng,action_space=action_space,**Settings.model_validate(options).model_dump())
 
 
 PLUGIN = LinUCBSFCH

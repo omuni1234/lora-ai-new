@@ -1,0 +1,38 @@
+name: 共通行動空間・分散学習の確認
+seed: 7
+duration_s: 300
+area_m: [1000, 800]
+action_space:
+  spreading_factors: [7, 8, 9, 10, 11, 12]
+  frequencies_hz: [868100000, 868300000, 868500000]
+  coding_rates: [1, 2, 3, 4]
+  powers_dbm: [8, 11, 14]
+# Global 6 x 3 x 4 x 3 = 216. Both groups learn over 18 actions.
+models:
+  policy:
+    local-bandit:
+      kind: bandit
+      action_space: {coding_rates: [1], powers_dbm: [14]}
+      options: {epsilon: 0.1, energy_weight: 0.02}
+    local-exp3:
+      kind: lora_mab
+      action_space: {coding_rates: [1], powers_dbm: [14]}
+      options: {horizon: 10000}
+  timing:
+    periodic-10:
+      kind: periodic
+      options:
+        interval_s: 10
+        start: {mode: uniform, min_s: 0, max_s: 10}
+gateways:
+  - position: [500, 400, 15]
+groups:
+  - name: bandit-ED
+    count: 12
+    policy: {ref: local-bandit}
+    timing: {ref: periodic-10}
+  - name: exp3-ED
+    count: 12
+    policy: {ref: local-exp3}
+    timing: {ref: periodic-10}
+# Duty cycle remains enabled; generated times and actual tx times may differ.

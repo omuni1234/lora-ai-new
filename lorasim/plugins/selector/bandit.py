@@ -4,8 +4,8 @@ from lorasim.interfaces import Policy
 from .random import RandomPolicy
 class Bandit(RandomPolicy):
     """Per-ED epsilon-greedy bandit. Rewards use only ACK and local energy proxy."""
-    def __init__(self, rng, actions=None, epsilon=.1, energy_weight=.02):
-        super().__init__(rng, actions)
+    def __init__(self, rng, actions=None, epsilon=.1, energy_weight=.02, action_space=None):
+        super().__init__(rng, actions, action_space)
         if not 0 <= epsilon <= 1 or energy_weight < 0:
             raise ValueError("invalid bandit hyperparameters")
         self.epsilon, self.energy_weight = epsilon, energy_weight

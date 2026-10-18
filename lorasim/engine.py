@@ -246,7 +246,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.6.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.7.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",
@@ -344,8 +344,8 @@ class Simulation:
             selector = (lambda obs:d.policy.select_attempt(obs,ctx.number==1)) if isinstance(d.policy,NetworkPolicy) else d.policy.select
             ctx.radio = Radio.model_validate(self._compute(d,"inference",selector,self.observation(d),d.tx_count+1))
         p = ctx.radio
-        if getattr(d.policy,'uses_action_space',False) and (p.sf,p.frequency_hz,p.tp_dbm,p.cr) not in self.action_keys:
-            raise ValueError(f"ED {d.id}: selector returned an action outside the common SF×CH space")
+        if hasattr(d.policy,'action_keys') and (p.sf,p.frequency_hz,p.tp_dbm,p.cr) not in d.policy.action_keys:
+            raise ValueError(f"ED {d.id}: selector returned an action outside the common SF×CH×CR×TP / ED action space")
         b = self.p.direction_band(p.frequency_hz,"ul")
         if p.tp_dbm > self.p.sub_bands[b].max_tp_dbm:
             raise ValueError(f"ED {d.id}: TP exceeds sub-band maximum")

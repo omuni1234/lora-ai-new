@@ -14,9 +14,7 @@ class LoRaMABSFCH(LoRaMAB):
     label = 'LoRa-MAB SF×CH（比較用拡張）'
     description = '原論文のACK報酬・Exp3更新を保ち、実験共通のSF×CH集合を使用します。TP・CRは固定です。'
     def __init__(self,rng,action_space,**options):
-        super().__init__(rng,spreading_factors=action_space.spreading_factors,
-            frequencies_hz=action_space.frequencies_hz,powers_dbm=[action_space.tp_dbm],
-            cr=action_space.cr,**Settings.model_validate(options).model_dump())
+        super().__init__(rng,action_space=action_space,**Settings.model_validate(options).model_dump())
 
 
 PLUGIN = LoRaMABSFCH

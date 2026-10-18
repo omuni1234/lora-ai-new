@@ -69,6 +69,9 @@ def metadata(category,kind):
     return {'kind':kind,'module':cls.__module__+':'+cls.__name__,'label':getattr(cls,'label','') or cls.__name__,
             'description':getattr(cls,'description',''),'schema':schema,'defaults':values,
             'uses_action_space':getattr(cls,'uses_action_space',False),
+            'accepts_action_space':getattr(cls,'accepts_action_space',False) or getattr(cls,'uses_action_space',False),
+            'space_options':getattr(cls,'space_options',[]),
+            'deprecated':kind.endswith('_sf_ch'),
             'requires_position':getattr(cls,'requires_position',False),
             'preview_safe':getattr(cls,'preview_safe',False),'legacy':options is None}
 

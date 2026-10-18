@@ -1,0 +1,104 @@
+{
+  "runs": [
+    {
+      "id": "30c484947e464b88affb6defbdec2bd6",
+      "experiment_id": "0c53352fad4d4b79bded61a6d38c77e4",
+      "status": "completed",
+      "summary": {
+        "status": "completed",
+        "sim_time_s": 300.0,
+        "duration_s": 300.0,
+        "progress": 1.0,
+        "wall_s": 0.15496729098958895,
+        "counts": {
+          "messages_generated": 270,
+          "uplinks_sent": 250,
+          "peak_air_bytes": 3200,
+          "events_processed": 4118,
+          "rx_Received": 230,
+          "uplinks_received_any_gw": 187,
+          "rx_LostBecauseTx": 36,
+          "downlinks_sent": 43,
+          "attempts_finished": 248,
+          "ack_received": 43,
+          "rx_Interference": 27,
+          "rx_NotAddressed": 2,
+          "attempts_truncated": 22
+        },
+        "table_rows": {
+          "transmissions": 293,
+          "receptions": 295,
+          "feedback": 248,
+          "events": 1440,
+          "devices": 24,
+          "uplinks": 250,
+          "energy": 1529
+        },
+        "energy": {
+          "radio_j": 10.11991558596872,
+          "mcu_j": 0.0
+        },
+        "abstract": {
+          "name": "共通行動空間・分散学習の確認",
+          "ed_count": 24,
+          "eligible_ed_count": 24,
+          "inactive_ed_count": 0,
+          "tx_start": 1,
+          "tx_end": null,
+          "maximum_tx_index": 25,
+          "uplinks": 250,
+          "censored": 0,
+          "mean_ed_prr": 0.7633655173329087,
+          "pooled_prr": 0.748,
+          "fractions": {
+            "Interference": 0.09081196581196582,
+            "LostBecauseTx": 0.14582251685512557,
+            "Received": 0.7633655173329087
+          },
+          "fairness": {
+            "jain": 0.8914706526996535,
+            "gini": 0.1686733635095532,
+            "min_max": 0.0,
+            "cv": 0.34891534535518015,
+            "p10": 0.53,
+            "median": 0.8
+          },
+          "include_mcu": true,
+          "energy": {
+            "by_state_j": {
+              "radio:TX": 6.463693824000012,
+              "radio:SLEEP": 0.00206961116732279,
+              "radio:RX_ENABLED": 2.086100470249196,
+              "radio:RX_ACTIVE": 1.0296916992000007
+            },
+            "total_j": 9.581555604616522,
+            "mean_ed_j": 0.39923148352568844,
+            "startup_excluded_j": {
+              "radio": 0.5383599813522
+            },
+            "j_per_received_uplink": 0.05123826526532899,
+            "fairness": {
+              "jain": 0.9711151294500178,
+              "gini": 0.0922143588336577,
+              "min_max": 0.4917518029040055,
+              "cv": 0.17246455519364573,
+              "p10": 0.3229873260994955,
+              "median": 0.3986748875932927
+            },
+            "measured": true
+          },
+          "series": []
+        }
+      }
+    }
+  ],
+  "ui_checks": [
+    "example 14 pasted and validated through GUI",
+    "GUI submitted run; detached worker completed",
+    "7 modules added and analyzed",
+    "outcomes removed: 6 modules",
+    "airtime toggled off: 5 modules",
+    "bandit effective actions 18 -> 72 -> 216 via inheritance; exp3 remains 18"
+  ],
+  "screenshot": "docs/analysis-v07.png"
+}

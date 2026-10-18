@@ -14,7 +14,7 @@ class BanditSFCH(Bandit):
     label = 'ACKバンディット SF×CH（比較用拡張）'
     description = '従来のACK・エネルギー代理報酬と標本平均更新を、実験共通のSF×CHに適用します。SEMA内部の累積報酬型ε-greedyとは別モデルです。'
     def __init__(self,rng,action_space,**options):
-        super().__init__(rng,actions=action_space.radios(),**Settings.model_validate(options).model_dump())
+        super().__init__(rng,action_space=action_space,**Settings.model_validate(options).model_dump())
 
 
 PLUGIN = BanditSFCH

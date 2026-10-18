@@ -125,7 +125,7 @@ def preflight(profile, horizon_s=None, limit=80, samples=12):
             if not getattr(cls,'preview_safe',False):
                 d['warnings'].append(f'{k}: preview_safe未宣言のため呼び出しを省略')
                 continue
-            if k=='policy' and hasattr(cls,'preview_bytes') and cls.preview_bytes(spec.options,profile.action_space)*len(view['devices'])>67108864:
+            if k=='policy' and hasattr(cls,'preview_bytes') and cls.preview_bytes(spec.options,profile.action_space.restrict(spec.action_space) if spec.action_space is not None else profile.action_space)*len(view['devices'])>67108864:
                 d['warnings'].append('policy: プレビューのモデルメモリ上限64 MiBを超えるため選択例を省略')
                 continue
             # Bound random-walk stepping independently of experiment duration.

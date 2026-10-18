@@ -18,6 +18,15 @@ def issue(code, message, hint, *, severity='error', path='', detail=''):
 # Match only known simulator messages; user/plugin exceptions fall back to a
 # Japanese explanation plus the unmodified diagnostic, rather than a false translation.
 RULES = [
+    ('ED action_space must be a subset', 'ACTION_SUBSET', 'EDの候補に全体のパラメータ空間にない値があります。', '全体集合に値を追加するか、ED側を全体の部分集合にしてください。', 'groups'),
+    ('action_space candidates must', 'ACTION_CANDIDATES', 'パラメータ候補が重複、範囲外、または有限値ではありません。', 'SFは7〜12、CRは1〜4、TPは−20〜27 dBmを重複なく指定してください。', 'action_space'),
+    ('selector does not accept configurable', 'ACTION_UNSUPPORTED', 'この選択器は共通行動空間の受け取りに対応していません。', '共通行動空間を未指定に戻すか、対応する選択器へ変更してください。独自モデルはaccepts_action_space=Trueとコンストラクタ引数を実装します。', 'groups'),
+    ('action_space legacy scalar conflicts', 'ACTION_CONFLICT', '旧形式の固定値と新形式の候補集合が矛盾しています。', '旧tp_dbm/crを削除し、powers_dbm/coding_ratesの候補集合に統一してください。', 'action_space'),
+    ('action_space is only available', 'ACTION_CATEGORY', '行動空間はパラメータ選択器にだけ指定できます。', '移動・送信タイミングモデルのaction_spaceを削除してください。', 'groups'),
+    ('legacy plugin requires fixed', 'ACTION_LEGACY', '旧形式の選択器はこの次元の複数候補に対応していません。', '候補を1値に固定するか、共通行動空間に対応した選択器を使用してください。', 'groups'),
+    ('unknown analysis module', 'ANALYSIS_UNKNOWN', '指定した分析モジュールが見つかりません。', '分析モジュール一覧を更新するか、Pythonモジュールの配置とクラス名を確認してください。', ''),
+    ('duplicate analysis module', 'ANALYSIS_DUPLICATE', '同じ分析モジュールが重複して指定されています。', '各モジュールは1つだけ追加してください。', ''),
+    ('no enabled analysis modules', 'ANALYSIS_EMPTY', '有効な分析モジュールがありません。', '中央下部でモジュールを追加し、少なくとも1つをオンにしてください。', ''),
     ('DQN loss is non-finite', 'DQN_DIVERGED', 'DQNの学習損失が有限値ではなくなりました。', '学習率を下げる、RSSI入力を正規化するなどして数値の発散を確認してください。', 'groups'),
     ('LoRa-MAB action candidates', 'MAB_DUPLICATE', 'LoRa-MABの候補行動が重複しています。', 'SF・送信電力・周波数の各候補リストから重複を除いてください。', ''),
     ('unique powers in', 'TP_CANDIDATES', '送信電力の候補に重複または範囲外の値があります。', '−20〜27 dBmの異なる値を指定し、各サブバンドの上限も確認してください。', ''),
@@ -60,7 +69,7 @@ RULES = [
     ('action_space SF', 'ACTION_SF', '候補SFが範囲外、または重複しています。', '7〜12のSFを重複なく指定してください。', 'action_space'),
     ('action_space channels', 'ACTION_CHANNELS', '共通行動空間のCHが重複しています。', '候補チャネルを重複なく指定してください。', 'action_space'),
     ('registered UL sub-band', 'ACTION_REGISTRATION', '共通行動空間のCHがULの中心周波数に登録されていません。', '許可ULサブバンドのチャネル一覧に登録してから選択してください。', 'action_space'),
-    ('outside the common SF', 'ACTION_OUTSIDE', '選択器が共通SF×CH行動空間の外の送信設定を返しました。', 'SF・CHに加え、固定送信電力と符号化率も共通設定に合わせてください。', 'action_space'),
+    ('outside the common SF', 'ACTION_OUTSIDE', '選択器がEDに割り当てられた行動空間の外の送信設定を返しました。', 'SF・CH・CR・TPの全値がED側の候補集合に含まれるようにしてください。', 'action_space'),
     ('fixed SF/CH must', 'ACTION_OUTSIDE', '固定SFまたはCHが共通行動空間に含まれていません。', '候補SF・CHに含まれる組み合わせを選択してください。', 'action_space'),
     ('TP exceeds', 'TX_POWER_LIMIT', '送信電力が使用するサブバンドの上限を超えています。', '選択器の送信電力と、使用帯域の最大送信電力を確認してください。', 'groups'),
     ('payload exceeds EU DR', 'PAYLOAD_LIMIT', '選択SFに対するEU DRのペイロード上限を超えました。', 'SF10〜12は51 byte、SF9は115 byte、SF7〜8は222 byte以下にしてください。', 'groups'),
@@ -187,6 +196,8 @@ def validate_options(profile):
                 location = path + '.ref'
                 try:
                     resolved = profile.component(spec, category)
+                    if category!='policy' and resolved.action_space is not None:
+                        raise ValueError('action_space is only available for policy plugins')
                     location = path + '.kind'
                     options = getattr(constructor(category, resolved.kind), 'Options', None)
                     if options:
@@ -229,6 +240,13 @@ def configuration_warnings(p):
                 if cls.__module__.startswith('lorasim.plugins.'):
                     o = cls.Options.model_validate(spec.options).model_dump() if getattr(cls,'Options',None) else spec.options
                     kind = cls.__module__.rsplit('.',1)[-1]
+                    bound = spec.action_space is not None or getattr(cls,'uses_action_space',False)
+                    space = p.action_space.restrict(spec.action_space) if spec.action_space is not None else p.action_space
+                    ignored = set(spec.options)&set(getattr(cls,'space_options',[])) if bound else set()
+                    if ignored:
+                        warn('ACTION_OPTIONS_IGNORED', path+'.policy.options', '共通行動空間を使うためモデル側の候補設定は適用されません: '+', '.join(sorted(ignored)), '候補は全体・EDの行動空間に統一し、optionsには学習定数だけを指定してください。')
+                    if bound and (kind.startswith('linucb') or kind in {'dqn','sema'}) and (len(space.coding_rates)>1 or len(space.powers_dbm)>1 or (kind=='linucb_sf' and len(space.frequencies_hz)>1)):
+                        warn('ACTION_RESEARCH_EXTENSION', path+'.policy.action_space', '原論文から行動の次元を拡張しています。学習式・報酬式は元の実装を使用します。', 'LinUCBの複数TPはTP差分のSNR補正を使用します。CRに応じた新しいContextや報酬項は追加していません。論文再現と比較用拡張を区別して記録してください。')
                     if kind in {'dqn','sema'}:
                         if o['learning_rate'] > .1:
                             warn('LARGE_LEARNING_RATE', path+'.policy.options.learning_rate', f'学習率 {o["learning_rate"]:g} が注意目安0.1を超えています。大きな更新で学習が不安定になる可能性があります。', 'これは経験的な確認目安です。既定0.01を基準に損失・報酬の推移を比較してください。')
@@ -247,12 +265,12 @@ def configuration_warnings(p):
                     radios = [o] if 'frequency_hz' in o or 'cr' in o else list(o.get('actions', []))
                     if o.get('initial'):
                         radios.append(o['initial'])
-                    if getattr(cls, 'uses_action_space', False):
-                        radios.extend(r.model_dump() for r in p.action_space.radios())
+                    if bound:
+                        radios=[r.model_dump() for r in space.radios()]
                     freqs = set(o.get('frequencies_hz', []))
-                    if getattr(cls, 'uses_action_space', False):
-                        freqs.update(p.action_space.frequencies_hz)
-                    if not o.get('frequencies_hz') and not getattr(cls, 'uses_action_space', False):
+                    if bound:
+                        freqs=set(space.frequencies_hz)
+                    if not o.get('frequencies_hz') and not bound:
                         freqs.update(r.get('frequency_hz',868100000) for r in radios)
                     for r in radios:
                         if r.get('cr',1) != 1 or r.get('preamble_symbols',8) != 8 or r.get('implicit_header',False) or not r.get('crc',True):

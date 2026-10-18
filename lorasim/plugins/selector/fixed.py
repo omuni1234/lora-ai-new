@@ -2,8 +2,13 @@ import numpy as np
 from lorasim.config import Radio
 from lorasim.interfaces import Policy
 class Fixed(Policy):
-    def __init__(self, rng, **options):
+    accepts_action_space = True
+    space_options = ["sf", "frequency_hz", "tp_dbm", "cr"]
+    def __init__(self, rng, action_space=None, **options):
         self.radio = Radio.model_validate(options)
+        if action_space is not None:
+            first = action_space.radios()[0]
+            self.radio = self.radio.model_copy(update={k:getattr(first,k) for k in ("sf","frequency_hz","tp_dbm","cr")})
     def select(self, observation):
         return self.radio.model_copy()
     def observe(self, feedback):

@@ -15,6 +15,7 @@ class Settings(SFSettings):
 
 
 class LinUCBSFTP(LinUCBSF):
+    accepts_action_space = False
     Options = Settings
     label = 'LinUCB-SF×TP（研究拡張）'
     description = '原論文のSF選択をSF×TPの腕へ拡張。TP差分によるSNR予測を使用するため、原論文の再現とは区別してください。'

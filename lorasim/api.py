@@ -38,7 +38,10 @@ class ExperimentBody(BaseModel):
     name: str = Field(min_length=1,max_length=160)
     description: str = Field(default="",max_length=10000)
 
+from .analysis_modules import Selection as AnalysisSelection
+
 class AnalysisBody(BaseModel):
+    modules: list[AnalysisSelection] | None = Field(None,max_length=20)
     experiment_ids: list[str] = Field(min_length=1,max_length=50)
     tx_start: int = Field(default=1,ge=1)
     tx_end: int | None = Field(default=None,ge=1)
@@ -49,7 +52,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.6.0")
+    app = FastAPI(title="LoRaSim Research",version="0.7.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -162,7 +165,8 @@ def create_app(root=None):
             bad(exc)
     @app.get("/api/defaults",dependencies=[Depends(auth)])
     def defaults():
-        return {"profile":Profile().model_dump(mode="json"),"components":DEFAULTS,"plugins":inventory()}
+        p=Profile.model_validate({"groups":[{"name":"devices","count":10,"policy":{"kind":"fixed","action_space":{"spreading_factors":[7],"frequencies_hz":[868100000],"coding_rates":[1],"powers_dbm":[14]}}}]})
+        return {"profile":p.model_dump(mode="json"),"components":DEFAULTS,"plugins":inventory()}
     @app.get("/api/plugins/schema",dependencies=[Depends(auth)])
     def plugin_schema(category:str,kind:str):
         try:
@@ -194,6 +198,15 @@ def create_app(root=None):
             return {"id":store.create_experiment(body.name,body.description)}
         except Exception as exc:
             bad(exc)
+    @app.get("/api/analysis/modules",dependencies=[Depends(auth)])
+    def analysis_modules():
+        from .analysis_modules import inventory
+        return inventory()
+    @app.get("/api/analysis/modules/schema",dependencies=[Depends(auth)])
+    def analysis_module_schema(kind:str):
+        from .analysis_modules import metadata
+        try: return metadata(kind)
+        except Exception as exc: bad(exc)
     @app.post("/api/analysis",dependencies=[Depends(auth)])
     def analysis(body:AnalysisBody):
         try:
@@ -211,7 +224,7 @@ def create_app(root=None):
                             runs.append({"id":row['id'],"experiment_id":eid,"experiment_name":experiment['name'],"root":store.root/'runs'/row['id']})
             if len(runs)>200:
                 raise ValueError("Select at most 200 runs per analysis request")
-            result = compare_runs(runs,body.tx_start,body.tx_end,body.include_mcu,body.bins,body.ed_count)
+            result = compare_runs(runs,body.tx_start,body.tx_end,body.include_mcu,body.bins,body.ed_count,body.modules)
             result["skipped_runs"] = skipped
             return result
         except Exception as exc:

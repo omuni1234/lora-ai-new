@@ -12,3 +12,5 @@ RUN lorasim import-examples --data /tmp/lorasim-profile-smoke \
 
 RUN lorasim run examples/12-sf-ch-comparison.yaml --output /tmp/lorasim-sema > /tmp/lorasim-sema.log \
     && lorasim run examples/13-markov.yaml --output /tmp/lorasim-markov > /tmp/lorasim-markov.log
+
+RUN lorasim run examples/14-unified-action-space.yaml --output /tmp/lorasim-action-space > /tmp/lorasim-action-space.log

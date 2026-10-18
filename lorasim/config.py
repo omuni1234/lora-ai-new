@@ -21,29 +21,74 @@ class Radio(Model):
     crc: bool = True
 
 
+class ActionSelection(Model):
+    spreading_factors: list[int] | None = Field(None, min_length=1, title="EDの候補SF", description="未指定なら全体の集合を継承。1値だけ選ぶと固定します。")
+    frequencies_hz: list[int] | None = Field(None, min_length=1, title="EDの候補CH [Hz]", description="全体の候補CHの部分集合。未指定なら全候補を使います。")
+    coding_rates: list[int] | None = Field(None, min_length=1, title="EDの候補符号化率", description="1〜4は4/5〜4/8。例 [1] はCR固定。全体集合の部分集合を指定します。")
+    powers_dbm: list[float] | None = Field(None, min_length=1, title="EDの候補送信電力 [dBm]", description="例 [14] は14 dBmに固定。未指定なら全体の集合を継承します。")
+
+
 class Component(Model):
     kind: str = "fixed"
     ref: str | None = None
     options: dict = Field(default_factory=dict)
+    action_space: ActionSelection | None = Field(None, title="EDの行動空間", description="選択器だけで使用。{} は全体集合を継承。各次元の部分集合で選択・固定を指定。未指定は旧プロファイルの動作を維持します。")
 
 
 class ActionSpace(Model):
-    spreading_factors: list[int] = Field(default_factory=lambda:list(range(7,13)), min_length=1, max_length=6, title="共通の候補SF", description="SF×CH対応モデルで使用するSF集合。重複のない7〜12。原論文版モデルの設定は変更しません。")
-    frequencies_hz: list[int] = Field(default_factory=lambda:[868100000,868300000,868500000], min_length=1, max_length=64, title="共通の候補CH [Hz]", description="許可ULサブバンドに登録された中心周波数から選択します。SFとの直積が行動空間です。")
-    tp_dbm: float = Field(14., ge=-20, le=27, title="共通の固定送信電力 [dBm]", description="SF×CH比較では送信電力をこの値に固定します。全候補CHのサブバンド上限以下にします。")
-    cr: int = Field(1, ge=1, le=4, title="共通の符号化率", description="1〜4は4/5〜4/8。行動によらず固定します。")
+    spreading_factors: list[int] = Field(default_factory=lambda:list(range(7,13)), min_length=1, max_length=6, title="利用可能なSF", description="重複のない7〜12。SF×CH×CR×TPの直積を各選択器へ渡します。")
+    frequencies_hz: list[int] = Field(default_factory=lambda:[868100000,868300000,868500000], min_length=1, max_length=64, title="利用可能なCH [Hz]", description="許可ULサブバンドに登録された中心周波数の集合。")
+    coding_rates: list[int] = Field(default_factory=lambda:[1], min_length=1, max_length=4, title="利用可能な符号化率", description="1〜4は4/5〜4/8。候補が1値なら全EDで固定します。")
+    powers_dbm: list[float] = Field(default_factory=lambda:[14.], min_length=1, max_length=48, title="利用可能な送信電力 [dBm]", description="−20〜27 dBmかつ全候補CHのサブバンド上限以下。候補が1値なら固定します。")
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_scalars(cls, value):
+        if isinstance(value,dict):
+            value=dict(value)
+            for old,new in [('tp_dbm','powers_dbm'),('cr','coding_rates')]:
+                if old in value:
+                    if new in value and value[new]!=[value[old]]:
+                        raise ValueError('action_space legacy scalar conflicts with candidates')
+                    value[new]=[value.pop(old)]
+        return value
 
     @model_validator(mode="after")
     def valid(self):
-        if len(set(self.spreading_factors)) != len(self.spreading_factors) or any(s < 7 or s > 12 for s in self.spreading_factors):
-            raise ValueError("action_space SF must be unique values in 7..12")
-        if len(set(self.frequencies_hz)) != len(self.frequencies_hz):
-            raise ValueError("action_space channels must be unique")
+        for name,lo,hi in [('spreading_factors',7,12),('coding_rates',1,4),('powers_dbm',-20,27)]:
+            values=getattr(self,name)
+            if len(set(values))!=len(values) or any(not math.isfinite(x) or not lo<=x<=hi for x in values):
+                raise ValueError('action_space candidates must be unique and in range: '+name)
+        if len(set(self.frequencies_hz))!=len(self.frequencies_hz):
+            raise ValueError('action_space channels must be unique')
         return self
 
+    @property
+    def tp_dbm(self):  # compatibility for external v0.5 plugins
+        if len(self.powers_dbm)!=1: raise ValueError('legacy plugin requires fixed TP')
+        return self.powers_dbm[0]
+
+    @property
+    def cr(self):
+        if len(self.coding_rates)!=1: raise ValueError('legacy plugin requires fixed CR')
+        return self.coding_rates[0]
+
+    @property
+    def size(self):
+        return math.prod(len(getattr(self,k)) for k in type(self).model_fields)
+
+    def restrict(self, selection):
+        values=self.model_dump()
+        for key,subset in selection.model_dump(exclude_none=True).items():
+            if not set(subset)<=set(values[key]):
+                raise ValueError('ED action_space must be a subset of global candidates: '+key)
+            values[key]=subset
+        return ActionSpace.model_validate(values)
+
     def radios(self):
-        return [Radio(sf=s,frequency_hz=f,tp_dbm=self.tp_dbm,cr=self.cr)
-                for s in self.spreading_factors for f in self.frequencies_hz]
+        return [Radio(sf=s,frequency_hz=f,cr=c,tp_dbm=t)
+                for s in self.spreading_factors for f in self.frequencies_hz
+                for c in self.coding_rates for t in self.powers_dbm]
 
 
 class RadioEnergy(Model):
@@ -199,7 +244,7 @@ class Profile(Model):
     sub_bands: list[SubBand] = Field(default_factory=lambda: [x.model_copy() for x in EU_BANDS])
     ul_sub_bands: list[str] | None = None
     dl_sub_bands: list[str] | None = None
-    action_space: ActionSpace = Field(default_factory=ActionSpace, title="比較用の共通SF×CH行動空間", description="DQN、SEMA、名前にsf_chを含む比較用モデルが使用します。SFを外側、CHを内側に並べて行動IDを自動採番します。")
+    action_space: ActionSpace = Field(default_factory=ActionSpace, title="全体のパラメータ空間", description="SF×CH×CR×TPの候補集合。各EDの選択器には、この部分集合からなる行動空間を渡します。行動ID順はSF→CH→CR→TP。")
     gateways: list[Gateway] = Field(default_factory=lambda: [Gateway(id="gw0", position=(1000,1000,15))])
     groups: list[Group] = Field(default_factory=lambda: [Group(name="devices", count=10)])
     assignments: list[Assignment] = Field(default_factory=list)
@@ -267,8 +312,13 @@ class Profile(Model):
         from .registry import constructor
         for spec in [g.policy for g in self.groups]+[a.policy for a in self.assignments if a.policy is not None]:
             resolved = self.component(spec,'policy')
-            if getattr(constructor('policy',resolved.kind),'uses_action_space',False):
+            if resolved.action_space is not None or getattr(constructor('policy',resolved.kind),'uses_action_space',False):
                 self.validate_action_space()
+                if resolved.action_space is not None:
+                    cls=constructor('policy',resolved.kind)
+                    if not (getattr(cls,'accepts_action_space',False) or getattr(cls,'uses_action_space',False)):
+                        raise ValueError('selector does not accept configurable action_space: '+resolved.kind)
+                    self.action_space.restrict(resolved.action_space)
         if set(self.models) - {"policy", "mobility", "timing"}:
             raise ValueError("model categories must be policy, mobility or timing")
         return self
@@ -278,7 +328,7 @@ class Profile(Model):
             b = self.sub_bands[self.direction_band(f,'ul')]
             if f not in b.channels_hz:
                 raise ValueError(f"action_space CH {f} must be a registered UL sub-band center frequency")
-            if self.action_space.tp_dbm > b.max_tp_dbm:
+            if max(self.action_space.powers_dbm) > b.max_tp_dbm:
                 raise ValueError("action_space TP exceeds a candidate sub-band maximum")
 
     def component(self, spec: Component, category: str) -> Component:
@@ -293,7 +343,8 @@ class Profile(Model):
                 base = resolve(self.models[category][value.ref])
             except KeyError:
                 raise ValueError(f"unknown {category} reference: {value.ref}") from None
-            return Component(kind=base.kind, options={**base.options, **value.options})
+            return Component(kind=base.kind, options={**base.options, **value.options},
+                             action_space=value.action_space if value.action_space is not None else base.action_space)
         return resolve(spec)
 
     def band(self, frequency: int) -> int:

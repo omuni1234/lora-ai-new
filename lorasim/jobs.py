@@ -116,6 +116,11 @@ class Store:
         from .components import make
         import numpy as np
         context = {'rng':np.random.default_rng(0)}
+        if category=='policy' and component.action_space is not None:
+            # Library definitions have no experiment-wide bounds yet. Validate
+            # their own candidates now; the Profile enforces subset membership.
+            from .config import ActionSpace
+            context['action_space']=ActionSpace(**component.action_space.model_dump(exclude_none=True))
         if category=='mobility':
             context.update(initial=(0.,0.,1.5),area=(2000.,2000.))
         make(component,category,**context)

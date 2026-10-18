@@ -20,3 +20,8 @@ canvas#map.map-stale{opacity:.5}.map-panel .sectiontitle .actions{justify-conten
 .diagnostic-code{display:none}
 
 .notice-close{float:right;margin:-4px 0 -4px 12px}
+
+/* Analysis workspace: results above, reusable module configuration below. */
+#analysisView{display:flex;flex-direction:column;height:calc(100vh - 170px);min-height:620px;gap:14px}
+#analysisView[hidden]{display:none}.analysis-output{height:53%;min-height:250px;overflow:auto;resize:vertical}.analysis-editor{flex:1;min-height:220px;overflow:auto}.analysis-module{padding:12px 0;border-bottom:1px solid var(--line,#dbe3eb)}.analysis-module details{margin:8px 0}.analysis-module label.check{margin:0}.module-results{margin-bottom:14px}.module-results .chart{border-top:1px solid #e6ebf0;margin-top:12px;padding-top:12px}.space-editor{border:1px solid #d5e2e9;background:#f5f9fb;border-radius:8px;padding:12px;margin:12px 0}.space-editor fieldset{display:flex;flex-wrap:wrap;gap:8px 14px;border:0;border-top:1px solid #dbe4eb;margin:8px 0;padding:8px 0}.space-editor legend{font-weight:700}.space-editor .check{margin:0;font-size:12px}.space-total{color:#206a83;font-weight:700;padding:8px;background:#edf5f8;border-radius:5px}
+@media(max-width:760px){#analysisView{height:auto;min-height:0}.analysis-output{height:auto;max-height:65vh}.analysis-editor{max-height:65vh}}

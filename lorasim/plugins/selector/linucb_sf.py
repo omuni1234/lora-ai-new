@@ -35,13 +35,23 @@ class Settings(Options):
 
 class LinUCBSF(Policy):
     Options = Settings
-    label = 'LinUCB-SF（原論文のSF選択）'
-    description = '6次元の端末側ContextとACKでSFを学習。GW情報は9 byteの実験用DL通知を受信したときだけ更新します。'
+    label = 'LinUCB-SF'
+    description = '6次元の端末側ContextとACKで学習。共通空間を有効にするとその全候補を腕として使用。GW情報は9 byteの実験用DL通知を受信したときだけ更新します。'
     preview_safe = True
     requires_confirmed = True
     link_feedback_bytes = 9
-    def __init__(self,rng,**options):
-        self._initialize(rng,Settings.model_validate(options))
+    accepts_action_space = True
+    space_options = ["initial", "frequencies_hz"]
+    def __init__(self,rng,action_space=None,**options):
+        o=Settings.model_validate(options)
+        if action_space is None:
+            self._initialize(rng,o)
+        else:
+            actions=action_space.radios()
+            o.initial=max(actions,key=lambda a:(a.sf,a.tp_dbm))
+            self._initialize(rng,o,actions=actions)
+            self.uses_action_space=True
+            self.joint=len(action_space.powers_dbm)>1
     def _initialize(self,rng,o,powers=None,actions=None):
         self.options,self.rng = o,rng
         self.actions = actions if actions is not None else [o.initial.model_copy(update={'sf':sf,'tp_dbm':tp}) for sf in range(7,13) for tp in (powers or [o.initial.tp_dbm])]

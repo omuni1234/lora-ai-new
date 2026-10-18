@@ -47,6 +47,8 @@ class Plugin(ABC):
 class Policy(Plugin):
     # Opt-in constructor contract: receive a validated config.ActionSpace.
     uses_action_space = False
+    # Optional action_space constructor input; activated by Component.action_space.
+    accepts_action_space = False
     requires_position = False
     def initialize(self, observation: Observation) -> None:
         """Optional time-zero local observation, before the first selection."""

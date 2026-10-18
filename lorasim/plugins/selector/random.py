@@ -2,9 +2,11 @@ import numpy as np
 from lorasim.config import Radio
 from lorasim.interfaces import Policy
 class RandomPolicy(Policy):
-    def __init__(self, rng, actions=None):
+    accepts_action_space = True
+    space_options = ["actions"]
+    def __init__(self, rng, actions=None, action_space=None):
         self.rng = rng
-        self.actions = [Radio.model_validate(x) for x in (actions or [{"sf":s} for s in range(7,13)])]
+        self.actions = action_space.radios() if action_space is not None else [Radio.model_validate(x) for x in (actions or [{"sf":s} for s in range(7,13)])]
         if not self.actions:
             raise ValueError("actions cannot be empty")
     def select(self, observation):

@@ -17,8 +17,8 @@ class Settings(DQNSettings):
 class SEMA(DQN):
     Options = Settings
     requires_position = True
-    label = 'SEMA SF×CH（逐次消去メタエージェント）'
-    description = '静止[A,B,ε-greedy]×移動[A,C]の6組をACKで逐次消去。状態プール内の全DQNへ経験を共有します。'
+    label = 'SEMA（逐次消去メタエージェント）'
+    description = '静止[A,B,ε-greedy]×移動[A,C]の6組をACKで逐次消去。同じEDの状態プール内だけで全DQNへ経験を共有します。ED間の共有はありません。'
     def __init__(self,rng,action_space,**options):
         self.options = o = Settings.model_validate(options)
         self.rng,self.actions = rng,action_space.radios()

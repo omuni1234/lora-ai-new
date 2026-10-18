@@ -22,11 +22,13 @@ class LoRaMAB(Policy):
     description = 'ACKだけで学習する分散型Exp3。SF・周波数・送信電力の直積から選択します。'
     preview_safe = True
     requires_confirmed = True
-    def __init__(self, rng, **options):
+    accepts_action_space = True
+    space_options = ["spreading_factors", "frequencies_hz", "powers_dbm", "cr"]
+    def __init__(self, rng, action_space=None, **options):
         self.options = o = Settings.model_validate(options)
         self.rng = rng
-        self.actions = [Radio(sf=sf,tp_dbm=tp,frequency_hz=freq,cr=o.cr) for sf,freq,tp in product(o.spreading_factors,o.frequencies_hz,o.powers_dbm)]
-        if len({(r.sf,r.frequency_hz,r.tp_dbm) for r in self.actions}) != len(self.actions):
+        self.actions = action_space.radios() if action_space is not None else [Radio(sf=sf,tp_dbm=tp,frequency_hz=freq,cr=o.cr) for sf,freq,tp in product(o.spreading_factors,o.frequencies_hz,o.powers_dbm)]
+        if len({(r.sf,r.frequency_hz,r.tp_dbm,r.cr) for r in self.actions}) != len(self.actions):
             raise ValueError('LoRa-MAB action candidates must be unique')
         self.k = len(self.actions)
         self.gamma = o.gamma if o.gamma is not None else min(1.,math.sqrt(self.k*math.log(self.k)/((math.e-1)*o.horizon)))

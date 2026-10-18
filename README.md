@@ -144,3 +144,18 @@ BADRはSemtechのBlind ADRとして実装しています。LoRaWAN標準が使�
 - [運用とデータ保全](docs/OPERATIONS.md)
 
 上流ソースに基づく改変コードを含むため、ライセンスは **GPL-2.0-only** です。[NOTICE](NOTICE) と [LICENSE](LICENSE) を参照してください。
+
+
+## v0.7: ED独立性・共通行動空間・分析モジュール
+
+EDごとのQ表・学習状態の独立性を検証し、SF×CH×CR×TPの全体集合からED側の部分集合を選択器へ渡す契約を追加しました。`bandit`や`lora_mab`の名前を変えずに216候補、CR/TP固定の18候補などを設定できます。旧プロファイルは互換読み込みします。
+
+- [行動空間とEDの独立性](docs/ACTION_SPACE.md)
+- [分析モジュール開発ガイド](docs/ANALYSIS_PLUGINS.md)
+- [7つの分析モジュール・定義・文献](docs/METRICS.md)
+- [検証結果](docs/VALIDATION-v07.md)
+- [実行例](examples/14-unified-action-space.yaml)
+
+比較・分析は中央上部に結果、下部にモジュールの追加・削除・トグル・定数を配置しました。収束は時点tまでの全履歴を使う累積割合です。
+
+![分析ワークスペース](docs/analysis-v07.png)

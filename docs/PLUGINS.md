@@ -154,3 +154,8 @@ SEMA/DQNのOptions、原論文との差分、観測上の制約は [SEMA.md](SEM
 ## 日本語の診断（v0.6）
 
 Optionsの型・Field制約による例外は、設定パスと日本語の説明・ヒントに変換されます。未知の独自例外は原因を推測せず、元のメッセージを技術詳細へ保持します。設定チェックと実行中エラーの範囲、Warning追加時の指針は [DIAGNOSTICS.md](DIAGNOSTICS.md) を参照してください。
+
+
+## v0.7: 行動空間と分析の拡張
+
+候補次元ごとに別の選択器クラスを作る必要はありません。[ACTION_SPACE.md](ACTION_SPACE.md)のコンストラクタ契約で、シミュレータが検証したSF×CH×CR×TPの部分集合を受け取れます。分析の追加は[ANALYSIS_PLUGINS.md](ANALYSIS_PLUGINS.md)を参照してください。
