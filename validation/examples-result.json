@@ -1,0 +1,86 @@
+{
+  "small": {
+    "status": "completed",
+    "counts": {
+      "messages_generated": 36,
+      "uplinks_sent": 54,
+      "peak_air_bytes": 832,
+      "events_processed": 927,
+      "rx_Received": 72,
+      "uplinks_received_any_gw": 45,
+      "downlinks_sent": 27,
+      "attempts_finished": 54,
+      "ack_received": 27,
+      "rx_LostBecauseTx": 9
+    },
+    "table_rows": {
+      "transmissions": 81,
+      "receptions": 81,
+      "feedback": 54,
+      "events": 216
+    }
+  },
+  "collision": {
+    "status": "completed",
+    "counts": {
+      "messages_generated": 48,
+      "uplinks_sent": 48,
+      "peak_air_bytes": 4992,
+      "events_processed": 392,
+      "rx_NoMoreReceivers": 40,
+      "rx_Interference": 8,
+      "attempts_finished": 48
+    },
+    "table_rows": {
+      "transmissions": 48,
+      "receptions": 48,
+      "feedback": 48,
+      "events": 192
+    }
+  },
+  "mobile": {
+    "status": "completed",
+    "counts": {
+      "messages_generated": 225,
+      "uplinks_sent": 222,
+      "peak_air_bytes": 2592,
+      "events_processed": 7619,
+      "rx_Received": 580,
+      "uplinks_received_any_gw": 221,
+      "downlinks_sent": 177,
+      "attempts_finished": 222,
+      "ack_received": 171,
+      "rx_LostBecauseTx": 35,
+      "rx_Interference": 6,
+      "attempts_truncated": 3
+    },
+    "table_rows": {
+      "transmissions": 399,
+      "receptions": 621,
+      "feedback": 222,
+      "events": 675
+    }
+  },
+  "scale": {
+    "status": "completed",
+    "counts": {
+      "messages_generated": 12000,
+      "uplinks_sent": 12000,
+      "peak_air_bytes": 288288,
+      "events_processed": 107930,
+      "rx_Received": 7652,
+      "uplinks_received_any_gw": 7652,
+      "rx_Interference": 4339,
+      "attempts_finished": 11982,
+      "rx_NoMoreReceivers": 6,
+      "rx_SimulationEnd": 3,
+      "attempts_truncated": 18
+    },
+    "table_rows": {
+      "transmissions": 12000,
+      "receptions": 12000,
+      "feedback": 11982,
+      "events": 47963
+    }
+  }
+}

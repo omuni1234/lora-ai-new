@@ -1,0 +1,14 @@
+[Unit]
+Description=LoRaSim independent experiment worker
+After=network.target
+[Service]
+Type=simple
+User=lorasim
+WorkingDirectory=/opt/lorawan-sim
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=OMP_NUM_THREADS=1
+ExecStart=/opt/lorawan-sim/.venv/bin/lorasim worker --data /var/lib/lorasim --workers 2
+Restart=on-failure
+TimeoutStopSec=40
+[Install]
+WantedBy=multi-user.target

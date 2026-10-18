@@ -1,0 +1,237 @@
+from __future__ import annotations
+import contextlib
+import fcntl
+import json
+import multiprocessing as mp
+import os
+from pathlib import Path
+import queue
+import signal
+import sqlite3
+import subprocess
+import threading
+import time
+import traceback
+import uuid
+from .config import load_profile, dump_profile
+from .engine import Simulation
+from .tracking import atomic_json
+
+TERMINAL = {"completed","failed","cancelled","interrupted"}
+
+
+class Store:
+    def __init__(self,root):
+        self.root = Path(root).resolve()
+        self.root.mkdir(parents=True,exist_ok=True)
+        (self.root/"runs").mkdir(exist_ok=True)
+        with self.connect() as db:
+            db.executescript("""
+            PRAGMA journal_mode=WAL;
+            CREATE TABLE IF NOT EXISTS jobs (
+              id TEXT PRIMARY KEY, name TEXT NOT NULL, profile TEXT NOT NULL,
+              status TEXT NOT NULL, created REAL NOT NULL, started REAL, finished REAL,
+              progress REAL NOT NULL DEFAULT 0, sim_time REAL NOT NULL DEFAULT 0,
+              heartbeat REAL, cancel INTEGER NOT NULL DEFAULT 0, error TEXT, summary TEXT
+            );
+            CREATE TABLE IF NOT EXISTS profiles (name TEXT PRIMARY KEY, yaml TEXT NOT NULL, updated REAL NOT NULL);
+            """)
+    def connect(self):
+        db = sqlite3.connect(self.root/"jobs.sqlite",timeout=30)
+        db.row_factory = sqlite3.Row
+        return db
+    def submit(self,text):
+        p = load_profile(text,text=True)
+        # Validate component construction before enqueueing (no model.select calls).
+        Simulation(p,self.root/"_validation")
+        jid = uuid.uuid4().hex
+        with self.connect() as db:
+            db.execute("INSERT INTO jobs(id,name,profile,status,created) VALUES(?,?,?,'queued',?)",(jid,p.name,dump_profile(p),time.time()))
+        return jid
+    def get(self,jid):
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM jobs WHERE id=?",(jid,)).fetchone()
+        if row is None:
+            raise KeyError(jid)
+        result = dict(row)
+        if result["summary"]:
+            result["summary"] = json.loads(result["summary"])
+        return result
+    def list(self,limit=100):
+        with self.connect() as db:
+            rows = db.execute("SELECT id,name,status,created,started,finished,progress,sim_time,error FROM jobs ORDER BY created DESC LIMIT ?",(limit,)).fetchall()
+        return [dict(x) for x in rows]
+    def claim(self):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT id FROM jobs WHERE status='queued' AND cancel=0 ORDER BY created LIMIT 1").fetchone()
+            if not row:
+                return None
+            jid = row["id"]
+            db.execute("UPDATE jobs SET status='running',started=?,heartbeat=? WHERE id=?",(time.time(),time.time(),jid))
+            return jid
+    def update_progress(self,jid,value):
+        with self.connect() as db:
+            db.execute("UPDATE jobs SET progress=?,sim_time=?,heartbeat=? WHERE id=?",(value["progress"],value["sim_time_s"],time.time(),jid))
+    def finish(self,jid,status,summary=None,error=None):
+        with self.connect() as db:
+            db.execute("UPDATE jobs SET status=?,finished=?,summary=?,error=? WHERE id=?",(status,time.time(),json.dumps(summary) if summary else None,error,jid))
+    def cancel(self,jid):
+        item = self.get(jid)
+        with self.connect() as db:
+            db.execute("UPDATE jobs SET cancel=1 WHERE id=?",(jid,))
+            db.execute("UPDATE jobs SET status='cancelled',finished=? WHERE id=? AND status='queued'",(time.time(),jid))
+        return item
+    def is_cancelled(self,jid):
+        return bool(self.get(jid)["cancel"])
+    def save_profile(self,name,text):
+        if not name.strip() or len(name)>120:
+            raise ValueError("profile name must have 1..120 characters")
+        p = load_profile(text,text=True)
+        Simulation(p,self.root/"_validation")
+        with self.connect() as db:
+            db.execute("INSERT INTO profiles VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET yaml=excluded.yaml,updated=excluded.updated",(name,dump_profile(p),time.time()))
+    def profiles(self):
+        with self.connect() as db:
+            return [dict(x) for x in db.execute("SELECT * FROM profiles ORDER BY name")]
+
+
+class Notifier:
+    """curl runs off the event loop, without a shell; bounded/coalesced progress queue."""
+    def __init__(self,configs,root,jid):
+        self.configs,self.root,self.jid = configs,Path(root),jid
+        self.pending = queue.Queue(maxsize=1)
+        self.last = [-1.]*len(configs)
+        self.thread = threading.Thread(target=self._run,daemon=True)
+        self.thread.start()
+    def push(self,value):
+        try:
+            self.pending.put_nowait(value.copy())
+        except queue.Full:
+            with contextlib.suppress(queue.Empty):
+                self.pending.get_nowait()
+            with contextlib.suppress(queue.Full):
+                self.pending.put_nowait(value.copy())
+    def close(self):
+        self.pending.put(None)
+        self.thread.join(timeout=sum(c.timeout_s+2 for c in self.configs)+5)
+    def _run(self):
+        while True:
+            value = self.pending.get()
+            if value is None:
+                break
+            percent = 100*value["progress"]
+            for i,c in enumerate(self.configs):
+                if self.last[i]>=0 and percent-self.last[i]<c.every_percent and value["status"] not in TERMINAL:
+                    continue
+                self.last[i] = percent
+                payload = json.dumps({"job_id":self.jid,**value})
+                try:
+                    result = subprocess.run(["curl","--silent","--show-error","--fail","--max-time",str(c.timeout_s),
+                                             "--request","POST","--header","Content-Type: application/json",
+                                             "--data-binary","@-","--url",c.url],input=payload,text=True,
+                                             stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=c.timeout_s+1)
+                    code,error = result.returncode,result.stderr[-1000:]
+                except Exception as exc:
+                    code,error = -1,str(exc)
+                with (self.root/"notifications.jsonl").open("a") as log:
+                    log.write(json.dumps({"job_id":self.jid,"time":time.time(),"status":value["status"],"percent":percent,"exit_code":code,"error":error})+"\n")
+
+
+def execute_job(root,jid):
+    store = Store(root)
+    item = store.get(jid)
+    output = store.root/"runs"/jid
+    notifier = None
+    stop = threading.Event()
+    def heartbeat():
+        while not stop.wait(5):
+            with store.connect() as db:
+                db.execute("UPDATE jobs SET heartbeat=? WHERE id=?",(time.time(),jid))
+    thread = threading.Thread(target=heartbeat,daemon=True)
+    thread.start()
+    # SIGTERM asks the event loop to finish and flush already generated records.
+    requested = threading.Event()
+    signal.signal(signal.SIGTERM,lambda *_:requested.set())
+    try:
+        p = load_profile(item["profile"],text=True)
+        # No file is written until the first progress callback, after run setup.
+        notifier = Notifier(p.notifications,output,jid) if p.notifications else None
+        def progress(value):
+            store.update_progress(jid,value)
+            if notifier:
+                notifier.push(value)
+        sim = Simulation(p,output,progress=progress,cancelled=lambda:requested.is_set() or store.is_cancelled(jid))
+        result = sim.run()
+        store.finish(jid,result["status"],result)
+    except BaseException as exc:
+        output.mkdir(exist_ok=True)
+        (output/"error.log").write_text(traceback.format_exc())
+        store.finish(jid,"failed",error=f"{type(exc).__name__}: {exc}")
+        if notifier:
+            row = store.get(jid)
+            notifier.push({"status":"failed","progress":row["progress"],"error":str(exc)})
+    finally:
+        stop.set()
+        thread.join(timeout=1)
+        if notifier:
+            notifier.close()
+
+
+def worker(root,workers=1,once=False):
+    if workers<1:
+        raise ValueError("workers must be >=1")
+    store = Store(root)
+    # One supervisor per storage directory, potentially many independent processes.
+    lock = (store.root/"worker.lock").open("w")
+    try:
+        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise RuntimeError("a worker supervisor already owns this data directory")
+    lock.write(str(os.getpid()))
+    lock.flush()
+    with store.connect() as db:
+        # A dead worker may leave a live child. A recent heartbeat must not be stolen.
+        stale = time.time()-30
+        db.execute("UPDATE jobs SET status='interrupted',finished=?,error='Worker stopped; resubmit profile to restart' WHERE status='running' AND heartbeat<?",(time.time(),stale))
+    ctx = mp.get_context("spawn")
+    children = {}
+    stopping = False
+    def stop(*_):
+        nonlocal stopping
+        stopping = True
+    oldterm,oldint = signal.signal(signal.SIGTERM,stop),signal.signal(signal.SIGINT,stop)
+    try:
+        while True:
+            for jid,process in tuple(children.items()):
+                if not process.is_alive():
+                    process.join()
+                    if store.get(jid)["status"]=="running":
+                        store.finish(jid,"failed",error=f"worker process exited with code {process.exitcode}")
+                    del children[jid]
+            with store.connect() as db:
+                db.execute("UPDATE jobs SET status='interrupted',finished=?,error='Worker heartbeat expired; resubmit to restart' WHERE status='running' AND heartbeat<?",(time.time(),time.time()-30))
+            if stopping:
+                for process in children.values():
+                    process.terminate()
+                for process in children.values():
+                    process.join(timeout=15)
+                    if process.is_alive():
+                        process.kill()
+                        process.join()
+                break
+            while len(children)<workers:
+                jid = store.claim()
+                if jid is None:
+                    break
+                process = ctx.Process(target=execute_job,args=(str(store.root),jid))
+                process.start()
+                children[jid] = process
+            atomic_json(store.root/"worker.json",{"pid":os.getpid(),"heartbeat":time.time(),"workers":workers,"active":list(children)})
+            if once and not children:
+                break
+            time.sleep(.2)
+    finally:
+        signal.signal(signal.SIGTERM,oldterm)
+        signal.signal(signal.SIGINT,oldint)
+        lock.close()

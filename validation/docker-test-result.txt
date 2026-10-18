@@ -1,0 +1,7 @@
+#7 20.60 =============================== warnings summary ===============================
+#7 20.60 ../usr/local/lib/python3.10/dist-packages/fastapi/testclient.py:1
+#7 20.60   /usr/local/lib/python3.10/dist-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+#7 20.60     from starlette.testclient import TestClient as TestClient  # noqa
+#7 20.60 61 passed, 1 warning in 11.58s
+#8 exporting to image
+#8 writing image sha256:db17aef54e436abaea6ab1443417a5d7ac9e7677c01c76c785fe8d4cffe45306 done

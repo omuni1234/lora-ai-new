@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "simulator_version": "0.1.0",
+  "profile_sha256": "79f56de56cb55a6ff076ac29c814d77ebbfdefd5b01c28bad7d73ec5c4084177",
+  "upstream": {
+    "lorawan": {
+      "url": "https://github.com/signetlabdei/lorawan",
+      "commit": "e45b4af428c92f30b2e6c201055809110758125f"
+    },
+    "ns3": {
+      "url": "https://github.com/nsnam/ns-3-dev-git",
+      "tag": "ns-3.48",
+      "commit": "d2add90b452d600cfb4859baed8e9ea633519447"
+    }
+  },
+  "python": "3.11.4",
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "numpy": "2.4.6",
+  "time_resolution": "ns",
+  "rng": "NumPy PCG64, SeedSequence(seed,device_id,component)",
+  "dependencies": {
+    "numpy": "2.4.6",
+    "pyarrow": "23.0.1",
+    "pydantic": "2.14.1",
+    "PyYAML": "6.0.3"
+  },
+  "source_sha256": {
+    "config.py": "1f7ba1ddec138e59a32d953c294b646afa10a8422abebb56944d08fa3f351958",
+    "phy.py": "eabb11ac9bdbc117d7a037fa8ba27fedd6fb99725235a0141c666f35095f7fb7",
+    "__init__.py": "43ec9497a8256d75a153254cc0f547323fb487446c892c22314a626e9a747c56",
+    "jobs.py": "e9a24f6da9ca6bfbbbf5dedf3f1c882b12f443a5b8ca296b0066d6e8e3c78255",
+    "api.py": "9ffc9c7fc402b08283490844162bc348c23ac88b4b677bdde63b48738f69d1c0",
+    "engine.py": "ac06056f2bebd79180791aeac851bcb204dbaec1cc4a694f2a6dc291c7c69bed",
+    "cli.py": "a8185025d0c1cb073716a0fad30a147d817f31b6716c38f411ed2be904109d1d",
+    "components.py": "2cca1717856745eb014be504f55810a763af8abe03bcfab682021c263f1cc711",
+    "tracking.py": "66c69d64dc63ac5b2dd1785f9c0d0d434e1ac7fe8c3a12818e25f2b75e205f94",
+    "__main__.py": "cf7390a2508a0fcad4777a4a629fc5212ab655cb45845975995f835676a834e3"
+  }
+}

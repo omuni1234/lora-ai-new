@@ -1,0 +1,36 @@
+name: mobile-bandit
+seed: 42
+duration_s: 600
+area_m: [3000, 3000]
+gateways:
+  - id: gw0
+    position: [800, 1500, 20]
+  - id: gw1
+    position: [2200, 1500, 20]
+groups:
+  - name: walkers
+    count: 20
+    tags: [mobile]
+    confirmed: true
+    policy:
+      kind: bandit
+      options:
+        epsilon: 0.15
+        actions:
+          - {sf: 7, tp_dbm: 8, cr: 1, frequency_hz: 868100000}
+          - {sf: 9, tp_dbm: 12, cr: 1, frequency_hz: 868300000}
+          - {sf: 12, tp_dbm: 14, cr: 2, frequency_hz: 868500000}
+    timing: {kind: periodic, options: {interval_s: 60, random_phase: true}}
+    mobility: {kind: random_walk, options: {speed_m_s: 1.5, step_s: 10}}
+  - name: reference
+    count: 5
+    placement: grid
+    confirmed: true
+    policy: {kind: fixed, options: {sf: 9}}
+    timing: {kind: periodic, options: {interval_s: 90, random_phase: true}}
+assignments:
+  - ids: [0]
+    mobility:
+      kind: waypoints
+      options:
+        points: [[0, 100, 100, 1.5], [300, 2900, 2900, 1.5], [600, 100, 100, 1.5]]

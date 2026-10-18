@@ -1,0 +1,16 @@
+name: scale-1000
+seed: 99
+duration_s: 3600
+area_m: [4000, 4000]
+groups:
+  - name: population
+    count: 1000
+    confirmed: false
+    policy:
+      kind: random
+      options:
+        actions:
+          - {sf: 7, frequency_hz: 868100000}
+          - {sf: 9, frequency_hz: 868300000}
+          - {sf: 12, frequency_hz: 868500000}
+    timing: {kind: periodic, options: {interval_s: 300, random_phase: true}}

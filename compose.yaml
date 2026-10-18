@@ -1,0 +1,32 @@
+services:
+  api:
+    build: .
+    image: lorasim-research:local
+    command: [lorasim, serve, --host, 0.0.0.0, --data, /data]
+    ports:
+      - "127.0.0.1:${LORASIM_PORT:-8000}:8000"
+    volumes:
+      - results:/data
+    environment:
+      LORASIM_API_TOKEN: ${LORASIM_API_TOKEN:-}
+      LORASIM_ALLOW_PLUGINS: ${LORASIM_ALLOW_PLUGINS:-0}
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost:8000/api/health]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+  worker:
+    build: .
+    image: lorasim-research:local
+    command: [lorasim, worker, --data, /data, --workers, "${LORASIM_WORKERS:-2}"]
+    volumes:
+      - results:/data
+    environment:
+      LORASIM_ALLOW_PLUGINS: ${LORASIM_ALLOW_PLUGINS:-0}
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    restart: unless-stopped
+    stop_grace_period: 40s
+volumes:
+  results:

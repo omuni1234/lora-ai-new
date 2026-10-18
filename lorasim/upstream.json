@@ -1,0 +1,4 @@
+{
+  "lorawan": {"url":"https://github.com/signetlabdei/lorawan", "commit":"e45b4af428c92f30b2e6c201055809110758125f"},
+  "ns3": {"url":"https://github.com/nsnam/ns-3-dev-git", "tag":"ns-3.48", "commit":"d2add90b452d600cfb4859baed8e9ea633519447"}
+}

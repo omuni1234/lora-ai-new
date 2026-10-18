@@ -1,0 +1,16 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 LORASIM_DATA=/data
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip ca-certificates curl tini \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY pyproject.toml LICENSE README.md NOTICE ./
+COPY lorasim ./lorasim
+COPY examples ./examples
+RUN python3 -m pip install --no-cache-dir --upgrade 'pip>=25,<27' 'setuptools>=68,<81' wheel \
+    && python3 -m pip install --no-cache-dir --no-build-isolation . \
+    && lorasim --help >/dev/null && useradd --create-home --uid 10001 sim \
+    && mkdir /data && chown sim:sim /data
+USER sim
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["lorasim", "serve", "--host", "0.0.0.0", "--data", "/data"]

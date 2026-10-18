@@ -1,0 +1,89 @@
+schema_version: 1
+name: small-class-a
+seed: 7
+duration_s: 180.0
+area_m:
+- 2000.0
+- 2000.0
+channel:
+  exponent: 3.76
+  reference_distance_m: 1.0
+  reference_loss_db: 7.7
+  speed_m_s: 299792458.0
+  collision_matrix: goursaud
+mac:
+  rx1_delay_s: 1.0
+  rx2_delay_s: 2.0
+  rx_symbols: 8
+  rx1_sf_offset: 0
+  rx2_sf: 12
+  rx2_frequency_hz: 869525000
+  backhaul_delay_s: 0.0
+  duty_cycle: true
+sub_bands:
+- low_hz: 863000000
+  high_hz: 865000000
+  duty_cycle: 0.001
+  max_tp_dbm: 14.0
+- low_hz: 865000000
+  high_hz: 868000000
+  duty_cycle: 0.01
+  max_tp_dbm: 14.0
+- low_hz: 868000000
+  high_hz: 868600000
+  duty_cycle: 0.01
+  max_tp_dbm: 14.0
+- low_hz: 868700000
+  high_hz: 869200000
+  duty_cycle: 0.001
+  max_tp_dbm: 14.0
+- low_hz: 869400000
+  high_hz: 869650000
+  duty_cycle: 0.1
+  max_tp_dbm: 27.0
+- low_hz: 869700000
+  high_hz: 870000000
+  duty_cycle: 0.01
+  max_tp_dbm: 14.0
+gateways:
+- id: gw0
+  position:
+  - 1000.0
+  - 1000.0
+  - 15.0
+  demodulators: 8
+  frequencies_hz:
+  - 868100000
+  - 868300000
+  - 868500000
+groups:
+- name: sensors
+  count: 12
+  tags: []
+  placement: grid
+  positions: []
+  policy:
+    kind: fixed
+    options:
+      sf: 7
+      tp_dbm: 14
+      cr: 1
+  timing:
+    kind: periodic
+    options:
+      interval_s: 60
+      random_phase: true
+  mobility:
+    kind: stationary
+    options: {}
+  payload_bytes: 20
+  confirmed: true
+  max_attempts: 2
+  observe_position: false
+assignments: []
+tracking:
+  batch_rows: 4096
+  max_air_signals: 100000
+  max_air_bytes: 536870912
+notifications: []
+channel_backend: numpy

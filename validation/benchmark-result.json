@@ -1,0 +1,126 @@
+{
+  "python": [
+    {
+      "platform": "macOS-26.3.1-arm64-arm-64bit",
+      "backend": "numpy",
+      "n": 1000,
+      "duration_s": 3600,
+      "wall_s": 0.7456644170015352,
+      "sent": 12000,
+      "received": 12000,
+      "maxrss_native_units": 102711296,
+      "summary": {
+        "status": "completed",
+        "sim_time_s": 3600.0,
+        "duration_s": 3600.0,
+        "progress": 1.0,
+        "wall_s": 0.7456644170015352,
+        "counts": {
+          "messages_generated": 12000,
+          "uplinks_sent": 12000,
+          "peak_air_bytes": 32032,
+          "events_processed": 108000,
+          "rx_Received": 12000,
+          "uplinks_received_any_gw": 12000,
+          "attempts_finished": 12000
+        },
+        "table_rows": {
+          "transmissions": 12000,
+          "receptions": 12000,
+          "feedback": 12000,
+          "events": 48000
+        }
+      }
+    },
+    {
+      "platform": "macOS-26.3.1-arm64-arm-64bit",
+      "backend": "numpy",
+      "n": 1000,
+      "duration_s": 3600,
+      "wall_s": 0.7387429580121534,
+      "sent": 12000,
+      "received": 12000,
+      "maxrss_native_units": 102400000,
+      "summary": {
+        "status": "completed",
+        "sim_time_s": 3600.0,
+        "duration_s": 3600.0,
+        "progress": 1.0,
+        "wall_s": 0.7387429580121534,
+        "counts": {
+          "messages_generated": 12000,
+          "uplinks_sent": 12000,
+          "peak_air_bytes": 32032,
+          "events_processed": 108000,
+          "rx_Received": 12000,
+          "uplinks_received_any_gw": 12000,
+          "attempts_finished": 12000
+        },
+        "table_rows": {
+          "transmissions": 12000,
+          "receptions": 12000,
+          "feedback": 12000,
+          "events": 48000
+        }
+      }
+    },
+    {
+      "platform": "macOS-26.3.1-arm64-arm-64bit",
+      "backend": "numpy",
+      "n": 1000,
+      "duration_s": 3600,
+      "wall_s": 0.7224261670053238,
+      "sent": 12000,
+      "received": 12000,
+      "maxrss_native_units": 102383616,
+      "summary": {
+        "status": "completed",
+        "sim_time_s": 3600.0,
+        "duration_s": 3600.0,
+        "progress": 1.0,
+        "wall_s": 0.7224261670053238,
+        "counts": {
+          "messages_generated": 12000,
+          "uplinks_sent": 12000,
+          "peak_air_bytes": 32032,
+          "events_processed": 108000,
+          "rx_Received": 12000,
+          "uplinks_received_any_gw": 12000,
+          "attempts_finished": 12000
+        },
+        "table_rows": {
+          "transmissions": 12000,
+          "receptions": 12000,
+          "feedback": 12000,
+          "events": 48000
+        }
+      }
+    }
+  ],
+  "ns3": [
+    {
+      "n": 1000,
+      "duration_s": 3600,
+      "wall_s": 4.30027,
+      "sent": 12000,
+      "received": 12000
+    },
+    {
+      "n": 1000,
+      "duration_s": 3600,
+      "wall_s": 4.17119,
+      "sent": 12000,
+      "received": 12000
+    },
+    {
+      "n": 1000,
+      "duration_s": 3600,
+      "wall_s": 4.24652,
+      "sent": 12000,
+      "received": 12000
+    }
+  ],
+  "python_median_s": 0.7387429580121534,
+  "ns3_median_s": 4.24652,
+  "ratio": 5.7483052175911755
+}

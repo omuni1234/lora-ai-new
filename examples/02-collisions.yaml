@@ -1,0 +1,16 @@
+name: collision-stress
+seed: 23
+duration_s: 20
+area_m: [100, 100]
+mac: {duty_cycle: false}
+gateways:
+  - id: gw0
+    position: [50, 50, 10]
+    demodulators: 2
+groups:
+  - name: simultaneous
+    count: 12
+    placement: grid
+    confirmed: false
+    policy: {kind: fixed, options: {sf: 7}}
+    timing: {kind: periodic, options: {interval_s: 5}}

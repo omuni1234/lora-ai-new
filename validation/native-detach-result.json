@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "job_state_before_api_stop": "queued",
+  "api_stopped": true,
+  "final_job_status": "completed",
+  "summary": {
+    "status": "completed",
+    "sim_time_s": 3600.0,
+    "duration_s": 3600.0,
+    "progress": 1.0,
+    "wall_s": 0.9150750840053661,
+    "counts": {
+      "messages_generated": 12000,
+      "uplinks_sent": 12000,
+      "peak_air_bytes": 288288,
+      "events_processed": 107930,
+      "rx_Received": 7652,
+      "uplinks_received_any_gw": 7652,
+      "rx_Interference": 4339,
+      "attempts_finished": 11982,
+      "rx_NoMoreReceivers": 6,
+      "rx_SimulationEnd": 3,
+      "attempts_truncated": 18
+    },
+    "table_rows": {
+      "transmissions": 12000,
+      "receptions": 12000,
+      "feedback": 11982,
+      "events": 47963
+    }
+  }
+}

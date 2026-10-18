@@ -1,0 +1,14 @@
+LoRaSim Research 0.1.0 — GPL-2.0-only
+
+This implementation derives equations, numerical tables and selected behavior from:
+- signetlabdei/lorawan, commit e45b4af428c92f30b2e6c201055809110758125f
+  Copyright (c) 2017, 2018 University of Padova and respective contributors.
+  Authors include Davide Magrin, Martina Capuzzo, Stefano Romagnolo and contributors.
+- nsnam/ns-3-dev-git, ns-3.48, commit d2add90b452d600cfb4859baed8e9ea633519447
+  Copyright by respective ns-3 authors; see the upstream source headers.
+
+Both upstream projects license the referenced code under GPL-2.0-only. This
+Python adaptation is distributed under the same license (see LICENSE).
+Detailed provenance, supported subset, differences and validation evidence are
+in docs/FIDELITY.md and validation/. This is an independent implementation,
+not an official ns-3 module or a claim of LoRaWAN certification.

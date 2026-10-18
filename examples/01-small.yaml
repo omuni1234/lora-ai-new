@@ -1,0 +1,16 @@
+schema_version: 1
+name: small-class-a
+seed: 7
+duration_s: 180
+area_m: [2000, 2000]
+gateways:
+  - id: gw0
+    position: [1000, 1000, 15]
+groups:
+  - name: sensors
+    count: 12
+    placement: grid
+    confirmed: true
+    max_attempts: 2
+    policy: {kind: fixed, options: {sf: 7, tp_dbm: 14, cr: 1}}
+    timing: {kind: periodic, options: {interval_s: 60, random_phase: true}}

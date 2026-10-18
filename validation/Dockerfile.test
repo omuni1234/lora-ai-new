@@ -1,0 +1,4 @@
+ARG BASE_IMAGE=lorasim-research:local
+FROM ${BASE_IMAGE}
+COPY tests /app/tests
+RUN python3 -m pip install --user pytest httpx && python3 -m pytest -q /app/tests -p no:cacheprovider

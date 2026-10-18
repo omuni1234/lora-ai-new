@@ -1,0 +1,12 @@
+{
+  "cpu_image_build": "passed",
+  "platform": "linux/amd64",
+  "base": "ubuntu:22.04",
+  "host": "Docker Desktop on Apple Silicon with amd64 emulation",
+  "test_phase": "BuildKit RUN",
+  "pytest_passed": 61,
+  "pytest_seconds": 11.58,
+  "compose_config_validation": "passed (CPU and GPU override)",
+  "compose_runtime": "unverified: Docker container start remained Created, also with /bin/true control",
+  "gpu": "not tested"
+}

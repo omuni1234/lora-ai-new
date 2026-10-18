@@ -1,0 +1,25 @@
+services:
+  api:
+    environment:
+      LORASIM_ALLOW_PLUGINS: "1"
+      PYTHONPATH: /app/plugins
+    volumes:
+      - ./examples:/app/plugins:ro
+  worker:
+    image: lorasim-research:gpu
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    environment:
+      LORASIM_ALLOW_PLUGINS: "1"
+      PYTHONPATH: /app/plugins
+    volumes:
+      - ./examples:/app/plugins:ro
+      - ./models:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

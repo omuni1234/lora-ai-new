@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "counts": {
+    "AIR": 144,
+    "PATH": 7,
+    "COL": 864,
+    "GW": 8
+  },
+  "note": "PHY primitives and gateway reference fixtures only; full MAC trajectory equivalence is not asserted"
+}
