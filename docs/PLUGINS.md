@@ -130,3 +130,23 @@ Observationに`attempt`（1始まり）と`max_attempts`を追加した。Feedba
 選択器は任意で`requires_confirmed=True`を宣言できる。`snapshot()`がdictを返す場合は最終状態をpolicy_state.jsonlへ保存する。LinUCBの研究用通知は`link_feedback_bytes=9`で要求する。ここは標準MACの汎用コーデックではなく、現在はSNR/RSSIの固定研究用フォーマット。独自形式はエンジン側にも実装が必要。
 
 [論文と実装の対応](PAPERS.md)と[高速化の範囲](PERFORMANCE.md)を参照。Pythonスクリプトから並列保存を利用するときは、Simulation(...).run()を`if __name__ == '__main__':`内から呼び出す（spawn方式）。CLIとWebワーカーは対応済み。
+
+## 共通SF×CH空間を使う選択器（v0.5）
+
+`Policy.uses_action_space = True` を宣言し、コンストラクタで `action_space` を受け取ります。factoryは実験設定の独立コピーを渡します。`action_space.radios()` がSF順×CH順のRadio一覧を返します。グローバル変数や別の設定ファイルから実験条件を読む必要はありません。
+
+```python
+class MySelector(Policy):
+    uses_action_space = True
+    def __init__(self, rng, action_space, **options):
+        self.rng = rng
+        self.actions = action_space.radios()
+    def select(self, observation):
+        return self.actions[int(self.rng.integers(len(self.actions)))].model_copy()
+```
+
+既存プラグインへ新しい引数を強制しません。`uses_action_space=False` が既定です。比較用モデルのテンプレートは `plugins/selector/random_sf_ch.py`、元モデルからの拡張例は `lora_mab_sf_ch.py` / `linucb_sf_ch.py` です。
+
+必要なら `initialize(observation)` をオーバーライドし、選択前の時刻0の端末観測を受け取れます。位置が必要なモデルは `requires_position=True` も宣言します。エンジンは位置観測が有効なグループのみ許可し、プレビューも同じ初期化を呼びます。初期化では送信・学習を行わず、ローカル状態の初期化に用いてください。SEMAの前回位置の初期化が実例です。
+
+SEMA/DQNのOptions、原論文との差分、観測上の制約は [SEMA.md](SEMA.md)、マルコフ移動の時間・乱数契約は [MARKOV.md](MARKOV.md) に記載しています。

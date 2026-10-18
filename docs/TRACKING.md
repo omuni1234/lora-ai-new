@@ -194,3 +194,11 @@ manifestの`source_sha256`は `plugins/selector/adr.py` 等を含むパッケー
 `policy_state.jsonl`には新選択器の最終状態を1 EDあたり1行保存する。Exp3の確率/対数重み、LinUCBの逆行列/b/θ/最終通知値を含む。時間ごとの行列をRAMへ蓄積しない。
 
 並列保存ではpart番号と行順序は逐次版と一致するが、ファイルの作成完了順序は異なり得る。実行中の末尾partを完了順で連結せず、ファイル名順で読み込むこと。実験終了は全保存プロセスの完了後。manifest/profile.yamlにexecution設定と全ソースSHAを記録する。MCU measuredモードはホスト実時間依存なので、高速化・並列化を変えた場合のMCUエネルギーの一致は保証しない。fixed/declaredモードは同じ設定で一致する。
+
+## v0.5の学習モデル
+
+Parquetの物理列形式（schema_version=3）は変更していません。共通SF×CHは実行時の `profile.yaml` の `action_space` に固定保存されます。行動IDの復元はSF外側×周波数内側のリスト順です。`transmissions.sf/frequency_hz/tx_power_dbm/cr` が実際に使われた値です。
+
+SEMA/DQNは `policy_state.jsonl` にED別学習集計を記録します。SEMAの `arms` は `(静止候補,移動候補)` の順で、`arm_counts` / `arm_rewards` は腕ID順です。`eliminated` の `experience` は当該EDのメタ試行累計。`selected_algorithms` は選択時の回数なので、終了時点で未送信・未確定の選択を含み得ます。`learners.*.experiences` はACKの成否が確定した経験のみです。`last_ack_rssi_dbm` は失敗時には保持値であり、その失敗試行で観測できたRSSIではありません。終端の未確定試行は学習しません。
+
+SEMAの消去履歴は最大5件、DQNの再生配列は容量制限付きです。1送信ごとのニューラルネット重みや勾配のログは蓄積しません。重みを保存して途中再開する機能は含みません。

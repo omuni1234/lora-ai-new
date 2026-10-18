@@ -1,0 +1,45 @@
+name: SF×CH共通空間・SEMA/DQN/LinUCB/LoRa-MAB
+seed: 42
+duration_s: 1200
+area_m: [2000, 2000]
+action_space:
+  spreading_factors: [7, 8, 9, 10, 11, 12]
+  frequencies_hz: [868100000, 868300000, 868500000]
+  tp_dbm: 14
+  cr: 1
+# 短時間の機能確認用。研究比較はモデルごとに別Experimentへ分け同じseed群で実行。
+# hidden_sizes/batch_sizeも短時間デモ用。論文の既定値は64,64 / 128。
+mac: {duty_cycle: false}
+models:
+  timing:
+    demo: {kind: periodic, options: {interval_s: 30, start: {mode: uniform, min_s: 0, max_s: 30}}}
+  mobility:
+    assets:
+      kind: markov
+      options: {random_count: 10, random_seed: 100, speed_m_s: 3, stay_probability: 0.8, decision_interval_s: 30}
+  policy:
+    meta: {kind: sema, options: {hidden_sizes: [16, 16], batch_size: 16, replay_capacity: 1000}}
+    deep: {kind: dqn, options: {hidden_sizes: [16, 16], batch_size: 16, replay_capacity: 1000}}
+groups:
+  - name: sema
+    count: 3
+    observe_position: true
+    policy: {ref: meta}
+    timing: {ref: demo}
+    mobility: {ref: assets}
+  - name: dqn
+    count: 3
+    policy: {ref: deep}
+    timing: {ref: demo}
+    mobility: {ref: assets}
+  - name: linucb
+    count: 3
+    observe_position: true
+    policy: {kind: linucb_sf_ch}
+    timing: {ref: demo}
+    mobility: {ref: assets}
+  - name: exp3
+    count: 3
+    policy: {kind: lora_mab_sf_ch}
+    timing: {ref: demo}
+    mobility: {ref: assets}

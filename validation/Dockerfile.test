@@ -9,3 +9,6 @@ RUN lorasim import-examples --data /tmp/lorasim-profile-smoke \
     && lorasim run examples/09-fast-multicore.yaml --output /tmp/lorasim-multicore > /tmp/lorasim-multicore.log \
     && lorasim run examples/10-random-waypoints.yaml --output /tmp/lorasim-waypoints > /tmp/lorasim-waypoints.log \
     && lorasim run examples/11-paper-selectors.yaml --output /tmp/lorasim-papers > /tmp/lorasim-papers.log
+
+RUN lorasim run examples/12-sf-ch-comparison.yaml --output /tmp/lorasim-sema > /tmp/lorasim-sema.log \
+    && lorasim run examples/13-markov.yaml --output /tmp/lorasim-markov > /tmp/lorasim-markov.log

@@ -98,12 +98,13 @@ def packet_details(root, packet_id):
 
 def preflight(profile, horizon_s=None, limit=80, samples=12):
     """Bounded dry run: configuration inspection only, no radio/MAC/feedback/events."""
-    from .interfaces import Observation
+    from .interfaces import Observation, Policy
     from .registry import constructor
     from .config import Radio
     horizon = min(profile.duration_s, 600. if horizon_s is None else horizon_s)
     view = layout(profile,0,limit)
     view.update(mode='preflight',horizon_s=horizon,transmissions=[],warnings=[],
+                action_space={**profile.action_space.model_dump(), 'action_count':len(profile.action_space.radios())},
                 note='生成予定・未学習の選択例。MAC待機、再送、干渉、ACK、学習を模擬しないため実送信時刻・最終性能とは異なります。')
     groups = {g.name:g for g in profile.groups}
     for d in view['devices']:
@@ -124,14 +125,20 @@ def preflight(profile, horizon_s=None, limit=80, samples=12):
             if not getattr(cls,'preview_safe',False):
                 d['warnings'].append(f'{k}: preview_safe未宣言のため呼び出しを省略')
                 continue
+            if k=='policy' and hasattr(cls,'preview_bytes') and cls.preview_bytes(spec.options,profile.action_space)*len(view['devices'])>67108864:
+                d['warnings'].append('policy: プレビューのモデルメモリ上限64 MiBを超えるため選択例を省略')
+                continue
             # Bound random-walk stepping independently of experiment duration.
             if k=='mobility' and hasattr(cls,'preview_cost') and cls.preview_cost(spec.options,horizon)>10000/max(1,len(view['devices'])):
                 d['warnings'].append('mobility: プレビューの計算上限を超えるため軌跡を省略')
                 continue
             context={'rng':np.random.default_rng(np.random.SeedSequence([profile.seed,d['id'],stream]))}
+            if k=='policy':context['action_space']=profile.action_space
             if k=='mobility':context.update(initial=d['xyz'],area=profile.area_m)
             instances[k]=make(spec,k,**context)
         obs=Observation(0.,d['id'],0,None,None,None,None,tuple(d['xyz']) if group.observe_position else None)
+        if 'policy' in instances and callable(getattr(instances['policy'],'initialize',None)) and getattr(type(instances['policy']),'initialize',None) is not Policy.initialize:
+            instances['policy'].initialize(obs)
         previous=None
         if 'timing' in instances:
             for j in range(samples):

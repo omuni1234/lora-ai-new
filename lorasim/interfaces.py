@@ -45,6 +45,12 @@ class Plugin(ABC):
 
 
 class Policy(Plugin):
+    # Opt-in constructor contract: receive a validated config.ActionSpace.
+    uses_action_space = False
+    requires_position = False
+    def initialize(self, observation: Observation) -> None:
+        """Optional time-zero local observation, before the first selection."""
+        pass
     @abstractmethod
     def select(self, observation: Observation) -> Radio: ...
     def observe(self, feedback: Feedback) -> None:

@@ -1,0 +1,52 @@
+{
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "python": "3.11.4 (v3.11.4:d2340ef257, Jun  6 2023, 19:15:51) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "ed_count": 500,
+  "ul_per_ed": 2000,
+  "mobility": "stationary",
+  "runs": [
+    {
+      "version": "v04",
+      "repetition": 0,
+      "wall_s": 111.89003891700122,
+      "counts": {
+        "messages_generated": 1000000,
+        "uplinks_sent": 1000000,
+        "peak_air_bytes": 80160,
+        "events_processed": 99590986,
+        "rx_Received": 950996,
+        "uplinks_received_any_gw": 780996,
+        "downlinks_sent": 176000,
+        "attempts_finished": 999999,
+        "ack_received": 170000,
+        "rx_Interference": 107003,
+        "rx_LostBecauseTx": 118001,
+        "rx_NotAddressed": 6000,
+        "attempts_truncated": 1
+      },
+      "max_rss_native_units": 110968832
+    },
+    {
+      "version": "v05",
+      "repetition": 0,
+      "wall_s": 89.27315254199493,
+      "counts": {
+        "messages_generated": 1000000,
+        "uplinks_sent": 1000000,
+        "peak_air_bytes": 80160,
+        "events_processed": 99590986,
+        "rx_Received": 950996,
+        "uplinks_received_any_gw": 780996,
+        "downlinks_sent": 176000,
+        "attempts_finished": 999999,
+        "ack_received": 170000,
+        "rx_Interference": 107003,
+        "rx_LostBecauseTx": 118001,
+        "rx_NotAddressed": 6000,
+        "attempts_truncated": 1
+      },
+      "max_rss_native_units": 112099328
+    }
+  ],
+  "exact_table_equality": true
+}

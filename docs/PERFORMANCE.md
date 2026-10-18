@@ -42,3 +42,22 @@ reference（等価高速化off）、optimized（on）、multicore（on＋保存2
 通常バッファは7テーブル×batch_rows行。並列時にはこれに最大2×writer_processesの送信待ちバッチ、子での変換用配列、プロセス実行環境が加わる。RAM使用は全実験時間に比例して増えない。batch_rowsを大きくするとファイル数は減るが、ピークRAMは増える。geometry_cache_bytesとmax_air_bytesも別に確保されるので合計を考慮する。
 
 進捗更新やキャンセル確認の単位は実際のイベント処理。重いユーザー定義select/observeの実行中には停止判定へ戻れない。並列保存では既に投入した有限個のバッチを回収してから終了する。突然の強制終了でも確定済みpartは独立に読めるが、tmpや未投入のバッファは完了データではない。
+
+## v0.5: 到着順と静止区間の再利用
+
+DL到着時刻の500件などのPythonタプル生成・sortを、安定ソートされたNumPyのインデックスと遅延参照に置き換えました。全端末静止時にはGWからの到着順も既存LRUのbyte上限内でキャッシュします。移動時は遅延に従って再ソートします。同時刻は元のED ID/FIFO順を保ち、途中の状態変更イベントで必ず区切ります。論理イベント数、受信の可否、記録順は変更しません。
+
+組込みWaypoints/Markovの静止区間では、次の区間境界まで前回位置を再利用します。移動中は元の `position()` と `np.interp` を呼ぶため、浮動小数点の補間式を近似しません。独自モデル・サブクラスには適用せず、元の呼び出しを維持します。`execution.optimized: false` でこれらを無効にし、逐次イベントと完全な位置更新による参照処理に戻せます。
+
+学習回数を減らす、干渉信号を省く、ACKを理想化する、時間を丸める変更は行っていません。DQNの `train_every` は別の実験条件であり、物理計算の等価な高速化に含めません。イベント所有スレッドは1本です。複数コアの試験機能は従来通り独立した保存プロセスで、DQNのGPU実行や並列離散イベント実行を追加したものではありません。
+
+旧版の展開フォルダとの比較を再現するコマンド:
+
+```bash
+python scripts/benchmark_revisions.py --baseline-source /path/to/v04 \
+  --output runs/revision-static --n 500 --rounds 2000
+python scripts/benchmark_revisions.py --baseline-source /path/to/v04 \
+  --output runs/revision-waypoints --n 500 --rounds 40 --mobility waypoints
+```
+
+両版を順番に別プロセスで実行し、全7テーブルをバッチ単位で比較します。起動後のモデル作成・全追跡・最終集計を測定に含めます。結果・環境・制約は [VALIDATION-v05.md](VALIDATION-v05.md) に記載します。

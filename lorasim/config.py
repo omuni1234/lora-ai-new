@@ -27,6 +27,25 @@ class Component(Model):
     options: dict = Field(default_factory=dict)
 
 
+class ActionSpace(Model):
+    spreading_factors: list[int] = Field(default_factory=lambda:list(range(7,13)), min_length=1, max_length=6, title="共通の候補SF", description="SF×CH対応モデルで使用するSF集合。重複のない7〜12。原論文版モデルの設定は変更しません。")
+    frequencies_hz: list[int] = Field(default_factory=lambda:[868100000,868300000,868500000], min_length=1, max_length=64, title="共通の候補CH [Hz]", description="許可ULサブバンドに登録された中心周波数から選択します。SFとの直積が行動空間です。")
+    tp_dbm: float = Field(14., ge=-20, le=27, title="共通の固定送信電力 [dBm]", description="SF×CH比較では送信電力をこの値に固定します。全候補CHのサブバンド上限以下にします。")
+    cr: int = Field(1, ge=1, le=4, title="共通の符号化率", description="1〜4は4/5〜4/8。行動によらず固定します。")
+
+    @model_validator(mode="after")
+    def valid(self):
+        if len(set(self.spreading_factors)) != len(self.spreading_factors) or any(s < 7 or s > 12 for s in self.spreading_factors):
+            raise ValueError("action_space SF must be unique values in 7..12")
+        if len(set(self.frequencies_hz)) != len(self.frequencies_hz):
+            raise ValueError("action_space channels must be unique")
+        return self
+
+    def radios(self):
+        return [Radio(sf=s,frequency_hz=f,tp_dbm=self.tp_dbm,cr=self.cr)
+                for s in self.spreading_factors for f in self.frequencies_hz]
+
+
 class RadioEnergy(Model):
     enabled: bool = True
     voltage_v: float = Field(3.0, gt=0)
@@ -180,6 +199,7 @@ class Profile(Model):
     sub_bands: list[SubBand] = Field(default_factory=lambda: [x.model_copy() for x in EU_BANDS])
     ul_sub_bands: list[str] | None = None
     dl_sub_bands: list[str] | None = None
+    action_space: ActionSpace = Field(default_factory=ActionSpace, title="比較用の共通SF×CH行動空間", description="DQN、SEMA、名前にsf_chを含む比較用モデルが使用します。SFを外側、CHを内側に並べて行動IDを自動採番します。")
     gateways: list[Gateway] = Field(default_factory=lambda: [Gateway(id="gw0", position=(1000,1000,15))])
     groups: list[Group] = Field(default_factory=lambda: [Group(name="devices", count=10)])
     assignments: list[Assignment] = Field(default_factory=list)
@@ -243,9 +263,23 @@ class Profile(Model):
             if set(a.groups) - {g.name for g in self.groups} or any(i < 0 or i >= n for i in a.ids):
                 raise ValueError("assignment refers to unknown group/device")
         self.direction_band(self.mac.rx2_frequency_hz,'dl')
+        # Validate only when used: old/custom profiles may use other regions.
+        from .registry import constructor
+        for spec in [g.policy for g in self.groups]+[a.policy for a in self.assignments if a.policy is not None]:
+            resolved = self.component(spec,'policy')
+            if getattr(constructor('policy',resolved.kind),'uses_action_space',False):
+                self.validate_action_space()
         if set(self.models) - {"policy", "mobility", "timing"}:
             raise ValueError("model categories must be policy, mobility or timing")
         return self
+
+    def validate_action_space(self):
+        for f in self.action_space.frequencies_hz:
+            b = self.sub_bands[self.direction_band(f,'ul')]
+            if f not in b.channels_hz:
+                raise ValueError(f"action_space CH {f} must be a registered UL sub-band center frequency")
+            if self.action_space.tp_dbm > b.max_tp_dbm:
+                raise ValueError("action_space TP exceeds a candidate sub-band maximum")
 
     def component(self, spec: Component, category: str) -> Component:
         seen = set()

@@ -16,7 +16,7 @@ from .components import Observation, Feedback, Stationary, make
 from .config import Profile, Radio, dump_profile
 from .phy import NS, ns, airtime_ns, links, destroyed_by, GW_SENSITIVITY, ED_SENSITIVITY
 from .tracking import Tracker, atomic_json
-from .interfaces import NetworkPolicy
+from .interfaces import NetworkPolicy, Policy
 from .energy import RadioMeter, compute_duration
 from .acceleration import Geometry
 
@@ -116,6 +116,7 @@ class Simulation:
         self.stats = Counter()
         self.progress_callback = progress or (lambda value: None)
         self.cancelled = cancelled or (lambda: False)
+        self.action_keys = {(r.sf,r.frequency_hz,r.tp_dbm,r.cr) for r in profile.action_space.radios()}
         self.devices = self._devices()
         self.n = len(self.devices)
         self.gw_xyz = np.array([g.position for g in profile.gateways])
@@ -152,10 +153,15 @@ class Simulation:
                 labels = {k:(v.ref or v.kind) for k,v in specs.items()}
                 specs = {k:self.p.component(v,k) for k,v in specs.items()}
                 rngs = [np.random.default_rng(np.random.SeedSequence([self.p.seed,i,k])) for k in range(4)]
-                devices.append(Device(i,group,make(specs["policy"],"policy",rng=rngs[0]),
+                devices.append(Device(i,group,make(specs["policy"],"policy",rng=rngs[0],action_space=self.p.action_space),
                                       make(specs["timing"],"timing",rng=rngs[1]),
                                       make(specs["mobility"],"mobility",rng=rngs[2],initial=initial,area=self.p.area_m),rngs[3]))
                 d = devices[-1]
+                if getattr(d.policy,'requires_position',False) and not group.observe_position:
+                    raise ValueError(f"{labels['policy']} requires observe_position=true")
+                initialize = getattr(d.policy,'initialize',None)
+                if callable(initialize) and getattr(type(d.policy),'initialize',None) is not Policy.initialize:
+                    initialize(self.observation(d))
                 if getattr(d.policy,"requires_confirmed",False) and not group.confirmed:
                     raise ValueError(f"{labels['policy']} requires confirmed uplinks for ACK learning")
                 d.policy_label,d.mobility_label = labels["policy"],labels["mobility"]
@@ -240,7 +246,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.4.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.5.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",
@@ -338,6 +344,8 @@ class Simulation:
             selector = (lambda obs:d.policy.select_attempt(obs,ctx.number==1)) if isinstance(d.policy,NetworkPolicy) else d.policy.select
             ctx.radio = Radio.model_validate(self._compute(d,"inference",selector,self.observation(d),d.tx_count+1))
         p = ctx.radio
+        if getattr(d.policy,'uses_action_space',False) and (p.sf,p.frequency_hz,p.tp_dbm,p.cr) not in self.action_keys:
+            raise ValueError(f"ED {d.id}: selector returned an action outside the common SF×CH space")
         b = self.p.direction_band(p.frequency_hz,"ul")
         if p.tp_dbm > self.p.sub_bands[b].max_tp_dbm:
             raise ValueError(f"ED {d.id}: TP exceeds sub-band maximum")
@@ -463,10 +471,7 @@ class Simulation:
                 # Reserve the original FIFO ids, including equal-time ED arrivals.
                 base = next(self.seq)
                 self.seq = itertools.count(base+self.n)
-                arrivals = sorted((self.now+int(delay[r]),base+r,r) for r in range(self.n))
-                ranks = [0]*self.n
-                for rank,(_,_,r) in enumerate(arrivals):
-                    ranks[r] = rank
+                arrivals,ranks = self.geometry.arrivals(source,delay,base,self.now)
                 self._schedule_arrival_batch(flight,arrivals,ranks,0)
             else:
                 for rid in range(self.n):
@@ -491,8 +496,8 @@ class Simulation:
                 break
             # Sleeping receivers cannot change state before the next queued event.
             # Retain the intended ED's rejected arrival for tracking.
-            relevant = min((ranks[r] for r in self.listening | {flight.attempt.ed}
-                            if ranks[r] >= index),default=len(arrivals))
+            relevant = int(min((ranks[r] for r in self.listening | {flight.attempt.ed}
+                            if ranks[r] >= index),default=len(arrivals)))
             skip_to = min(relevant,stop)
             if skip_to > index:
                 self.now = arrivals[skip_to-1][0]

@@ -1,0 +1,22 @@
+name: マルコフ拠点移動・非対称遷移
+seed: 7
+duration_s: 3600
+area_m: [2000, 2000]
+action_space:
+  spreading_factors: [7, 9, 12]
+  frequencies_hz: [868100000, 868500000]
+  tp_dbm: 14
+  cr: 1
+groups:
+  - count: 12
+    observe_position: true
+    policy: {kind: random_sf_ch}
+    timing: {kind: periodic, options: {interval_s: 120, start: {mode: uniform, min_s: 0, max_s: 120}}}
+    mobility:
+      kind: markov
+      options:
+        points: [[200, 200, 1.5], [1800, 200, 1.5], [1000, 1800, 1.5]]
+        transition_matrix: [[0.8, 0.15, 0.05], [0.1, 0.7, 0.2], [0.3, 0.2, 0.5]]
+        decision_interval_s: 60
+        speed_m_s: 3
+        speed_jitter_m_s: 1

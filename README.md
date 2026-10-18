@@ -2,7 +2,17 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.4。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.5。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.5の変更
+
+- 実験共通のSF×CH行動空間。登録済みのUL中心周波数からCHを選択し、SFと直積にします。
+- 原手法とは別の `linucb_sf_ch` / `lora_mab_sf_ch`、一様ランダムの `random_sf_ch`。
+- 添付修士論文に基づく `sema` と同一の下位学習器による `dqn`。ハイパーパラメータはGUI/YAMLで変更できます。
+- 遷移確率行列、自己滞在、拠点間速度を指定する `markov` 移動。
+- DL到着順の配列化・再利用と、移動モデルの静止区間の再利用による追加高速化。
+
+[SEMA/DQNと共通行動空間](docs/SEMA.md)、[マルコフ移動](docs/MARKOV.md)、[検証と性能測定](docs/VALIDATION-v05.md)。すぐ試せる例は `examples/12-sf-ch-comparison.yaml`、`13-markov.yaml` です。
 
 ## v0.4の変更
 

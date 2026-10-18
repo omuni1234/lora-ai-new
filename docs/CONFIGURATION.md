@@ -155,3 +155,9 @@ Webでは配列の追加/削除、条件割当、座標、電流、Webhook、全
 「実行方式・高速化」の`execution.optimized`は既定true。`writer_processes`は試験的な保存並列化のプロセス数（既定0）。`geometry_cache_bytes`は静止時のリンクキャッシュ上限。詳細と実測条件は[PERFORMANCE.md](PERFORMANCE.md)。
 
 ウェイポイントの`mode=route`では、ランダム地点数、経路seed、速度、速度の揺らぎ、静止時間の割当、到着ごとの揺らぎ、周回をGUIから指定できる。従来の時刻指定は`mode=timed`。追加選択器の全OptionsもEDグループとモデルライブラリのフォームに公開する。
+
+## v0.5の比較空間と移動
+
+`action_space` がSF×CH対応モデルの共通実験条件です。`spreading_factors`、登録済みCHから選ぶ `frequencies_hz`、固定 `tp_dbm` / `cr` を設定します。説明は [SEMA.md](SEMA.md)。モデルライブラリのsf_chモデルはこの集合を内部に複製せず、利用先の実験から受け取ります。
+
+マルコフ移動は `kind: markov`。行列の編集は移動モデルの「遷移確率行列 P」で行い、空なら自己滞在確率と一様な退出先から生成します。詳細は [MARKOV.md](MARKOV.md)。

@@ -42,9 +42,9 @@ class LinUCBSF(Policy):
     link_feedback_bytes = 9
     def __init__(self,rng,**options):
         self._initialize(rng,Settings.model_validate(options))
-    def _initialize(self,rng,o,powers=None):
+    def _initialize(self,rng,o,powers=None,actions=None):
         self.options,self.rng = o,rng
-        self.actions = [o.initial.model_copy(update={'sf':sf,'tp_dbm':tp}) for sf in range(7,13) for tp in (powers or [o.initial.tp_dbm])]
+        self.actions = actions if actions is not None else [o.initial.model_copy(update={'sf':sf,'tp_dbm':tp}) for sf in range(7,13) for tp in (powers or [o.initial.tp_dbm])]
         self.sf = np.array([a.sf for a in self.actions])
         self.tp = np.array([a.tp_dbm for a in self.actions])
         self.k = len(self.actions)
@@ -88,6 +88,8 @@ class LinUCBSF(Policy):
                     chosen = int(self.rng.choice(feasible))
         self.current = chosen
         self.pending = (chosen,x)
+        if self.uses_action_space:
+            return self.actions[chosen].model_copy()
         return self.actions[chosen].model_copy(update={'frequency_hz':int(self.rng.choice(o.frequencies_hz))})
     def observe(self,f):
         if f.downlink_received and f.ul_snr_db is not None and f.ul_rssi_dbm is not None:
