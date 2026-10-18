@@ -2,7 +2,17 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.2。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.3。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.3の変更
+
+- 内蔵・独自モデルの共通インターフェース、型付きOptionsによるGUIへの定数公開。
+- グループ別の周期・初回時刻（一様分布/固定）、日本語ラベルと説明ツールチップ。
+- 自動採番、UL/DL許可サブバンド、登録チャネルからの周波数選択。
+- 実験前プレビュー専用の中央パネル、モデルライブラリの一覧・編集・複製。
+- Experimentの実行時刻・実時間・実行環境をinfoで確認。
+
+既存YAMLと旧importパスは維持します。新しい例は `examples/07-preflight-sub-bands.yaml`、独自モデルは `examples/exposed_models.py` です。[開発ガイド](docs/PLUGINS.md)と[検証記録](docs/VALIDATION-v03.md)を参照してください。
 
 ## 起動（Ubuntu 22.04 / Docker Compose）
 
@@ -17,8 +27,8 @@ docker compose exec api lorasim import-examples --data /data
 
 1. 保存済みプロファイルから例を選ぶ。
 2. 左側の設定フォームで全項目を編集する。YAMLの直接編集も可能。
-3. Experimentを選び、「設定を検証」「保存」「バックグラウンドで実行」を押す。
-4. 中央の配置・送信・移動表示と右側アブストラクトを確認する。
+3. 中央の「設定を確認する」で配置・移動・生成予定時刻・モデル定数を確認する。
+4. Experimentを選び、「設定を検証」「保存」「バックグラウンドで実行」を押す。終了後に右側のアブストラクトを確認する。
 5. 「比較・分析」でExperimentを選び、送信回数範囲、フェアネス、MCU有無を指定する。
 
 `.env.example`を`.env`へコピーするとワーカー数等を変更できます。`LORASIM_WORKERS=4`は**独立した実験を4プロセスで実行**します。一つの無線ネットワークのイベントを非同期に並列化して因果関係を変えることはしません。
@@ -67,7 +77,7 @@ lorasim submit examples/01-small.yaml --data data
 | ED観測 | ACKの成否、成功したDLのRSSI、自己送信設定、任意で自己位置 |
 | 送信タイミング | periodic、poisson、Python拡張 |
 | 移動 | 静止、waypoints、反射境界random_walk、Python拡張 |
-| GUI / YAML | 全設定の型付きフォーム、モデルライブラリ、3ペイン、全文エディター |
+| GUI / YAML | 定数公開フォーム、日本語の説明、モデルライブラリ、実験前プレビュー、全文エディター |
 | 再利用 | モデル定義YAML / ref、実行時スナップショット、開発者API |
 | 比較アルゴリズム | 上流ADRサーバー計算、模擬LinkADRReq、端末backoff、Blind ADR |
 | 消費電力 | 上流無線モデルの状態積分・線形TX電流、別立てMCU推論/学習 |
@@ -90,13 +100,14 @@ lorasim worker --data data --workers 2 --once
 
 BADRはSemtechのBlind ADRとして実装しています。LoRaWAN標準が使用順序を一意に決める方式ではないため、比較に使ったSF列を明示してください。無線電力は上流の既定値を使用しますが、MCUの電力・時間は対象ハードウェアに合わせて設定します。
 
-![v0.2 control panel](docs/control-panel-v02.png)
+![v0.3 configuration preflight](docs/control-panel-v03.png)
 
 ## 読む順序
 
 - [モデルの根拠・適用範囲・相違点](docs/FIDELITY.md)
 - [プロファイル・プラグイン・GPU利用](docs/CONFIGURATION.md)
-- [モデル実装・再利用の開発者マニュアル](docs/DEVELOPER.md)
+- [プラグインとGUI設定公開（v0.3）](docs/PLUGINS.md)
+- [観測・学習・再利用の開発者マニュアル](docs/DEVELOPER.md)
 - [ADR / BADRの定義と範囲](docs/ALGORITHMS.md)
 - [無線・MCU消費電力の式と検証](docs/ENERGY.md)
 - [Experiment管理・分析仕様](docs/ANALYSIS.md)

@@ -145,3 +145,7 @@ CPU版APIにも同じ`examples`ディレクトリを`/app/plugins`へread-only�
 `energy.radio`は全EDの無線モデル、`energy.mcu`はMCU既定値、`groups[].mcu`はグループ上書きです。設定一覧・単位はGUIの全項目フォームと`GET /api/schema`、計算式は[ENERGY.md](ENERGY.md)。`adr`/`badr`のoptionsは[ALGORITHMS.md](ALGORITHMS.md)。
 
 Webでは配列の追加/削除、条件割当、座標、電流、Webhook、全Radio引数までフォームから変更できます。長い配列は50件ずつ表示します。任意プラグインのoptionsはキー名・型・値を追加できます。未登録のキーや不正な型はサーバーで検証されます。
+
+## v0.3のGUI定数・サブバンド
+
+`Options`による型・既定値・日本語説明の公開、グループごとの初回生成分布、UL/DLサブバンド、ID自動採番の書式は [PLUGINS.md](PLUGINS.md) を参照してください。従来のperiodic.first_s/random_phaseはstart未指定時に同じ意味で動作します。GUIの周波数候補はsub_bands[].channels_hzから生成します。

@@ -12,8 +12,10 @@ from .config import Profile, load_profile, dump_profile
 from .engine import Simulation
 from .jobs import Store
 from .analysis import analyze_run, compare_runs
-from .visualization import layout, traces, packet_details
+from .visualization import layout, traces, packet_details, preflight
 from .catalog import DEFAULTS
+from .registry import inventory, metadata
+from .ui_metadata import describe_schema
 
 
 class YamlBody(BaseModel):
@@ -22,6 +24,11 @@ class YamlBody(BaseModel):
 
 class SubmitBody(YamlBody):
     experiment_id: str | None = None
+
+class PreviewBody(YamlBody):
+    horizon_s: float | None = Field(None,ge=0,le=1e9)
+    limit: int = Field(80,ge=1,le=200)
+    samples: int = Field(12,ge=2,le=30)
 
 class ExperimentBody(BaseModel):
     name: str = Field(min_length=1,max_length=160)
@@ -38,7 +45,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.2.0")
+    app = FastAPI(title="LoRaSim Research",version="0.3.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -56,7 +63,7 @@ def create_app(root=None):
         return value
     @app.get("/api/schema",dependencies=[Depends(auth)])
     def schema():
-        return Profile.model_json_schema()
+        return describe_schema(Profile.model_json_schema())
     @app.post("/api/validate",dependencies=[Depends(auth)])
     def validate(body: YamlBody):
         try:
@@ -118,7 +125,13 @@ def create_app(root=None):
             bad(exc)
     @app.get("/api/defaults",dependencies=[Depends(auth)])
     def defaults():
-        return {"profile":Profile().model_dump(mode="json"),"components":DEFAULTS}
+        return {"profile":Profile().model_dump(mode="json"),"components":DEFAULTS,"plugins":inventory()}
+    @app.get("/api/plugins/schema",dependencies=[Depends(auth)])
+    def plugin_schema(category:str,kind:str):
+        try:
+            return metadata(category,kind)
+        except Exception as exc:
+            bad(exc)
     @app.get("/api/models",dependencies=[Depends(auth)])
     def models():
         return store.catalog()
@@ -132,6 +145,12 @@ def create_app(root=None):
     @app.get("/api/experiments",dependencies=[Depends(auth)])
     def experiments():
         return store.experiments()
+    @app.get("/api/experiments/{eid}/info",dependencies=[Depends(auth)])
+    def experiment_info(eid:str):
+        try:
+            return store.experiment_info(eid)
+        except KeyError:
+            raise HTTPException(404,"Experiment not found")
     @app.post("/api/experiments",status_code=201,dependencies=[Depends(auth)])
     def experiment(body:ExperimentBody):
         try:
@@ -174,9 +193,9 @@ def create_app(root=None):
             return item['summary']['abstract']
         raise HTTPException(409,"Abstract is available after a schema-v2 run finishes")
     @app.post("/api/preview",dependencies=[Depends(auth)])
-    def preview(body:YamlBody):
+    def preview(body:PreviewBody):
         try:
-            return layout(store.parse_profile(body.yaml))
+            return preflight(store.parse_profile(body.yaml),body.horizon_s,body.limit,body.samples)
         except Exception as exc:
             bad(exc)
     @app.get("/api/jobs/{jid}/visualization",dependencies=[Depends(auth)])

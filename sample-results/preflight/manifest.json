@@ -1,0 +1,64 @@
+{
+  "schema_version": 2,
+  "simulator_version": "0.3.0",
+  "profile_sha256": "5e26cde9591a301babecb52457a6d2449ec71c3a1277013339f1e4c19778ab05",
+  "upstream": {
+    "lorawan": {
+      "url": "https://github.com/signetlabdei/lorawan",
+      "commit": "e45b4af428c92f30b2e6c201055809110758125f"
+    },
+    "ns3": {
+      "url": "https://github.com/nsnam/ns-3-dev-git",
+      "tag": "ns-3.48",
+      "commit": "d2add90b452d600cfb4859baed8e9ea633519447"
+    }
+  },
+  "python": "3.11.4",
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "numpy": "2.4.6",
+  "time_resolution": "ns",
+  "rng": "NumPy PCG64, SeedSequence(seed,device_id,component)",
+  "dependencies": {
+    "numpy": "2.4.6",
+    "pyarrow": "23.0.1",
+    "pydantic": "2.14.1",
+    "PyYAML": "6.0.3"
+  },
+  "source_sha256": {
+    "catalog.py": "e42593c4c9f23dcaeabdf1bc14168dd1a1762f692105d24fe6862ef08d4b1bb6",
+    "interfaces.py": "521d2eb08ca4d763d334d2b29bdcf181e8eba42f434d47e8b42e2d99632cda33",
+    "algorithms.py": "f5674bcc63f9aed59609be743d629ff007329bf5ddc776fa41d14fb7dd21ef0f",
+    "config.py": "3a976092ecda55947b7f403d9453b724d43769ed3cac29d4767af106480dde67",
+    "analysis.py": "9b77b0b66153f1393fd2dce337acb64a563255a1d96b193c32fdda666c856b8b",
+    "mobility.py": "6569637193b5c592ce059cdd956af76ab71d1f1fdc22c2b9bba71aa0a6a5fe80",
+    "registry.py": "9609393936e537eb833640c674eb2a048a5ab8b047fece9e763991ca80dcbb92",
+    "ui_metadata.py": "49966286ee7f43542e09464984e2e3322514b631862579b49d024af04cd66cc3",
+    "phy.py": "eabb11ac9bdbc117d7a037fa8ba27fedd6fb99725235a0141c666f35095f7fb7",
+    "__init__.py": "61d51597ce04834ea2c36df4ac9bf06087c9d02779ddbea47496b7630ce0177e",
+    "visualization.py": "b915398f54fd64e8ea37526cb55223cfc2ffdff8dee891888c877a34229158f9",
+    "energy.py": "b614e41975d7cb702a77f83d02149c3aa7b9515f60285614fef1494c415237c0",
+    "jobs.py": "37ca9769f135c82b41426456a6068e862d8dae0f9478ae18b8584007995dcb75",
+    "api.py": "93a690e9eafd99eb0332a24afe76f8060809c56567613c29ae9ab981ecd5de8f",
+    "engine.py": "bc9957f00874eaad831dbd898450b408ae82a69d899759a8e126d81062c3c612",
+    "timing.py": "e22759ac99c84ef6cd64c078b8d60785b281ade1a764ab71259ca4de2c2f8a4c",
+    "cli.py": "bc346063f7843b0fae5636fbb8cb11cfc70bf1d6f44ab96c9e2452ba303d1248",
+    "components.py": "9f9758acb2121782abc2f9e99abad75d1b2f5eded6362f929d213eedb0e85427",
+    "tracking.py": "ad98be8c7c7d2449e0dc55f3be959f698dad4f830813e92489c7b7db6ed9ceb2",
+    "policies.py": "cc9607f3bdecf67d137ed8b65701bee7bebae644a80d0a134dfee50aeef37f82",
+    "__main__.py": "cf7390a2508a0fcad4777a4a629fc5212ab655cb45845975995f835676a834e3",
+    "plugins/__init__.py": "906f152d68c9f284f7975bd33a4ed53d17feb1592fe6912a8a5f77a1a6347cfe",
+    "plugins/selector/fixed.py": "d85ebcaf18a4a27f76034816f37725d6c8d8031b98b867cc96e1c1b7460b9192",
+    "plugins/selector/__init__.py": "906f152d68c9f284f7975bd33a4ed53d17feb1592fe6912a8a5f77a1a6347cfe",
+    "plugins/selector/adr.py": "e031091c80ee5f972816ee3cd719eb9ae66f895c011876fc7da74f297cc7154a",
+    "plugins/selector/random.py": "8e304c64b314c9e9e67d965d2fa77ea9b8baa28a0735a9b6bf57e0a4e128214f",
+    "plugins/selector/badr.py": "cd3b413abfbe3d3d96116170632a580ef986d410aed61371560e9c17f77db254",
+    "plugins/selector/bandit.py": "887dabee0c0d94c6d1bda9c5118796e552222e94e24f67e4481f0ff4f14d8eb6",
+    "plugins/mobility/stationary.py": "f7ee74af76e05782b1bbe96323b6d1f7cf7e5071c9f2ef1ea30b505e55132984",
+    "plugins/mobility/waypoints.py": "b1c92eabb13fc9e1a1be5978829c4bfc9c369cf3c6db4968eabc4f11eeefc305",
+    "plugins/mobility/__init__.py": "906f152d68c9f284f7975bd33a4ed53d17feb1592fe6912a8a5f77a1a6347cfe",
+    "plugins/mobility/random_walk.py": "1f3c088c5abe0a08e0173576285cc02599bf7f67bc232ed4ef81b08057684bc4",
+    "plugins/application/periodic.py": "737bd013cafcc6e55eb2e69c4ed8ca9053b858a72461a818dcacab0dadbe8f3f",
+    "plugins/application/poisson.py": "cbc8094eb2870baa0eeb0fc184b9a7efb113376aba39bba61375f254dbb3c48c",
+    "plugins/application/__init__.py": "906f152d68c9f284f7975bd33a4ed53d17feb1592fe6912a8a5f77a1a6347cfe"
+  }
+}

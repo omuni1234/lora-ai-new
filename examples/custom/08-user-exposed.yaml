@@ -1,0 +1,8 @@
+name: exposed-user-models
+seed: 7
+duration_s: 600
+groups:
+  - count: 8
+    timing: {kind: 'exposed_models:UniformStart', options: {interval_s: 120, start_max_s: 90}}
+    policy: {kind: 'exposed_models:AckSelector', options: {sf: 9, adapt: true}}
+    mobility: {kind: 'exposed_models:LinearMotion', options: {velocity_m_s: [1, 0.5, 0]}}

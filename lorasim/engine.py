@@ -15,7 +15,7 @@ from .components import Observation, Feedback, Stationary, make
 from .config import Profile, Radio, dump_profile
 from .phy import NS, ns, airtime_ns, links, destroyed_by, GW_SENSITIVITY, ED_SENSITIVITY
 from .tracking import Tracker, atomic_json
-from .algorithms import ADR, ADRServer
+from .interfaces import NetworkPolicy
 from .energy import RadioMeter, compute_duration
 
 
@@ -123,7 +123,7 @@ class Simulation:
         self.moving = [d for d in self.devices if type(d.mobility) is not Stationary]
         self.tracker = None
         self.pending_uplinks = {}
-        self.adr_servers = {d.id:ADRServer(d.policy.server_options) for d in self.devices if isinstance(d.policy,ADR)}
+        self.adr_servers = {d.id:d.policy.create_server() for d in self.devices if isinstance(d.policy,NetworkPolicy)}
 
     def _devices(self):
         devices = []
@@ -228,12 +228,12 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":2,"simulator_version":"0.2.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":2,"simulator_version":"0.3.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",
                     "dependencies":{k:importlib.metadata.version(k) for k in ("numpy","pyarrow","pydantic","PyYAML")},
-                    "source_sha256":{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(__file__).parent.glob("*.py")}})
+                    "source_sha256":{str(p.relative_to(Path(__file__).parent)):hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(__file__).parent.rglob("*.py")}})
         self.tracker = Tracker(self.output,self.p.tracking.batch_rows)
         start = time.perf_counter()
         last_wall, last_percent = start,-1
@@ -321,10 +321,10 @@ class Simulation:
         if ctx.done:
             return
         if ctx.radio is None:
-            selector = (lambda obs:d.policy.select_attempt(obs,ctx.number==1)) if isinstance(d.policy,ADR) else d.policy.select
+            selector = (lambda obs:d.policy.select_attempt(obs,ctx.number==1)) if isinstance(d.policy,NetworkPolicy) else d.policy.select
             ctx.radio = Radio.model_validate(self._compute(d,"inference",selector,self.observation(d),d.tx_count+1))
         p = ctx.radio
-        b = self.p.band(p.frequency_hz)
+        b = self.p.direction_band(p.frequency_hz,"ul")
         if p.tp_dbm > self.p.sub_bands[b].max_tp_dbm:
             raise ValueError(f"ED {d.id}: TP exceeds sub-band maximum")
         max_payload = 51 if p.sf >= 10 else 115 if p.sf == 9 else 222
@@ -335,7 +335,7 @@ class Simulation:
             self.event("DutyCycleDeferred",ctx,str((wait-self.now)/NS))
             self.at(wait,self._attempt,d,ctx)
             return
-        answer = isinstance(d.policy,ADR) and d.policy.answer_pending
+        answer = isinstance(d.policy,NetworkPolicy) and d.policy.answer_pending
         phy_bytes = d.group.payload_bytes+9+(2 if answer else 0)
         ctx.start,ctx.duration = self.now,airtime_ns(phy_bytes,p)
         d.duty[b] = self.now+ns(ctx.duration/NS/self.p.sub_bands[b].duty_cycle)
@@ -347,14 +347,14 @@ class Simulation:
             self.tracker.write("energy",**row)
         d.pending_compute.clear()
         d.last_radio = p
-        ctx.adr_ack_req = isinstance(d.policy,ADR) and d.policy.ack_requested
+        ctx.adr_ack_req = isinstance(d.policy,NetworkPolicy) and d.policy.ack_requested
         self.stats["uplinks_sent"] += 1
         flight = self._transmit(d.id,"UL",ctx,p,phy_bytes)
         ctx.packet_id = flight.id
         ctx.xyz = tuple(self.positions[d.id])
         self.pending_uplinks[ctx.packet_id] = ctx
         self.at(self.now+ctx.duration+int(flight.delay[self.n:].max())+1,self._uplink_result,ctx)
-        if isinstance(d.policy,ADR):
+        if isinstance(d.policy,NetworkPolicy):
             d.policy.answer_pending = False
             d.policy.sent(ctx.number==1)
         self.at(self.now+ctx.duration,self._tx_done,d,ctx)
@@ -400,7 +400,7 @@ class Simulation:
         self.stats["attempts_finished"] += 1
         if ack:
             self.stats["ack_received"] += 1
-        if not (ack or downlink_received) and ctx.number < (1 if isinstance(d.policy,ADR) and d.policy.reset_repetitions else d.group.max_attempts):
+        if not (ack or downlink_received) and ctx.number < (1 if isinstance(d.policy,NetworkPolicy) and d.policy.reset_repetitions else d.group.max_attempts):
             next_ctx = Attempt(ctx.message_id,d.id,ctx.number+1,ctx.generation_s)
             d.context = next_ctx
             self.at(self.now+ns(d.rng.uniform(1,3)),self._attempt,d,next_ctx)
@@ -427,7 +427,7 @@ class Simulation:
         self.stats["peak_air_bytes"] = max(self.stats["peak_air_bytes"],self.air_bytes)
         self.tracker.write("transmissions",packet_id=flight.id,message_id=ctx.message_id,direction=direction,
                            device_id=ctx.ed,gateway_id=self.p.gateways[source-self.n].id if direction=="DL" else None,
-                           attempt=ctx.number,tx_index=ctx.tx_index,adr=isinstance(self.devices[ctx.ed].policy,ADR),
+                           attempt=ctx.number,tx_index=ctx.tx_index,adr=isinstance(self.devices[ctx.ed].policy,NetworkPolicy),
                            adr_ack_req=ctx.adr_ack_req if direction=="UL" else False,
                            link_adr_sf=ctx.command.sf if direction=="DL" and ctx.command else None,
                            link_adr_tp_dbm=ctx.command.tp_dbm if direction=="DL" and ctx.command else None,
@@ -543,7 +543,7 @@ class Simulation:
             ctx = d.context
             if ctx and not ctx.done:
                 if outcome=="Received" and f.attempt is ctx:
-                    if isinstance(d.policy,ADR):
+                    if isinstance(d.policy,NetworkPolicy):
                         d.policy.downlink(ctx.command)
                         if ctx.command:
                             self.event("LinkADRReqApplied",ctx,f"sf={ctx.command.sf},tp={ctx.command.tp_dbm}")
@@ -562,6 +562,12 @@ class Simulation:
             return
         freq = ctx.radio.frequency_hz if window==1 else self.p.mac.rx2_frequency_hz
         band = self.p.band(freq)
+        allowed = self.p.dl_sub_bands
+        if allowed is not None and self.p.sub_bands[band].id not in allowed:
+            self.event(f"RX{window}SubBandDisabled",ctx)
+            if window == 1:
+                self.at(self.now+ns(self.p.mac.rx2_delay_s-self.p.mac.rx1_delay_s),self._reply,ctx,2)
+            return
         candidates = sorted(ctx.gateways,key=lambda g:(-ctx.gateways[g],g))
         selected = next((g for g in candidates if self.gw_tx_until[g]<=self.now and
                          (not self.p.mac.duty_cycle or self.gw_duty[g].get(band,0)<=self.now)),None)

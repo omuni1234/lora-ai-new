@@ -62,7 +62,7 @@ class Energy(Model):
 
 
 class Group(Model):
-    name: str
+    name: str = ""
     count: int = Field(1, ge=1, le=1000000)
     tags: list[str] = Field(default_factory=list)
     placement: Literal["uniform", "grid", "explicit"] = "uniform"
@@ -93,27 +93,30 @@ class Assignment(Model):
 
 
 class Gateway(Model):
-    id: str
+    id: str = ""
     position: tuple[float, float, float]
     demodulators: int = Field(8, ge=1, le=1024)
     frequencies_hz: list[int] = Field(default_factory=lambda: [868100000, 868300000, 868500000])
 
 
 class SubBand(Model):
+    id: str = ""
     low_hz: int
     high_hz: int
     duty_cycle: float = Field(gt=0, le=1)
     max_tp_dbm: float
+    channels_hz: list[int] = Field(default_factory=list)
 
 
 EU_BANDS = [
-    SubBand(low_hz=a, high_hz=b, duty_cycle=c, max_tp_dbm=d)
-    for a, b, c, d in [(863000000, 865000000, .001, 14),
+    SubBand(id=f"band{i}", low_hz=a, high_hz=b, duty_cycle=c, max_tp_dbm=d,
+            channels_hz={2:[868100000,868300000,868500000],4:[869525000]}.get(i,[]))
+    for i, (a, b, c, d) in enumerate([(863000000, 865000000, .001, 14),
                        (865000000, 868000000, .01, 14),
                        (868000000, 868600000, .01, 14),
                        (868700000, 869200000, .001, 14),
                        (869400000, 869650000, .1, 27),
-                       (869700000, 870000000, .01, 14)]
+                       (869700000, 870000000, .01, 14)])
 ]
 
 
@@ -169,6 +172,8 @@ class Profile(Model):
     channel: Channel = Field(default_factory=Channel)
     mac: Mac = Field(default_factory=Mac)
     sub_bands: list[SubBand] = Field(default_factory=lambda: [x.model_copy() for x in EU_BANDS])
+    ul_sub_bands: list[str] | None = None
+    dl_sub_bands: list[str] | None = None
     gateways: list[Gateway] = Field(default_factory=lambda: [Gateway(id="gw0", position=(1000,1000,15))])
     groups: list[Group] = Field(default_factory=lambda: [Group(name="devices", count=10)])
     assignments: list[Assignment] = Field(default_factory=list)
@@ -179,6 +184,27 @@ class Profile(Model):
     # Catalogs are embedded in run snapshots; files are only a CLI authoring aid.
     models: dict[str, dict[str, Component]] = Field(default_factory=dict)
     model_files: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def auto_identifiers(cls, data):
+        if not isinstance(data,dict):
+            return data
+        data = dict(data)
+        for collection,key,prefix in [('gateways','id','gw'),('groups','name','group'),('sub_bands','id','band')]:
+            if collection not in data:
+                continue
+            rows = [x.model_dump() if isinstance(x,BaseModel) else dict(x) for x in data[collection]]
+            used = {x.get(key) for x in rows if x.get(key)}
+            counter = 0
+            for row in rows:
+                if not row.get(key):
+                    while f'{prefix}{counter}' in used:
+                        counter += 1
+                    row[key] = f'{prefix}{counter}'
+                    used.add(row[key])
+            data[collection] = rows
+        return data
 
     @model_validator(mode="after")
     def consistent(self):
@@ -195,11 +221,21 @@ class Profile(Model):
             raise ValueError("invalid sub-band")
         if any(a.high_hz > b.low_hz for a,b in zip(bands,bands[1:])):
             raise ValueError("overlapping sub-bands")
+        band_ids = {b.id for b in self.sub_bands}
+        if len(band_ids) != len(self.sub_bands):
+            raise ValueError("duplicate sub-band id")
+        for direction in ('ul','dl'):
+            allowed = getattr(self,direction+'_sub_bands')
+            if allowed is not None and (not allowed or len(set(allowed)) != len(allowed) or set(allowed)-band_ids):
+                raise ValueError(f'{direction}_sub_bands must contain unique, known sub-band IDs')
+        for b in self.sub_bands:
+            if len(set(b.channels_hz)) != len(b.channels_hz) or any(not b.low_hz <= f < b.high_hz for f in b.channels_hz):
+                raise ValueError(f'{b.id}: channels must be unique and inside the sub-band')
         n = sum(g.count for g in self.groups)
         for a in self.assignments:
             if set(a.groups) - {g.name for g in self.groups} or any(i < 0 or i >= n for i in a.ids):
                 raise ValueError("assignment refers to unknown group/device")
-        self.band(self.mac.rx2_frequency_hz)
+        self.direction_band(self.mac.rx2_frequency_hz,'dl')
         if set(self.models) - {"policy", "mobility", "timing"}:
             raise ValueError("model categories must be policy, mobility or timing")
         return self
@@ -224,6 +260,13 @@ class Profile(Model):
             if b.low_hz <= frequency < b.high_hz:
                 return i
         raise ValueError(f"frequency {frequency} is outside configured sub-bands")
+
+    def direction_band(self, frequency: int, direction: str) -> int:
+        index = self.band(frequency)
+        allowed = getattr(self,direction+'_sub_bands')
+        if allowed is not None and self.sub_bands[index].id not in allowed:
+            raise ValueError(f'{direction.upper()} frequency {frequency} is in a disabled sub-band')
+        return index
 
 
 def load_profile(source: str | Path, *, text: bool = False, catalog=None) -> Profile:

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Protocol
+from abc import ABC, abstractmethod
+from pydantic import BaseModel, ConfigDict
 from .config import Radio
 
 @dataclass(frozen=True, slots=True)
@@ -25,8 +26,49 @@ class Feedback:
     downlink_received: bool = False
 
 
-class Policy(Protocol):
+class Options(BaseModel):
+    """Declare GUI fields with pydantic Field(title=..., description=...)."""
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+
+class Plugin(ABC):
+    Options = Options
+    label = ""
+    description = ""
+    # Opt in only for bounded, side-effect-free preflight calls.
+    preview_safe = False
+
+
+class Policy(Plugin):
+    @abstractmethod
     def select(self, observation: Observation) -> Radio: ...
-    def observe(self, feedback: Feedback) -> None: ...
+    def observe(self, feedback: Feedback) -> None:
+        pass
+
+
+class Mobility(Plugin):
+    @abstractmethod
+    def position(self, time_s: float): ...
+
+
+class Application(Plugin):
+    @abstractmethod
+    def next_time(self, observation: Observation, previous_generation_s: float | None) -> float | None: ...
+
+
+class NetworkPolicy(Policy):
+    """Optional LinkADRReq-compatible network controller contract."""
+    answer_pending = False
+    ack_requested = False
+    reset_repetitions = False
+    @abstractmethod
+    def create_server(self):
+        """Return a per-ED controller with request(message_id, radio, powers)."""
+    def select_attempt(self, observation, new_frame=True):
+        return self.select(observation)
+    def sent(self, new_frame):
+        pass
+    def downlink(self, command):
+        pass
 
 

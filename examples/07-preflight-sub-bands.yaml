@@ -1,0 +1,39 @@
+name: preflight-uniform-start
+seed: 42
+duration_s: 600
+area_m: [2000, 2000]
+# IDs omitted intentionally: gw0, group0/group1, band0/band1 are assigned automatically.
+sub_bands:
+  - low_hz: 868000000
+    high_hz: 868600000
+    duty_cycle: 0.01
+    max_tp_dbm: 14
+    channels_hz: [868100000, 868300000, 868500000]
+  - low_hz: 869400000
+    high_hz: 869650000
+    duty_cycle: 0.1
+    max_tp_dbm: 27
+    channels_hz: [869525000]
+ul_sub_bands: [band0]
+dl_sub_bands: [band1]
+gateways:
+  - position: [1000, 1000, 15]
+models:
+  timing:
+    spread-start:
+      kind: periodic
+      options:
+        interval_s: 120
+        start: {mode: uniform, min_s: 0, max_s: 90}
+  mobility:
+    walking:
+      kind: random_walk
+      options: {speed_m_s: 1.5, step_s: 10}
+groups:
+  - count: 12
+    timing: {ref: spread-start}
+    mobility: {ref: walking}
+    policy: {kind: fixed, options: {sf: 7}}
+  - count: 8
+    timing: {ref: spread-start, options: {interval_s: 60, start: {mode: uniform, min_s: 10, max_s: 30}}}
+    policy: {kind: adr, options: {initial: {sf: 9}, history_range: 5}}

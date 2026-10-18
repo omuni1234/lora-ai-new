@@ -1,11 +1,14 @@
 # 移動モデル・選択アルゴリズム開発者マニュアル
 
+v0.3以降の新規開発は **[プラグイン開発ガイド](PLUGINS.md)** の抽象クラス・OptionsによるGUI公開を推奨します。以下の従来APIも読み込み可能です。
+
 ## 責務とディレクトリ
 
 - `examples/*.yaml`: 実験条件（ED/GW数、時間、配置、割り当て）。
 - `examples/models/*.yaml`: 再利用する名前付き定義。実装を`kind`、引数を`options`で指定。
-- `lorasim/policies.py`, `algorithms.py`: 選択アルゴリズム。`algorithms.ADRServer`だけはサーバー側。
-- `lorasim/mobility.py`: 移動モデル。`timing.py`: 生成タイミング。
+- `lorasim/plugins/selector/*.py`: 選択アルゴリズム。`adr.py`にはEDとネットワークの制御実装。
+- `lorasim/plugins/mobility/*.py`: 移動モデル。`plugins/application/*.py`: 生成タイミング。
+- `policies.py`, `algorithms.py`, `mobility.py`, `timing.py`は旧import互換用で、実装を保持しません。
 - `lorasim/interfaces.py`: EDに公開される入力。`components.py`: ファクトリと旧importとの互換窓口。
 - `config.py`: 宣言的設定の検証・参照解決。`engine.py`: 時刻・無線状態・配送を管理。
 

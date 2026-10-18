@@ -71,6 +71,30 @@ class Store:
             for row in db.execute("SELECT * FROM models ORDER BY category,name"):
                 result.setdefault(row['category'],{})[row['name']] = json.loads(row['definition'])
         return result
+    def experiment_info(self,eid):
+        """Small hover abstract; no Parquet scan or simulation construction."""
+        with self.connect() as db:
+            row = db.execute('SELECT * FROM experiments WHERE id=?',(eid,)).fetchone()
+            if row is None:
+                raise KeyError(eid)
+            result = dict(row)
+            result['statuses'] = {x['status']:x['n'] for x in db.execute('SELECT status,count(*) n FROM jobs WHERE experiment_id=? GROUP BY status',(eid,))}
+            result.update(dict(db.execute('SELECT min(started) first_started,max(finished) last_finished,sum(CASE WHEN started IS NOT NULL AND finished IS NOT NULL THEN finished-started END) wall_total_s FROM jobs WHERE experiment_id=?',(eid,)).fetchone()))
+            latest = db.execute('SELECT id,profile,summary,started,finished FROM jobs WHERE experiment_id=? ORDER BY COALESCE(started,created) DESC LIMIT 1',(eid,)).fetchone()
+            completed = db.execute("SELECT id FROM jobs WHERE experiment_id=? AND status IN ('completed','cancelled') AND started IS NOT NULL ORDER BY finished DESC LIMIT 1",(eid,)).fetchone()
+        if latest:
+            p = load_profile(latest['profile'],text=True)
+            result['latest_run'] = {'id':latest['id'],'ed_count':sum(g.count for g in p.groups),'gw_count':len(p.gateways),
+                'duration_s':p.duration_s,'seed':p.seed,'started':latest['started'],'finished':latest['finished'],
+                'models':{g.name:{k:(getattr(g,k).ref or getattr(g,k).kind) for k in ('policy','timing','mobility')} for g in p.groups[:20]}}
+        result['environment'] = None
+        if completed:
+            path = self.root/'runs'/completed['id']/'manifest.json'
+            if path.exists():
+                manifest = json.loads(path.read_text())
+                result['environment'] = {k:manifest.get(k) for k in ('platform','python','numpy','dependencies','simulator_version')}
+                result['environment_run_id'] = completed['id']
+        return result
     def save_model(self,category,name,definition):
         if category not in {'policy','mobility','timing'} or not name.strip() or len(name)>120:
             raise ValueError("invalid category or model name")

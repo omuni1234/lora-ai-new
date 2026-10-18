@@ -178,3 +178,9 @@ for batch in scanner.to_batches():
     frame = batch.to_pandas()
     # 必要な集約だけ更新。frameを全てリストへ貯めない。
 ```
+
+## v0.3: 周波数制限とコード配置
+
+`events.RX1SubBandDisabled` はRX1の周波数が `dl_sub_bands` で禁止され、DLをRX2へ回したことを示します。送信していないDLの損失行は生成しません。EDのRXウィンドウと消費電力計算は維持します。ULで禁止帯域を選んだ場合は設定エラーでRunを失敗させます。故意にパケット損失へ置き換えないため、成功率へ紛れ込みません。
+
+manifestの`source_sha256`は `plugins/selector/adr.py` 等を含むパッケージ内の相対パスをキーにします。v0.2以前のファイル名だけのキーも分析時にはそのまま読めます。Parquetのスキーマ番号は2を維持します。
