@@ -21,6 +21,8 @@ def make(spec: Component, category: str, **context):
             from .config import ActionSpace
             space = ActionSpace()
         space = space.restrict(spec.action_space) if spec.action_space is not None else space.model_copy(deep=True)
+        if hasattr(cls, 'validate_action_space'):
+            cls.validate_action_space(space)
         context['action_space'] = space
     options = getattr(cls,'Options',None)
     values = options.model_validate(spec.options).model_dump() if options else spec.options

@@ -3,12 +3,21 @@ from collections import deque
 import math
 from lorasim.config import Radio
 from lorasim.interfaces import NetworkPolicy
+from ._adr_space import ADRSpace
 class ADR(NetworkPolicy):
+    accepts_action_space = True
+    fixed_space_dimensions = ('coding_rates', 'powers_dbm')
+    space_options = ['initial', 'change_tx_power']
+    space_description = '比較用拡張：初期SFは候補の最大値。SNRのstep判定後、SFを許可候補へ切り上げます。TP・CRは固定、CHは送信試行ごとに一様選択。backoffも候補内に制限します。原方式のTP適応・既定3CH復帰とは異なります。'
     def __init__(self, rng, initial=None, history_range=20, gateway_combine="max",
                  history_combine="max", change_tx_power=True, margin_db=0.,
-                 ack_limit=64, ack_delay=32, backoff=True):
-        self.radio = Radio.model_validate(initial or {"sf":12, "tp_dbm":14})
-        if self.radio.tp_dbm not in range(2,15,2):
+                 ack_limit=64, ack_delay=32, backoff=True, action_space=None):
+        self.rng = rng
+        self.space = ADRSpace(action_space) if action_space is not None else None
+        self.radio = (Radio(sf=self.space.sfs[-1], tp_dbm=self.space.tp, cr=self.space.cr,
+                            frequency_hz=self.space.channels[0]) if self.space else
+                      Radio.model_validate(initial or {"sf":12, "tp_dbm":14}))
+        if self.space is None and self.radio.tp_dbm not in range(2,15,2):
             raise ValueError("ADR uses EU TX power steps 2,4,...,14 dBm")
         if type(history_range) is not int or not 1 <= history_range <= 100:
             raise ValueError("ADR history_range must be 1..100")
@@ -24,7 +33,7 @@ class ADR(NetworkPolicy):
         self.channel_index = 0
         self.reset_repetitions = False
     def create_server(self):
-        return ADRServer(self.server_options)
+        return ADRServer(self.server_options, self.space)
     @property
     def ack_requested(self):
         return self.backoff and self.counter >= self.limit
@@ -32,27 +41,33 @@ class ADR(NetworkPolicy):
         c = self.counter
         if self.backoff and c >= self.limit+self.delay and c != self.last_backoff:
             if c == self.limit+self.delay:
-                self.radio.tp_dbm = 14
+                self.radio.tp_dbm = self.space.tp if self.space else 14
             elif (c-self.limit) % self.delay == 0:
-                if self.radio.sf < 12:
-                    self.radio.sf += 1
+                if self.radio.sf < (self.space.sfs[-1] if self.space else 12):
+                    self.radio.sf = self.space.project_sf(self.radio.sf+1) if self.space else self.radio.sf+1
                 else:
                     self.default_channels = True
                     self.reset_repetitions = True
             self.last_backoff = c
+        if self.space:
+            return self.space.hop(self.radio, self.rng)
         result = self.radio.model_copy()
         if self.default_channels:
             result.frequency_hz = (868100000,868300000,868500000)[self.channel_index % 3]
             self.channel_index += 1
         return result
     def select_attempt(self, observation, new_frame=True):
-        return self.select(observation) if new_frame else self.radio.model_copy()
+        if new_frame:
+            return self.select(observation)
+        return self.space.hop(self.radio, self.rng) if self.space else self.radio.model_copy()
     def sent(self, new_frame):
         if new_frame:
             self.counter += 1
     def downlink(self, command):
         self.counter,self.last_backoff = 0,-1
         if command is not None:
+            if self.space:
+                command = self.space.constrain(command)
             self.radio.sf,self.radio.tp_dbm = command.sf,command.tp_dbm
             self.answer_pending = True
     def observe(self, feedback):
@@ -60,7 +75,8 @@ class ADR(NetworkPolicy):
 
 
 class ADRServer:
-    def __init__(self, options):
+    def __init__(self, options, space=None):
+        self.space = space
         self.size,self.gw_method,self.history_method,self.change_power,self.margin = options
         self.history = deque(maxlen=self.size)
         self.last_message = None
@@ -78,6 +94,9 @@ class ADRServer:
         snr = self.combine(self.history,self.history_method)
         required = {7:-7.5,8:-10.,9:-12.5,10:-15.,11:-17.5,12:-20.}[radio.sf]
         steps = math.floor((snr-required-self.margin)/3)
+        if self.space:
+            command = self.space.command(radio, steps)
+            return command if command.sf != radio.sf else None
         sf,tp = radio.sf,radio.tp_dbm
         while steps > 0 and sf > 7:
             sf -= 1; steps -= 1

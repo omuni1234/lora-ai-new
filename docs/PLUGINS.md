@@ -159,3 +159,7 @@ Optionsの型・Field制約による例外は、設定パスと日本語の説�
 ## v0.7: 行動空間と分析の拡張
 
 候補次元ごとに別の選択器クラスを作る必要はありません。[ACTION_SPACE.md](ACTION_SPACE.md)のコンストラクタ契約で、シミュレータが検証したSF×CH×CR×TPの部分集合を受け取れます。分析の追加は[ANALYSIS_PLUGINS.md](ANALYSIS_PLUGINS.md)を参照してください。
+
+## 共通空間の制約メタデータ（v0.8）
+
+`Policy.fixed_space_dimensions = ("coding_rates", "powers_dbm")`は各次元を1値に制限し、GUIを固定値プルダウンにします。`validate_action_space(space)`はProfile検証とfactoryから呼ばれる軽いクラスメソッドです。状態やRNGは生成しません。`space_description`に原制御との差分を記述すると共通空間の下に表示します。標準実装例は`selector/adr.py`と`selector/badr.py`です。

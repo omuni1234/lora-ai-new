@@ -86,7 +86,7 @@ function buildField(parent,key,value,s,path,onChange){
   if(meta)wrap.append(el('p',{class:'hint'},meta.description));
   const bound=cat==='policy'&&(effective.action_space!=null||meta?.uses_action_space);
   if(cat==='policy'&&meta?.accepts_action_space){
-   wrap.append(el('label',{class:'check'},el('input',{type:'checkbox',checked:bound,...(meta.uses_action_space?{disabled:true}:{}),onchange:e=>{const next={...(value.ref?effective:value),ref:null,options:clone(effective.options||{}),action_space:e.target.checked?{}:null};if(e.target.checked)for(const key of meta.space_options||[])delete next.options[key];onChange(next);renderAll();}}),'全体のパラメータ空間を使用',info('SF・CH・CR・TPは下の候補集合で指定し、モデルへ全送信設定を渡します。旧プロファイルはオフで元の動作を維持します。')));
+   wrap.append(el('label',{class:'check'},el('input',{type:'checkbox',checked:bound,...(meta.uses_action_space?{disabled:true}:{}),onchange:e=>{const next={...(value.ref?effective:value),ref:null,options:clone(effective.options||{}),action_space:e.target.checked?defaultSpaceSelection(meta):null};if(e.target.checked)for(const key of meta.space_options||[])delete next.options[key];onChange(next);renderAll();}}),'全体のパラメータ空間を使用',info('SF・CH・CR・TPは下の候補集合で指定し、モデルへ全送信設定を渡します。旧プロファイルはオフで元の動作を維持します。')));
    if(bound)spaceEditor(wrap,effective.action_space||{},v=>{onChange({...value,action_space:v});renderAll();},path+'.action_space',effective.kind);
   }else if(cat==='policy')wrap.append(el('p',{class:'hint'},'このモデルは原方式固有のパラメータ制御を使います。全体行動空間の注入には未対応です。'));
 
@@ -199,16 +199,39 @@ $('exportAnalysis').onclick=()=>{if(analysisData)download('analysis.json',JSON.s
 $('exportCSV').onclick=()=>{if(!analysisData)return;const rows=[['experiment','run_id','ed_count','eligible_ed_count','mean_ed_prr','jain','gini','cv','energy_j','mean_ed_j'],...analysisData.runs.map(r=>[r.experiment_name,r.id,r.ed_count,r.eligible_ed_count,r.mean_ed_prr,r.fairness?.jain,r.fairness?.gini,r.fairness?.cv,r.energy.measured?r.energy.total_j:null,r.energy.measured?r.energy.mean_ed_j:null])];download('analysis.csv',rows.map(row=>row.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv');};
 $('credentials').onclick=()=>{$('token').value=sessionStorage.getItem('lorasim-token')||'';$('connectDialog').showModal();};$('saveToken').onclick=()=>{sessionStorage.setItem('lorasim-token',$('token').value);setTimeout(()=>location.reload(),50);};
 let connectionError=null;
-async function poll(){if(busyPoll||document.hidden)return;busyPoll=true;try{const w=await api('/api/worker');$('worker').textContent=w.online?`● worker 稼働中 · ${w.workers} 並列Run`:'○ worker 未確認';$('worker').className='badge '+(w.online?'online':'offline');$('worker').title=w.online?'実験をバックグラウンドで実行できます。':'APIは接続済みですがworkerの生存通知を確認できません。待機中のRunがある場合は、workerのプロセス・ログを確認してください。';if(connectionError){connectionError=null;renderDiagnostics('connectionDiagnostics',[]);}if(currentView==='experiment'){const previous=selectedItem?.status;await refreshJobs();if(previous!==selectedItem?.status)await renderFiles();}else if(selectedJob){const id=selectedJob,item=await api('/api/jobs/'+id);if(id===selectedJob){selectedItem=item;renderResult(item);}}}catch(e){$('worker').textContent='接続エラー';connectionError=e;renderDiagnostics('connectionDiagnostics',e.diagnostics||[localDiagnostic(e)]);}finally{busyPoll=false;}}
+let workerSnapshot=null,workerLimitDirty=false;
+function renderWorker(w){
+ workerSnapshot=w;const running=w.counts?.running||0,queued=w.counts?.queued||0;
+ $('worker').textContent=w.online?`● ${running} Run実行中 / 上限 ${w.workers}`:'○ worker 未確認';
+ $('worker').className='badge '+(w.online?'online':'offline');
+ $('worker').title=w.online?'Runごとに独立したプロセスを使います。':'workerの生存通知を確認できません。ログと起動状態を確認してください。';
+ $('workerCounts').textContent=`実行中 ${running} · 待機 ${queued} · CPU枠 ${w.cpu_count}`;
+ $('workerLimitState').textContent=w.online?(w.workers===w.requested_workers?'適用済み':'変更を反映中'):'次回worker起動時に適用';
+ if(!workerLimitDirty)$('workerLimit').value=w.requested_workers;
+ $('workerLimitNote').textContent=(w.configured_workers==null?'起動設定を使用。':'GUI設定を保存済み（起動設定より優先）。')+(w.requested_workers>w.cpu_count?' 同時実行数がCPU枠を超えています。CPU競合により遅くなる場合があります。':'')+(running>w.requested_workers?' 上限を超えて実行中のRunは完了まで継続し、新しいRunは空きができるまで待機します。':'');
+}
+$('workerLimit').oninput=()=>{workerLimitDirty=true;};
+$('applyWorkerLimit').onclick=action(async()=>{const workers=Number($('workerLimit').value);if(!Number.isInteger(workers)||workers<1||workers>256)throw Error('同時実行数は1〜256の整数で指定してください。');const w=await api('/api/worker/settings','PUT',{workers});workerLimitDirty=false;renderWorker(w);notice('同時実行数を保存しました。workerが稼働中なら次の空き枠確認から適用します。');});
+$('resetWorkerLimit').onclick=action(async()=>{const w=await api('/api/worker/settings','DELETE');workerLimitDirty=false;renderWorker(w);notice('同時実行数をworkerの起動設定に戻しました。');});
+async function poll(){if(busyPoll||document.hidden)return;busyPoll=true;try{const w=await api('/api/worker');renderWorker(w);if(connectionError){connectionError=null;renderDiagnostics('connectionDiagnostics',[]);}if(currentView==='experiment'){const previous=selectedItem?.status;await refreshJobs();if(previous!==selectedItem?.status)await renderFiles();}else if(selectedJob){const id=selectedJob,item=await api('/api/jobs/'+id);if(id===selectedJob){selectedItem=item;renderResult(item);}}}catch(e){$('worker').textContent='接続エラー';connectionError=e;renderDiagnostics('connectionDiagnostics',e.diagnostics||[localDiagnostic(e)]);}finally{busyPoll=false;}}
 
 const spaceDimensions=[['spreading_factors','SF'],['frequencies_hz','CH'],['coding_rates','CR'],['powers_dbm','TP']];
 function spaceCount(a){const lengths=spaceDimensions.map(([k])=>(a[k]||[]).length);return lengths.map((n,i)=>`${spaceDimensions[i][1]} ${n}`).join(' × ')+' = '+lengths.reduce((a,b)=>a*b,1)+' 行動';}
-function newComponent(cat,kind){const m=pluginSchemas[cat][kind],options=clone(m?.defaults||{}),value={kind,options};if(cat==='policy'&&m?.accepts_action_space){value.action_space={};for(const k of m.space_options||[])delete options[k];}return value;}
+function defaultSpaceSelection(meta){const global=profile.action_space||defaults.profile.action_space,result={};for(const key of meta.fixed_space_dimensions||[]){const values=global[key]||[];result[key]=[values.includes(key==='powers_dbm'?14:1)?(key==='powers_dbm'?14:1):values[0]];}return result;}
+function newComponent(cat,kind){const m=pluginSchemas[cat][kind],options=clone(m?.defaults||{}),value={kind,options};if(cat==='policy'&&m?.accepts_action_space){value.action_space=defaultSpaceSelection(m);for(const k of m.space_options||[])delete options[k];}return value;}
 function spaceEditor(parent,selection,onChange,path,kind){
- const global=profile.action_space||defaults.profile.action_space,space={...global,...selection};for(const[k]of spaceDimensions)if(selection[k]==null)space[k]=global[k];
+ const meta=pluginSchemas.policy[kind],global=profile.action_space||defaults.profile.action_space,space={...global,...selection};for(const[k]of spaceDimensions)if(selection[k]==null)space[k]=global[k];
  const box=el('div',{class:'space-editor'},el('p',{class:'space-total'},spaceCount(space)),el('p',{class:'hint'},kind==='fixed'?'固定モデルはこの集合の先頭の組み合わせを返します。固定したい各値を1つずつ選択してください。':'1値の次元は固定、複数値の次元は選択対象です。学習状態はEDごとに独立します。'));
+ if(meta?.space_description)box.append(el('p',{class:'comparison-note'},meta.space_description,info('制御則の詳細と原方式との差分は docs/ADR_COMPARISON.md を参照してください。')));
  for(const[k,name]of spaceDimensions){
   const inherit=selection[k]==null,all=global[k]||[],values=selection[k]||all;
+  if(meta?.fixed_space_dimensions?.includes(k)){
+   const select=el('select',{'aria-label':path+'.'+k+'.fixed'},all.map(v=>el('option',{value:v},k==='coding_rates'?'4/'+(4+v):v+' dBm')));
+   if(values.length!==1||!all.includes(values[0]))select.prepend(el('option',{value:''},'固定値を1つ選択してください'));
+   select.value=values.length===1&&all.includes(values[0])?String(values[0]):'';
+   select.onchange=()=>onChange({...selection,[k]:[Number(select.value)]});
+   box.append(el('fieldset',{},el('legend',{},name+' · 固定',info('このモデルは共通空間モードで1値に固定します。全体の候補から選択してください。')),select));continue;
+  }
   const row=el('fieldset',{},el('legend',{},name,info('全体候補の部分集合だけ指定できます。全体を継承すると追加した候補も自動反映します。')),el('label',{class:'check'},el('input',{type:'checkbox',checked:inherit,'aria-label':path+'.'+k+'.inherit',onchange:e=>onChange({...selection,[k]:e.target.checked?null:[all[0]]})}),'全体を継承'));
   for(const v of [...new Set([...all,...values])])row.append(el('label',{class:'check'},el('input',{type:'checkbox',checked:values.includes(v),...(inherit?{disabled:true}:{}),'aria-label':path+'.'+k+'.'+v,onchange:e=>{const next=values.filter(x=>x!==v);if(e.target.checked)next.push(v);onChange({...selection,[k]:next});}}),(k==='frequencies_hz'?v/1e6+' MHz':k==='coding_rates'?'4/'+(4+v):v)+(all.includes(v)?'':'（全体に未登録）')));
   box.append(row);

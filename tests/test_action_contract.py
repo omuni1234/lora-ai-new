@@ -94,7 +94,7 @@ def test_effective_not_just_global_space_is_enforced(tmp_path):
 
 
 def test_unsupported_or_wrong_category_space_is_not_silently_ignored():
-    with pytest.raises(ValueError,match='does not accept'):Profile.model_validate({'groups':[{'policy':{'kind':'adr','action_space':{}}}]})
+    with pytest.raises(ValueError,match='does not accept'):Profile.model_validate({'groups':[{'policy':{'kind':'linucb_sf_tp','action_space':{}}}]})
     with pytest.raises(ValueError,match='only available'):make(Component(kind='stationary',action_space={}),'mobility',initial=(0,0,0),area=(1,1),rng=np.random.default_rng(1))
     p=Profile.model_validate({'groups':[{'policy':{'kind':'bandit','action_space':{},'options':{'actions':[{'sf':8}]}}}]})
     assert any(w['code']=='ACTION_OPTIONS_IGNORED' for w in configuration_warnings(p))

@@ -16,12 +16,12 @@ class GADR(ADR):
     Options = Settings
     label = 'G-ADR'
     description = '成功ULのSNRを平均±標準偏差でフィルタし、LinkADRReqでSF・TPを制御します。'
-    def __init__(self,rng,**options):
+    def __init__(self,rng,action_space=None,**options):
         o = Settings.model_validate(options).model_dump()
         o['history_combine'] = 'avg'
-        super().__init__(rng,**o)
+        super().__init__(rng,action_space=action_space,**o)
     def create_server(self):
-        return GADRServer(self.server_options)
+        return GADRServer(self.server_options, self.space)
 
 
 class GADRServer(ADRServer):
@@ -39,6 +39,9 @@ class GADRServer(ADRServer):
         required = (-7.5,-10.,-12.5,-15.,-17.5,-20.)[radio.sf-7]
         # Paper Eq.5 says int, i.e. truncation toward zero (unlike upstream ADR floor).
         steps = int((snr-required-self.margin)/3)
+        if self.space:
+            # Preserve Algorithm 1's command even when SF is unchanged.
+            return self.space.command(radio, steps)
         sf,tp = radio.sf,radio.tp_dbm
         while steps>0 and sf>7:
             sf -= 1; steps -= 1

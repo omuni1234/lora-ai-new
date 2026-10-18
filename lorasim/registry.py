@@ -71,6 +71,8 @@ def metadata(category,kind):
             'uses_action_space':getattr(cls,'uses_action_space',False),
             'accepts_action_space':getattr(cls,'accepts_action_space',False) or getattr(cls,'uses_action_space',False),
             'space_options':getattr(cls,'space_options',[]),
+            'fixed_space_dimensions':getattr(cls,'fixed_space_dimensions',()),
+            'space_description':getattr(cls,'space_description',''),
             'deprecated':kind.endswith('_sf_ch'),
             'requires_position':getattr(cls,'requires_position',False),
             'preview_safe':getattr(cls,'preview_safe',False),'legacy':options is None}

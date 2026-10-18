@@ -49,6 +49,14 @@ class Policy(Plugin):
     uses_action_space = False
     # Optional action_space constructor input; activated by Component.action_space.
     accepts_action_space = False
+    fixed_space_dimensions = ()
+    space_description = ""
+    @classmethod
+    def validate_action_space(cls, space):
+        """Cheap contract validation, also used before allocating any ED state."""
+        for key in cls.fixed_space_dimensions:
+            if len(getattr(space, key)) != 1:
+                raise ValueError('action_space requires fixed dimension: '+key)
     requires_position = False
     def initialize(self, observation: Observation) -> None:
         """Optional time-zero local observation, before the first selection."""

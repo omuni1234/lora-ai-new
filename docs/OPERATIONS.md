@@ -12,7 +12,7 @@ SQLiteは同一ホストのローカルディスク／Docker named volumeで使�
 
 ## 進捗と通知
 
-進捗はsimulation time / duration。イベントを処理しながら、実時間0.25秒または整数%進行のタイミングで更新し、最終状態を必ず保存します。GUIは2秒間隔で取得します。ETAは表示していません。高負荷区間でsimulation timeと実時間の比率が変わるためです。
+進捗はsimulation time / duration。イベントを処理しながら、実時間0.25秒または整数%進行のタイミングで更新し、最終状態を必ず保存します。GUIは表示中だけ4秒間隔で取得します。ETAは表示していません。高負荷区間でsimulation timeと実時間の比率が変わるためです。
 
 ```yaml
 notifications:
@@ -56,3 +56,25 @@ Docker DesktopでUbuntu 22.04 / linux/amd64イメージをビルドし、BuildKi
 モデルライブラリ更新後も投入済みRunは埋め込み定義を使います。独自Pythonプラグインは別途バージョン固定してください。`lorasim sweep`はseed群を一つのExperimentにまとめます。`submit/sweep --experiment-id ID`で既存Experimentへ追加できます。
 
 v0.2の最新Linuxテストログは[こちら](../validation/docker-v02-test.log)。実機NVIDIA、指定Linuxカーネル、通常のComposeサービス起動は未確認です。BuildKit RUNのUbuntu/amd64実行と、macOSでのAPI/独立ワーカー/ブラウザ連携を検証しています。
+
+## v0.8: GUIから複数Runを並列実行
+
+右側「実行リソース」の「同時実行するRunの上限」を2以上にして「並列数を適用」を押します。別のRunを通常どおり登録すれば、空き枠で開始します。1 Runにつき独立したspawnプロセスなので、複数のCPUコアを利用できます。1つのDESのイベント順序・PHY計算を並列化する変更はありません。同じExperimentに属するRunも同時実行の対象です。
+
+- 実行中数、待機数、上限、workerのCPU枠を表示します。CPU枠は論理CPU/affinityと通常のLinux cgroup CPU quotaから求める目安で、CPUの予約や固定割り当てではありません。
+- 上限は1〜256。保存領域のSQLiteに永続化し、同じ領域の全ユーザー・Runに適用します。プロファイルの実験条件には含めません。APIや画面の再起動でも保持します。
+- workerは約0.2秒ごとに読み直し、空き枠を確認します。GUI表示は表示中だけ4秒間隔で更新します。上限を下げても実行中のRunは止めず、枠が空くまで新規起動を待ちます。
+- 優先順位は**保存済みGUI設定 > workerの`--workers` > min(2, CPU枠)**。「起動設定に戻す」でGUI設定を削除できます。Composeの`LORASIM_WORKERS`とsystemdの値は`--workers`の初期値です。
+- worker停止中も設定を保存できますが、APIはworkerを自動起動しません。次回起動で反映します。停止中のCPU表示は最後のworker値、未起動ならAPI環境の推定値です。
+- 同じデータ領域のsupervisorは1つに保ちます。flockとSQLiteの原子的claimで二重起動を防ぎ、前のsupervisorが残した生存中Runも枠数に含めます。
+
+CLI例（GUIの保存値がなければ4並列）：
+
+```bash
+lorasim start-worker --data data --workers 4
+lorasim sweep examples/15-adr-common-space.yaml --data data --seeds 1 2 3 4
+```
+
+API: `GET /api/worker`で状態とRun→PIDの`processes`、`PUT /api/worker/settings`に`{"workers":4}`で変更、`DELETE /api/worker/settings`で起動設定へ戻します。既存APIと同じBearer認証を適用します。
+
+各RunはそれぞれRAM・GPUメモリ・出力I/Oを必要とします。保存用`writer_processes`は別枠で、4 Run × writer_processes=2ならDES4＋保存8プロセスです。DQN等のGPU学習はGPUを共有し、GPUごとの振り分けは行いません。CPU枠超過はGUIで注意を表示します。固定/宣言済みMCU時間を使う条件の計算結果は並列順に依存しませんが、`energy.mcu.mode: measured`の実測時間とエネルギーは競合負荷で変化し得ます。任意の独自プラグインが外部の共有状態を使う場合の再現性はプラグイン実装側の責任です。

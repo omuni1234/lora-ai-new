@@ -246,7 +246,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.7.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.8.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",

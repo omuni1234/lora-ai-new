@@ -29,6 +29,9 @@ class YamlBody(BaseModel):
 class SubmitBody(YamlBody):
     experiment_id: str | None = None
 
+class WorkerBody(BaseModel):
+    workers: int = Field(ge=1, le=256, strict=True)
+
 class PreviewBody(YamlBody):
     horizon_s: float | None = Field(None,ge=0,le=1e9)
     limit: int = Field(80,ge=1,le=200)
@@ -52,7 +55,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.7.0")
+    app = FastAPI(title="LoRaSim Research",version="0.8.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -89,10 +92,15 @@ def create_app(root=None):
         return {"status":"ok"}
     @app.get("/api/worker",dependencies=[Depends(auth)])
     def status():
-        path = store.root/"worker.json"
-        value = json.loads(path.read_text()) if path.exists() else {}
-        value["online"] = time.time()-value.get("heartbeat",0)<10
-        return value
+        return store.worker_status()
+    @app.put("/api/worker/settings",dependencies=[Depends(auth)])
+    def worker_settings(body: WorkerBody):
+        store.set_worker_limit(body.workers)
+        return store.worker_status()
+    @app.delete("/api/worker/settings",dependencies=[Depends(auth)])
+    def reset_worker_settings():
+        store.reset_worker_limit()
+        return store.worker_status()
     @app.get("/api/schema",dependencies=[Depends(auth)])
     def schema():
         return describe_schema(Profile.model_json_schema())

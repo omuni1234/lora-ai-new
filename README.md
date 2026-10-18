@@ -2,7 +2,15 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.6。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.8。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.8の変更
+
+- ADR・BADR・G-ADRへ共通行動空間を注入。GUIからSF/CH候補とTP/CR固定値を設定できます。原制御との差分を画面とWarningで明示します。
+- GUI右側に複数Runの同時実行数、稼働数・待機数を表示。独立プロセスの起動上限を実行中に変更し、保存します。
+- 共通空間を指定しない旧プロファイルの制御、PHY/MACの計算とイベント順序を維持します。
+
+[制御則と比較条件](docs/ADR_COMPARISON.md)、[並列実行の運用](docs/OPERATIONS.md#v08-guiから複数runを並列実行)、[検証記録](docs/VALIDATION-v08.md)。例: `examples/15-adr-common-space.yaml`。
 
 ## v0.6の変更
 

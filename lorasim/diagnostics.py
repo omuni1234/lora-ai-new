@@ -18,6 +18,8 @@ def issue(code, message, hint, *, severity='error', path='', detail=''):
 # Match only known simulator messages; user/plugin exceptions fall back to a
 # Japanese explanation plus the unmodified diagnostic, rather than a false translation.
 RULES = [
+    ('action_space requires fixed dimension', 'ACTION_FIXED_REQUIRED', 'この選択器の共通行動空間ではTP・CRをそれぞれ1値に固定する必要があります。', 'EDの行動空間で送信電力と符号化率の固定値を選択してください。全体集合に複数候補を登録することは可能です。', 'groups'),
+    ('concurrent workers must', 'WORKER_LIMIT', '同時実行数が不正です。', '1〜256の整数を指定してください。CPU数と各Runのメモリ使用量に応じて調整してください。', ''),
     ('ED action_space must be a subset', 'ACTION_SUBSET', 'EDの候補に全体のパラメータ空間にない値があります。', '全体集合に値を追加するか、ED側を全体の部分集合にしてください。', 'groups'),
     ('action_space candidates must', 'ACTION_CANDIDATES', 'パラメータ候補が重複、範囲外、または有限値ではありません。', 'SFは7〜12、CRは1〜4、TPは−20〜27 dBmを重複なく指定してください。', 'action_space'),
     ('selector does not accept configurable', 'ACTION_UNSUPPORTED', 'この選択器は共通行動空間の受け取りに対応していません。', '共通行動空間を未指定に戻すか、対応する選択器へ変更してください。独自モデルはaccepts_action_space=Trueとコンストラクタ引数を実装します。', 'groups'),
@@ -243,6 +245,9 @@ def configuration_warnings(p):
                     bound = spec.action_space is not None or getattr(cls,'uses_action_space',False)
                     space = p.action_space.restrict(spec.action_space) if spec.action_space is not None else p.action_space
                     ignored = set(spec.options)&set(getattr(cls,'space_options',[])) if bound else set()
+                    if bound and kind in {'adr','badr','gadr'}:
+                        warn('ADR_COMPARISON_EXTENSION', path+'.policy.action_space', cls.space_description,
+                             '原方式の再現ではなく共通条件での比較用拡張です。SF候補・CH候補・固定TP/CRを揃え、docs/ADR_COMPARISON.mdの制御則の差分を研究報告に記載してください。')
                     if ignored:
                         warn('ACTION_OPTIONS_IGNORED', path+'.policy.options', '共通行動空間を使うためモデル側の候補設定は適用されません: '+', '.join(sorted(ignored)), '候補は全体・EDの行動空間に統一し、optionsには学習定数だけを指定してください。')
                     if bound and (kind.startswith('linucb') or kind in {'dqn','sema'}) and (len(space.coding_rates)>1 or len(space.powers_dbm)>1 or (kind=='linucb_sf' and len(space.frequencies_hz)>1)):

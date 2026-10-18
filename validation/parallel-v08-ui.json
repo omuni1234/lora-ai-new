@@ -1,0 +1,47 @@
+{
+  "pid": 18873,
+  "heartbeat": 1792331029.880142,
+  "workers": 2,
+  "default_workers": 1,
+  "cpu_count": 8,
+  "active": [
+    "a54d0b6724254f1792eeb62f1ee8b563",
+    "c3f243ec03c645b1be43f370b434bc4c"
+  ],
+  "processes": {
+    "a54d0b6724254f1792eeb62f1ee8b563": 19555,
+    "c3f243ec03c645b1be43f370b434bc4c": 19590
+  },
+  "online": true,
+  "configured_workers": 2,
+  "requested_workers": 2,
+  "counts": {
+    "completed": 4,
+    "running": 2
+  },
+  "overlap_s": 38.69603204727173,
+  "completed": [
+    {
+      "id": "c3f243ec03c645b1be43f370b434bc4c",
+      "status": "completed",
+      "started": 1792331024.7430542,
+      "finished": 1792331072.2175832
+    },
+    {
+      "id": "a54d0b6724254f1792eeb62f1ee8b563",
+      "status": "completed",
+      "started": 1792331017.566176,
+      "finished": 1792331063.4390862
+    }
+  ],
+  "identical_seed_exact_table_equality": true,
+  "rows": {
+    "transmissions": 629952,
+    "receptions": 629952,
+    "feedback": 360000,
+    "events": 1020198,
+    "devices": 12,
+    "uplinks": 360000,
+    "energy": 2130098
+  }
+}

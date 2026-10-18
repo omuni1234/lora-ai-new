@@ -49,7 +49,7 @@ GUIでは左の「周波数・行動空間」で全体集合を設定し、「ED
 | lora_mab | 対応 | Exp3のACK報酬・重み更新は維持 |
 | linucb_sf | 対応 | Context・更新・報酬を維持。複数TP時だけ既存のTP差分SNR補正を適用 |
 | dqn / sema | 常に使用 | 入出力サイズを候補数へ合わせる。既存の状態・報酬を維持 |
-| ADR / BADR / GADR | 今回は未対応 | 原方式のSF/TP制御、チャネル処理を維持。共通空間を指定するとError |
+| ADR / BADR / GADR | v0.8で対応 | SF候補への写像、CH一様選択、TP/CR固定。原方式との差分は[ADR_COMPARISON.md](ADR_COMPARISON.md) |
 | linucb_sf_tp | 旧研究拡張のまま | 新規設定ではlinucb_sfの共通空間でTP候補を指定可能 |
 
 論文で固定だった次元を追加すると「論文の完全再現」ではなく比較用拡張になります。CR依存の新しいContext・報酬項を自動追加するものではありません。LinUCB、DQN、SEMAの該当設定はWarningで通知します。LoRa-MABのCR拡張も研究条件に明記してください。

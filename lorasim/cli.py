@@ -22,7 +22,7 @@ def main():
         if name=="sweep":
             p.add_argument("--seeds",nargs="+",type=int,required=True)
         if name in ("worker","start-worker"):
-            p.add_argument("--workers",type=int,default=1)
+            p.add_argument("--workers",type=int,default=None,help="同時Run数の初期値（省略時: CPU数と2の小さい方）。保存済みGUI設定が優先されます。")
         if name=="worker":
             p.add_argument("--once",action="store_true")
         if name=="cancel":
@@ -54,7 +54,7 @@ def main():
     elif args.command=="start-worker":
         root = Path(args.data).resolve(); root.mkdir(parents=True,exist_ok=True)
         with (root/"worker.log").open("a") as log:
-            process = subprocess.Popen([sys.executable,"-m","lorasim","worker","--data",str(root),"--workers",str(args.workers)],
+            process = subprocess.Popen([sys.executable,"-m","lorasim","worker","--data",str(root)]+(["--workers",str(args.workers)] if args.workers is not None else []),
                                        stdin=subprocess.DEVNULL,stdout=log,stderr=log,start_new_session=True)
         print(json.dumps({"pid":process.pid,"log":str(root/"worker.log")}))
     else:

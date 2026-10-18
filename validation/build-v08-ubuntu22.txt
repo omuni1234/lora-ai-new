@@ -1,0 +1,148 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 889B done
+#1 DONE 0.0s
+
+#2 [internal] load .dockerignore
+#2 transferring context: 214B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/ubuntu:22.04
+#3 DONE 3.0s
+
+#4 [1/7] FROM docker.io/library/ubuntu:22.04@sha256:0a9887931b0e38af2e3487ed39e29436b0535c4f3f52e57745baaf79d1898956
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 1.02MB 0.0s done
+#5 DONE 0.0s
+
+#6 [2/7] RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip ca-certificates curl tini     && rm -rf /var/lib/apt/lists/*
+#6 CACHED
+
+#7 [3/7] WORKDIR /app
+#7 CACHED
+
+#8 [4/7] COPY pyproject.toml LICENSE README.md NOTICE ./
+#8 DONE 0.0s
+
+#9 [5/7] COPY lorasim ./lorasim
+#9 DONE 0.0s
+
+#10 [6/7] COPY examples ./examples
+#10 DONE 0.0s
+
+#11 [7/7] RUN python3 -m pip install --no-cache-dir --upgrade 'pip>=25,<27' 'setuptools>=68,<81' wheel     && python3 -m pip install --no-cache-dir --no-build-isolation .     && lorasim --help >/dev/null && useradd --create-home --uid 10001 sim     && mkdir /data && chown sim:sim /data
+#11 3.604 Collecting pip<27,>=25
+#11 3.863   Downloading pip-26.2.1-py3-none-any.whl (1.8 MB)
+#11 7.141      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 559.1 kB/s eta 0:00:00
+#11 9.055 Collecting setuptools<81,>=68
+#11 9.072   Downloading setuptools-80.10.2-py3-none-any.whl (1.1 MB)
+#11 11.22      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 503.0 kB/s eta 0:00:00
+#11 11.29 Requirement already satisfied: wheel in /usr/lib/python3/dist-packages (0.37.1)
+#11 11.55 Collecting wheel
+#11 11.56   Downloading wheel-0.48.0-py3-none-any.whl (33 kB)
+#11 11.79 Collecting packaging>=24.0
+#11 11.81   Downloading packaging-26.3-py3-none-any.whl (129 kB)
+#11 12.28      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 KB 274.6 kB/s eta 0:00:00
+#11 12.81 Installing collected packages: setuptools, pip, packaging, wheel
+#11 12.81   Attempting uninstall: setuptools
+#11 12.81     Found existing installation: setuptools 59.6.0
+#11 12.82     Not uninstalling setuptools at /usr/lib/python3/dist-packages, outside environment /usr
+#11 12.82     Can't uninstall 'setuptools'. No files were found to uninstall.
+#11 15.08   Attempting uninstall: pip
+#11 15.08     Found existing installation: pip 22.0.2
+#11 15.09     Not uninstalling pip at /usr/lib/python3/dist-packages, outside environment /usr
+#11 15.09     Can't uninstall 'pip'. No files were found to uninstall.
+#11 18.54   Attempting uninstall: wheel
+#11 18.54     Found existing installation: wheel 0.37.1
+#11 18.54     Not uninstalling wheel at /usr/lib/python3/dist-packages, outside environment /usr
+#11 18.55     Can't uninstall 'wheel'. No files were found to uninstall.
+#11 18.63 Successfully installed packaging-26.3 pip-26.2.1 setuptools-80.10.2 wheel-0.48.0
+#11 18.63 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#11 21.31 Processing ./.
+#11 21.31   Preparing metadata (pyproject.toml): started
+#11 22.16   Preparing metadata (pyproject.toml): finished with status 'done'
+#11 23.70 Collecting numpy<3,>=1.24 (from lorasim-research==0.8.0)
+#11 23.89   Downloading numpy-2.2.6-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (62 kB)
+#11 25.18 Collecting pyarrow<24,>=14 (from lorasim-research==0.8.0)
+#11 25.20   Downloading pyarrow-23.0.1-cp310-cp310-manylinux_2_28_x86_64.whl.metadata (3.1 kB)
+#11 25.51 Collecting PyYAML<7,>=6 (from lorasim-research==0.8.0)
+#11 25.54   Downloading pyyaml-6.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#11 27.09 Collecting pydantic<3,>=2.7 (from lorasim-research==0.8.0)
+#11 27.10   Downloading pydantic-2.14.1-py3-none-any.whl.metadata (133 kB)
+#11 28.14 Collecting fastapi<1,>=0.110 (from lorasim-research==0.8.0)
+#11 28.40   Downloading fastapi-0.144.0-py3-none-any.whl.metadata (26 kB)
+#11 28.67 Collecting uvicorn<1,>=0.29 (from lorasim-research==0.8.0)
+#11 28.69   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+#11 29.02 Collecting starlette>=0.46.0 (from fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 29.04   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+#11 29.21 Collecting typing-extensions>=4.8.0 (from fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 29.23   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#11 29.37 Collecting typing-inspection>=0.4.2 (from fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 29.38   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#11 29.41 Collecting annotated-doc>=0.0.2 (from fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 29.43   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+#11 29.55 Collecting opentelemetry-api>=1.44.0 (from fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 29.57   Downloading opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+#11 29.61 Collecting annotated-types>=0.6.0 (from pydantic<3,>=2.7->lorasim-research==0.8.0)
+#11 29.62   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#11 36.07 Collecting pydantic-core==2.50.1 (from pydantic<3,>=2.7->lorasim-research==0.8.0)
+#11 36.17   Downloading pydantic_core-2.50.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.5 kB)
+#11 36.30 Collecting click>=7.0 (from uvicorn<1,>=0.29->lorasim-research==0.8.0)
+#11 36.31   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#11 36.35 Collecting h11>=0.8 (from uvicorn<1,>=0.29->lorasim-research==0.8.0)
+#11 36.36   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#11 36.52 Collecting anyio<5,>=4.0.0 (from starlette>=0.46.0->fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 36.53   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+#11 36.71 Collecting exceptiongroup>=1.0.2 (from anyio<5,>=4.0.0->starlette>=0.46.0->fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 36.73   Downloading exceptiongroup-1.3.1-py3-none-any.whl.metadata (6.7 kB)
+#11 36.80 Collecting idna>=2.8 (from anyio<5,>=4.0.0->starlette>=0.46.0->fastapi<1,>=0.110->lorasim-research==0.8.0)
+#11 36.82   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+#11 36.87 Downloading fastapi-0.144.0-py3-none-any.whl (144 kB)
+#11 37.42 Downloading numpy-2.2.6-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (16.8 MB)
+#11 70.88    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.8/16.8 MB 510.8 kB/s  0:00:33
+#11 70.91 Downloading pyarrow-23.0.1-cp310-cp310-manylinux_2_28_x86_64.whl (47.6 MB)
+#11 181.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 47.6/47.6 MB 426.2 kB/s  0:01:50
+#11 181.6 Downloading pydantic-2.14.1-py3-none-any.whl (488 kB)
+#11 182.6 Downloading pydantic_core-2.50.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+#11 187.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 434.1 kB/s  0:00:04
+#11 187.5 Downloading pyyaml-6.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (770 kB)
+#11 189.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 770.3/770.3 kB 387.4 kB/s  0:00:02
+#11 189.6 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+#11 189.9 Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+#11 189.9 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#11 190.0 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#11 190.1 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#11 190.3 Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+#11 190.5 Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+#11 190.6 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+#11 190.9 Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+#11 190.9 Downloading idna-3.20-py3-none-any.whl (69 kB)
+#11 191.0 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#11 191.1 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#11 193.7 Building wheels for collected packages: lorasim-research
+#11 193.7   Building wheel for lorasim-research (pyproject.toml): started
+#11 195.1   Building wheel for lorasim-research (pyproject.toml): finished with status 'done'
+#11 195.1   Created wheel for lorasim-research: filename=lorasim_research-0.8.0-py3-none-any.whl size=155619 sha256=193b34614e46d3e7cba5a1ee1e5947044ffb99fb28deeb58261a0afb8d10d84d
+#11 195.1   Stored in directory: /tmp/pip-ephem-wheel-cache-cdql_b22/wheels/9b/2c/d1/15e20a2b97f37ccf65a87ba1049c73a9076d0bf0fbaf814e83
+#11 195.1 Successfully built lorasim-research
+#11 195.5 Installing collected packages: typing-extensions, PyYAML, pyarrow, numpy, idna, h11, click, annotated-types, annotated-doc, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, exceptiongroup, pydantic, anyio, starlette, fastapi, lorasim-research
+#11 212.8 
+#11 212.8 Successfully installed PyYAML-6.0.3 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 click-8.5.0 exceptiongroup-1.3.1 fastapi-0.144.0 h11-0.16.0 idna-3.20 lorasim-research-0.8.0 numpy-2.2.6 opentelemetry-api-1.45.1 pyarrow-23.0.1 pydantic-2.14.1 pydantic-core-2.50.1 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0
+#11 212.8 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#11 214.7 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#11 214.7 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#11 DONE 215.4s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 0.8s done
+#12 writing image sha256:655dc7745e48569ad04c1d1c014359a29aaa64b52b7f12fafdb36088d6bd8615 done
+#12 naming to docker.io/library/lorasim-research:v08-local done
+#12 DONE 0.8s
+
+What's Next?
+  1. Sign in to your Docker account → docker login
+  2. View a summary of image vulnerabilities and recommendations → docker scout quickview

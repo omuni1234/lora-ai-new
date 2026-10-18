@@ -21,6 +21,30 @@ from .diagnostics import validate_options, configuration_warnings, exception_dia
 TERMINAL = {"completed","failed","cancelled","interrupted"}
 
 
+def available_cpus():
+    """Logical CPU budget visible to this process, including common Linux quotas."""
+    count = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else os.cpu_count() or 1
+    try:
+        quota, period = Path('/sys/fs/cgroup/cpu.max').read_text().split()
+        if quota != 'max':
+            count = min(count, max(1, -(-int(quota)//int(period))))
+    except (OSError, ValueError, ZeroDivisionError):
+        try:
+            quota = int(Path('/sys/fs/cgroup/cpu/cpu.cfs_quota_us').read_text())
+            period = int(Path('/sys/fs/cgroup/cpu/cpu.cfs_period_us').read_text())
+            if quota > 0:
+                count = min(count, max(1, -(-quota//period)))
+        except (OSError, ValueError, ZeroDivisionError):
+            pass
+    return count
+
+
+def validate_workers(workers):
+    if type(workers) is not int or not 1 <= workers <= 256:
+        raise ValueError('concurrent workers must be an integer in 1..256')
+    return workers
+
+
 class Store:
     def __init__(self,root):
         self.root = Path(root).resolve()
@@ -40,6 +64,9 @@ class Store:
             CREATE TABLE IF NOT EXISTS models (category TEXT NOT NULL, name TEXT NOT NULL,
               definition TEXT NOT NULL, updated REAL NOT NULL, PRIMARY KEY(category,name));
             CREATE TABLE IF NOT EXISTS profiles (name TEXT PRIMARY KEY, yaml TEXT NOT NULL, updated REAL NOT NULL);
+            CREATE TABLE IF NOT EXISTS worker_settings (
+              id INTEGER PRIMARY KEY CHECK(id=1), workers INTEGER NOT NULL CHECK(workers BETWEEN 1 AND 256)
+            );
             """)
             # API and worker may start together against the same old database.
             db.execute("BEGIN IMMEDIATE")
@@ -55,6 +82,29 @@ class Store:
         db = sqlite3.connect(self.root/"jobs.sqlite",timeout=30)
         db.row_factory = sqlite3.Row
         return db
+    def worker_limit(self, default):
+        with self.connect() as db:
+            row = db.execute('SELECT workers FROM worker_settings WHERE id=1').fetchone()
+        return row[0] if row else default
+    def set_worker_limit(self, workers):
+        validate_workers(workers)
+        with self.connect() as db:
+            db.execute('INSERT INTO worker_settings VALUES(1,?) ON CONFLICT(id) DO UPDATE SET workers=excluded.workers', (workers,))
+    def reset_worker_limit(self):
+        with self.connect() as db:
+            db.execute('DELETE FROM worker_settings')
+    def worker_status(self):
+        path = self.root/'worker.json'
+        value = json.loads(path.read_text()) if path.exists() else {}
+        value['online'] = not value.get('stopped', False) and time.time()-value.get('heartbeat', 0)<10
+        cpus = value.get('cpu_count', available_cpus())
+        default = value.get('default_workers', min(2, cpus))
+        configured = self.worker_limit(None)
+        value.update(configured_workers=configured, requested_workers=configured or default,
+                     default_workers=default, cpu_count=cpus)
+        with self.connect() as db:
+            value['counts'] = {row[0]: row[1] for row in db.execute('SELECT status,count(*) FROM jobs GROUP BY status')}
+        return value
     def parse_profile(self,text):
         return load_profile(text,text=True,catalog=self.catalog())
     def check_profile(self, text, *, construct=True):
@@ -154,9 +204,12 @@ class Store:
         with self.connect() as db:
             rows = db.execute("SELECT id,name,status,created,started,finished,progress,sim_time,error,experiment_id FROM jobs WHERE (? IS NULL OR experiment_id=?) ORDER BY created DESC LIMIT ?",(experiment_id,experiment_id,limit)).fetchall()
         return [dict(x) for x in rows]
-    def claim(self):
+    def claim(self, max_running=None):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            # Includes still-live children left by a previous supervisor.
+            if max_running is not None and db.execute("SELECT count(*) FROM jobs WHERE status='running'").fetchone()[0] >= max_running:
+                return None
             row = db.execute("SELECT id FROM jobs WHERE status='queued' AND cancel=0 ORDER BY created LIMIT 1").fetchone()
             if not row:
                 return None
@@ -304,9 +357,9 @@ def execute_job(root,jid):
             notifier.close()
 
 
-def worker(root,workers=1,once=False):
-    if workers<1:
-        raise ValueError("workers must be >=1")
+def worker(root,workers=None,once=False):
+    cpus = available_cpus()
+    default_workers = min(2, cpus) if workers is None else validate_workers(workers)
     store = Store(root)
     # One supervisor per storage directory, potentially many independent processes.
     lock = (store.root/"worker.lock").open("w")
@@ -346,18 +399,29 @@ def worker(root,workers=1,once=False):
                         process.kill()
                         process.join()
                 break
+            workers = store.worker_limit(default_workers)
             while len(children)<workers:
-                jid = store.claim()
+                jid = store.claim(max_running=workers)
                 if jid is None:
                     break
                 process = ctx.Process(target=execute_job,args=(str(store.root),jid))
-                process.start()
+                try:
+                    process.start()
+                except Exception as exc:
+                    store.finish(jid, 'failed', error=f'worker process start failed: {exc}')
+                    raise
                 children[jid] = process
-            atomic_json(store.root/"worker.json",{"pid":os.getpid(),"heartbeat":time.time(),"workers":workers,"active":list(children)})
-            if once and not children:
+            atomic_json(store.root/"worker.json",{"pid":os.getpid(),"heartbeat":time.time(),"workers":workers,
+                        "default_workers":default_workers,"cpu_count":cpus,"active":list(children),
+                        "processes":{jid:p.pid for jid,p in children.items()}})
+            with store.connect() as db:
+                running = db.execute("SELECT count(*) FROM jobs WHERE status='running'").fetchone()[0]
+            if once and not children and not running:
                 break
             time.sleep(.2)
     finally:
+        atomic_json(store.root/"worker.json",{"pid":os.getpid(),"heartbeat":time.time(),"workers":workers,
+                    "default_workers":default_workers,"cpu_count":cpus,"active":[],"processes":{},"stopped":True})
         signal.signal(signal.SIGTERM,oldterm)
         signal.signal(signal.SIGINT,oldint)
         lock.close()

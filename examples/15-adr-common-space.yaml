@@ -1,0 +1,42 @@
+name: ADR・共通SF-CH比較条件
+seed: 7
+duration_s: 7200
+area_m: [1000, 800]
+action_space:
+  spreading_factors: [7, 8, 9, 10, 11, 12]
+  frequencies_hz: [868100000, 868300000, 868500000]
+  coding_rates: [1, 2, 3, 4]
+  powers_dbm: [8, 11, 14]
+models:
+  policy:
+    comparison-adr:
+      kind: adr
+      action_space: {coding_rates: [1], powers_dbm: [14]}
+      options: {history_range: 20}
+    comparison-badr:
+      kind: badr
+      action_space: {coding_rates: [1], powers_dbm: [14]}
+      options: {sequence: [12, 7, 10, 7, 10, 7], random_phase: true}
+    comparison-gadr:
+      kind: gadr
+      action_space: {coding_rates: [1], powers_dbm: [14]}
+      options: {history_range: 20, margin_db: 10}
+    comparison-bandit:
+      kind: bandit
+      action_space: {coding_rates: [1], powers_dbm: [14]}
+      options: {epsilon: 0.1}
+gateways:
+  - position: [500, 400, 15]
+groups:
+  - name: devices
+    count: 12
+    confirmed: true
+    max_attempts: 1
+    policy: {ref: comparison-adr}
+    timing:
+      kind: periodic
+      options:
+        interval_s: 120
+        start: {mode: uniform, min_s: 0, max_s: 120}
+# GUIでpolicy.refをcomparison-badr / comparison-gadr / comparison-banditに変更。
+# 手法ごとに別Experimentへ投入。SF/CH・TP/CR・負荷・配置・seedは共通。

@@ -48,3 +48,7 @@ policy:
 ## v0.4の論文ベース選択器
 
 `gadr`、`lora_mab`、`linucb_sf`を追加。`linucb_sf_tp`は明示的に分けた研究拡張。原典PDF、式番号、既定値、情報の観測境界、論文の未指定/不整合部分は[PAPERS.md](PAPERS.md)を参照。
+
+## v0.8の共通空間
+
+ADR・BADR・GADRへ`policy.action_space`を指定する比較用拡張を追加。上記の旧モードとの制御則・CH・backoffの差分は[ADR_COMPARISON.md](ADR_COMPARISON.md)を参照してください。

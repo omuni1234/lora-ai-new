@@ -14,3 +14,5 @@ RUN lorasim run examples/12-sf-ch-comparison.yaml --output /tmp/lorasim-sema > /
     && lorasim run examples/13-markov.yaml --output /tmp/lorasim-markov > /tmp/lorasim-markov.log
 
 RUN lorasim run examples/14-unified-action-space.yaml --output /tmp/lorasim-action-space > /tmp/lorasim-action-space.log
+
+RUN lorasim run examples/15-adr-common-space.yaml --output /tmp/lorasim-adr-common > /tmp/lorasim-adr-common.log

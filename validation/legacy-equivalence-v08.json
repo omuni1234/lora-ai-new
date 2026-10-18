@@ -1,0 +1,42 @@
+{
+  "baseline_commit": "396b488",
+  "version": "0.8.0",
+  "policies": {
+    "adr": {
+      "exact_table_equality": true,
+      "rows": {
+        "transmissions": 700,
+        "receptions": 700,
+        "feedback": 500,
+        "events": 1408,
+        "devices": 10,
+        "uplinks": 500,
+        "energy": 2810
+      }
+    },
+    "badr": {
+      "exact_table_equality": true,
+      "rows": {
+        "transmissions": 925,
+        "receptions": 925,
+        "feedback": 500,
+        "events": 891,
+        "devices": 10,
+        "uplinks": 500,
+        "energy": 2735
+      }
+    },
+    "gadr": {
+      "exact_table_equality": true,
+      "rows": {
+        "transmissions": 700,
+        "receptions": 700,
+        "feedback": 500,
+        "events": 1596,
+        "devices": 10,
+        "uplinks": 500,
+        "energy": 2810
+      }
+    }
+  }
+}
