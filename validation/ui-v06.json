@@ -1,0 +1,124 @@
+{
+  "environment": {
+    "platform": "macOS-26.3.1-arm64-arm-64bit",
+    "architecture": "arm64",
+    "python": "3.11.4"
+  },
+  "method": "実際の管理GUIでYAML適用・プレビュー・Run登録・結果表示・再接続・Experiment選択分析を確認。",
+  "runs": [
+    {
+      "id": "d4e04ff44a0f4409bca2fa1c6060f5c3",
+      "name": "設備配置・ベースライン",
+      "status": "completed",
+      "diagnostics": [],
+      "summary": {
+        "status": "completed",
+        "sim_time_s": 180.0,
+        "duration_s": 180.0,
+        "progress": 1.0,
+        "wall_s": 0.10035958301159553,
+        "counts": {
+          "messages_generated": 144,
+          "uplinks_sent": 144,
+          "peak_air_bytes": 1600,
+          "events_processed": 2793,
+          "rx_Received": 166,
+          "uplinks_received_any_gw": 123,
+          "downlinks_sent": 45,
+          "attempts_finished": 143,
+          "ack_received": 43,
+          "rx_LostBecauseTx": 9,
+          "rx_Interference": 14,
+          "rx_NotAddressed": 2,
+          "attempts_truncated": 1
+        },
+        "table_rows": {
+          "transmissions": 189,
+          "receptions": 191,
+          "feedback": 143,
+          "events": 645,
+          "devices": 24,
+          "uplinks": 144,
+          "energy": 879
+        },
+        "energy": {
+          "radio_j": 4.028668398308461,
+          "mcu_j": 0.0
+        },
+        "abstract": {
+          "name": "設備配置・ベースライン",
+          "ed_count": 24,
+          "eligible_ed_count": 24,
+          "inactive_ed_count": 0,
+          "tx_start": 1,
+          "tx_end": null,
+          "maximum_tx_index": 6,
+          "uplinks": 144,
+          "censored": 0,
+          "mean_ed_prr": 0.8541666666666666,
+          "pooled_prr": 0.8541666666666666,
+          "fractions": {
+            "Interference": 0.08333333333333333,
+            "LostBecauseTx": 0.0625,
+            "Received": 0.8541666666666666
+          },
+          "fairness": {
+            "jain": 0.8891043723554303,
+            "gini": 0.14126016260162588,
+            "min_max": 0.0,
+            "cv": 0.35316758746298327,
+            "p10": 0.4333333333333334,
+            "median": 1.0
+          },
+          "include_mcu": true,
+          "energy": {
+            "by_state_j": {
+              "radio:TX": 0.8082063359999997,
+              "radio:SLEEP": 0.0011576539692617971,
+              "radio:RX_ENABLED": 0.8722999558008007,
+              "radio:RX_ACTIVE": 0.6475935744000002
+            },
+            "total_j": 2.3292575201700614,
+            "mean_ed_j": 0.09705239667375255,
+            "startup_excluded_j": {
+              "radio": 1.6994108781383999
+            },
+            "j_per_received_uplink": 0.018937053009512695,
+            "fairness": {
+              "jain": 0.9106645864088937,
+              "gini": 0.17219669991854203,
+              "min_max": 0.29199641028054996,
+              "cv": 0.31320782384535484,
+              "p10": 0.055645243188565896,
+              "median": 0.08627784562860508
+            }
+          },
+          "series": []
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "1927196b081e45b2a94c257e3e02c433",
+      "name": "UI検証・実行時エラー",
+      "status": "failed",
+      "diagnostics": [
+        {
+          "code": "PAYLOAD_LIMIT",
+          "severity": "error",
+          "path": "groups",
+          "message": "選択SFに対するEU DRのペイロード上限を超えました。",
+          "hint": "SF10〜12は51 byte、SF9は115 byte、SF7〜8は222 byte以下にしてください。",
+          "detail": "ValueError: ED 0: payload exceeds EU DR limit for SF12"
+        }
+      ],
+      "summary": null,
+      "error": "ValueError: ED 0: payload exceeds EU DR limit for SF12"
+    }
+  ],
+  "screenshots": [
+    "docs/control-panel-v06.png",
+    "docs/error-v06.png",
+    "docs/warning-v06.png"
+  ]
+}

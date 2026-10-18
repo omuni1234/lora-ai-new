@@ -2,7 +2,16 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.5。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.6。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.6の変更
+
+- Errorを日本語の原因説明・対処ヒント・元の技術詳細で表示。実行中の失敗もRunに保存します。
+- 設定の自動チェックと、物理層・学習条件・通知失敗に対する非ブロッキングのWarning。
+- 左を設定メニュー、中央上をプレビュー、中央下を設定フォーム、右を実行進捗と結果に整理。上下パネルは独立してスクロールできます。
+- 物理層・MAC・イベントの理論と計算方式は変更していません。
+
+[操作と診断仕様](docs/DIAGNOSTICS.md)、[検証記録](docs/VALIDATION-v06.md)。
 
 ## v0.5の変更
 
@@ -119,7 +128,7 @@ lorasim worker --data data --workers 2 --once
 
 BADRはSemtechのBlind ADRとして実装しています。LoRaWAN標準が使用順序を一意に決める方式ではないため、比較に使ったSF列を明示してください。無線電力は上流の既定値を使用しますが、MCUの電力・時間は対象ハードウェアに合わせて設定します。
 
-![v0.3 configuration preflight](docs/control-panel-v03.png)
+![v0.6 control panel](docs/control-panel-v06.png)
 
 ## 読む順序
 

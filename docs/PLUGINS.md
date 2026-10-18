@@ -150,3 +150,7 @@ class MySelector(Policy):
 必要なら `initialize(observation)` をオーバーライドし、選択前の時刻0の端末観測を受け取れます。位置が必要なモデルは `requires_position=True` も宣言します。エンジンは位置観測が有効なグループのみ許可し、プレビューも同じ初期化を呼びます。初期化では送信・学習を行わず、ローカル状態の初期化に用いてください。SEMAの前回位置の初期化が実例です。
 
 SEMA/DQNのOptions、原論文との差分、観測上の制約は [SEMA.md](SEMA.md)、マルコフ移動の時間・乱数契約は [MARKOV.md](MARKOV.md) に記載しています。
+
+## 日本語の診断（v0.6）
+
+Optionsの型・Field制約による例外は、設定パスと日本語の説明・ヒントに変換されます。未知の独自例外は原因を推測せず、元のメッセージを技術詳細へ保持します。設定チェックと実行中エラーの範囲、Warning追加時の指針は [DIAGNOSTICS.md](DIAGNOSTICS.md) を参照してください。

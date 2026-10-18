@@ -5,11 +5,15 @@ import os
 from pathlib import Path
 import time
 from fastapi import FastAPI, HTTPException, Request, Depends, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+import logging
+import yaml
+from .diagnostics import exception_diagnostics, issue
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from .config import Profile, load_profile, dump_profile
-from .engine import Simulation
 from .jobs import Store
 from .analysis import analyze_run, compare_runs
 from .visualization import layout, traces, packet_details, preflight
@@ -45,13 +49,38 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.5.0")
+    app = FastAPI(title="LoRaSim Research",version="0.6.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
             raise HTTPException(401,"Authentication required")
+    def response_error(exc, status=422):
+        diagnostics = exception_diagnostics(exc)
+        return JSONResponse(status_code=status, content={"detail":diagnostics[0]["message"],"diagnostics":diagnostics})
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(request, exc):
+        return response_error(exc)
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(request, exc):
+        messages = {
+            401:("APIの認証に失敗しました。", "右上の接続設定でBearer tokenを確認してください。"),
+            403:("この操作は許可されていません。", "実行ユーザーとアクセス権限を確認してください。"),
+            404:("指定したデータまたはページが見つかりません。", "一覧を更新して選び直してください。パケットは書き出し済みの記録だけを参照できます。"),
+            409:("現在の状態ではこのデータを取得できません。", "アブストラクトは対応する記録形式のRunが終了した後に表示できます。"),
+            405:("この操作方法には対応していません。", "画面を再読み込みし、対応する操作ボタンを使用してください。"),
+        }
+        message, hint = messages.get(exc.status_code, ("リクエストを処理できませんでした。", "入力内容と技術詳細を確認してください。"))
+        ds = exc.detail if isinstance(exc.detail, list) else [issue('HTTP_'+str(exc.status_code),message,hint,detail=exc.detail)]
+        return JSONResponse(status_code=exc.status_code,content={"detail":ds[0]["message"],"diagnostics":ds})
+    @app.exception_handler(Exception)
+    async def unexpected(request, exc):
+        logging.getLogger(__name__).error("API processing failed",exc_info=exc)
+        return response_error(exc,500)
     def bad(exc):
-        raise HTTPException(422,str(exc))
+        status = 422 if isinstance(exc,(ValueError, yaml.YAMLError)) else 500
+        if status == 500:
+            logging.getLogger(__name__).exception("API operation failed")
+        raise HTTPException(status,exception_diagnostics(exc)) from exc
     @app.get("/api/health")
     def health():
         return {"status":"ok"}
@@ -65,11 +94,18 @@ def create_app(root=None):
     def schema():
         return describe_schema(Profile.model_json_schema())
     @app.post("/api/validate",dependencies=[Depends(auth)])
-    def validate(body: YamlBody):
+    def validate(body: YamlBody, report: bool=False):
         try:
-            p = store.parse_profile(body.yaml)
-            Simulation(p,store.root/"_validation")
-            return p.model_dump(mode="json")
+            p, diagnostics = store.check_profile(body.yaml)
+            value = p.model_dump(mode="json")
+            return {"profile":value,"diagnostics":diagnostics} if report else value
+        except Exception as exc:
+            bad(exc)
+    @app.post("/api/diagnostics",dependencies=[Depends(auth)])
+    def diagnostics(body: YamlBody):
+        try:
+            p, messages = store.check_profile(body.yaml,construct=False)
+            return {"diagnostics":messages,"scope":"configuration"}
         except Exception as exc:
             bad(exc)
     @app.get("/api/profiles",dependencies=[Depends(auth)])
@@ -85,7 +121,8 @@ def create_app(root=None):
     @app.post("/api/jobs",status_code=201,dependencies=[Depends(auth)])
     def submit(body:SubmitBody):
         try:
-            return {"id":store.submit(body.yaml,body.experiment_id)}
+            jid = store.submit(body.yaml,body.experiment_id)
+            return {"id":jid,"diagnostics":store.get(jid)["diagnostics"]}
         except Exception as exc:
             bad(exc)
     @app.get("/api/jobs",dependencies=[Depends(auth)])
@@ -195,7 +232,8 @@ def create_app(root=None):
     @app.post("/api/preview",dependencies=[Depends(auth)])
     def preview(body:PreviewBody):
         try:
-            return preflight(store.parse_profile(body.yaml),body.horizon_s,body.limit,body.samples)
+            p, diagnostics = store.check_profile(body.yaml,construct=False)
+            return {**preflight(p,body.horizon_s,body.limit,body.samples),"diagnostics":diagnostics}
         except Exception as exc:
             bad(exc)
     @app.get("/api/jobs/{jid}/visualization",dependencies=[Depends(auth)])

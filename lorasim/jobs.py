@@ -16,6 +16,7 @@ import uuid
 from .config import load_profile, dump_profile, Component
 from .engine import Simulation
 from .tracking import atomic_json
+from .diagnostics import validate_options, configuration_warnings, exception_diagnostics, issue
 
 TERMINAL = {"completed","failed","cancelled","interrupted"}
 
@@ -40,7 +41,11 @@ class Store:
               definition TEXT NOT NULL, updated REAL NOT NULL, PRIMARY KEY(category,name));
             CREATE TABLE IF NOT EXISTS profiles (name TEXT PRIMARY KEY, yaml TEXT NOT NULL, updated REAL NOT NULL);
             """)
+            # API and worker may start together against the same old database.
+            db.execute("BEGIN IMMEDIATE")
             columns = {x[1] for x in db.execute("PRAGMA table_info(jobs)")}
+            if "diagnostics" not in columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN diagnostics TEXT")
             if "experiment_id" not in columns:
                 db.execute("ALTER TABLE jobs ADD COLUMN experiment_id TEXT")
             for row in db.execute("SELECT id,name,created FROM jobs WHERE experiment_id IS NULL").fetchall():
@@ -52,6 +57,13 @@ class Store:
         return db
     def parse_profile(self,text):
         return load_profile(text,text=True,catalog=self.catalog())
+    def check_profile(self, text, *, construct=True):
+        p = self.parse_profile(text)
+        validate_options(p)
+        if construct:
+            Simulation(p, self.root/"_validation")
+        return p, configuration_warnings(p)
+
     def create_experiment(self,name,description=""):
         if not name.strip() or len(name)>160 or len(description)>10000:
             raise ValueError("invalid experiment name or description")
@@ -111,9 +123,7 @@ class Store:
             db.execute("INSERT INTO models VALUES(?,?,?,?) ON CONFLICT(category,name) DO UPDATE SET definition=excluded.definition,updated=excluded.updated",
                        (category,name,component.model_dump_json(),time.time()))
     def submit(self,text,experiment_id=None):
-        p = self.parse_profile(text)
-        # Validate component construction before enqueueing (no model.select calls).
-        Simulation(p,self.root/"_validation")
+        p, diagnostics = self.check_profile(text)
         jid = uuid.uuid4().hex
         with self.connect() as db:
             if experiment_id is None:
@@ -121,7 +131,7 @@ class Store:
                 db.execute("INSERT INTO experiments(id,name,created) VALUES(?,?,?)",(experiment_id,p.name,time.time()))
             elif not db.execute("SELECT 1 FROM experiments WHERE id=?",(experiment_id,)).fetchone():
                 raise ValueError("unknown Experiment")
-            db.execute("INSERT INTO jobs(id,name,profile,status,created,experiment_id) VALUES(?,?,?,'queued',?,?)",(jid,p.name,dump_profile(p),time.time(),experiment_id))
+            db.execute("INSERT INTO jobs(id,name,profile,status,created,experiment_id,diagnostics) VALUES(?,?,?,'queued',?,?,?)",(jid,p.name,dump_profile(p),time.time(),experiment_id,json.dumps(diagnostics,ensure_ascii=False)))
         return jid
     def get(self,jid):
         with self.connect() as db:
@@ -131,6 +141,9 @@ class Store:
         result = dict(row)
         if result["summary"]:
             result["summary"] = json.loads(result["summary"])
+        result["diagnostics"] = json.loads(result["diagnostics"]) if result.get("diagnostics") else []
+        if result.get("error") and not any(d["severity"] == "error" for d in result["diagnostics"]):
+            result["diagnostics"].extend(exception_diagnostics(result["error"]))
         return result
     def list(self,limit=100,experiment_id=None):
         with self.connect() as db:
@@ -148,9 +161,25 @@ class Store:
     def update_progress(self,jid,value):
         with self.connect() as db:
             db.execute("UPDATE jobs SET progress=?,sim_time=?,heartbeat=? WHERE id=?",(value["progress"],value["sim_time_s"],time.time(),jid))
-    def finish(self,jid,status,summary=None,error=None):
+    def finish(self,jid,status,summary=None,error=None,diagnostics=None):
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if error:
+                row = db.execute("SELECT diagnostics FROM jobs WHERE id=?", (jid,)).fetchone()
+                existing = json.loads(row[0]) if row and row[0] else []
+                value = [d for d in existing if d["severity"] != "error"] + (diagnostics or exception_diagnostics(error))
+                db.execute("UPDATE jobs SET diagnostics=? WHERE id=?", (json.dumps(value,ensure_ascii=False),jid))
             db.execute("UPDATE jobs SET status=?,finished=?,summary=?,error=? WHERE id=?",(status,time.time(),json.dumps(summary) if summary else None,error,jid))
+    def record_diagnostic(self,jid,message):
+        # Coalesce repeated failures by code/path; do not grow with notification count.
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT diagnostics FROM jobs WHERE id=?", (jid,)).fetchone()
+            values = json.loads(row[0]) if row and row[0] else []
+            values = [d for d in values if (d['code'],d['path']) != (message['code'],message['path'])]
+            values.append(message)
+            db.execute("UPDATE jobs SET diagnostics=? WHERE id=?", (json.dumps(values,ensure_ascii=False),jid))
+
     def cancel(self,jid):
         item = self.get(jid)
         with self.connect() as db:
@@ -158,12 +187,16 @@ class Store:
             db.execute("UPDATE jobs SET status='cancelled',finished=? WHERE id=? AND status='queued'",(time.time(),jid))
         return item
     def is_cancelled(self,jid):
-        return bool(self.get(jid)["cancel"])
+        # Progress checks do not deserialize stored warning/error payloads.
+        with self.connect() as db:
+            row = db.execute("SELECT cancel FROM jobs WHERE id=?", (jid,)).fetchone()
+        if row is None:
+            raise KeyError(jid)
+        return bool(row[0])
     def save_profile(self,name,text):
         if not name.strip() or len(name)>120:
             raise ValueError("profile name must have 1..120 characters")
-        p = self.parse_profile(text)
-        Simulation(p,self.root/"_validation")
+        p, diagnostics = self.check_profile(text)
         with self.connect() as db:
             db.execute("INSERT INTO profiles VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET yaml=excluded.yaml,updated=excluded.updated",(name,text,time.time()))
     def profiles(self):
@@ -173,8 +206,9 @@ class Store:
 
 class Notifier:
     """curl runs off the event loop, without a shell; bounded/coalesced progress queue."""
-    def __init__(self,configs,root,jid):
+    def __init__(self,configs,root,jid,diagnostic_sink=None):
         self.configs,self.root,self.jid = configs,Path(root),jid
+        self.diagnostic_sink = diagnostic_sink or (lambda message: None)
         self.pending = queue.Queue(maxsize=1)
         self.last = [-1.]*len(configs)
         self.thread = threading.Thread(target=self._run,daemon=True)
@@ -209,8 +243,17 @@ class Notifier:
                     code,error = result.returncode,result.stderr[-1000:]
                 except Exception as exc:
                     code,error = -1,str(exc)
-                with (self.root/"notifications.jsonl").open("a") as log:
-                    log.write(json.dumps({"job_id":self.jid,"time":time.time(),"status":value["status"],"percent":percent,"exit_code":code,"error":error})+"\n")
+                if code:
+                    self.diagnostic_sink(issue('NOTIFICATION_FAILED', '進捗通知のHTTP送信に失敗しました。シミュレーション本体は継続します。',
+                        '通知先URL、受信サービス、ネットワーク、curlの有無とタイムアウトを確認してください。技術詳細は最後の失敗です。',
+                        severity='warning',path=f'notifications.{i}.url',detail=f'curl exit code: {code}; {error}'))
+                try:
+                    with (self.root/"notifications.jsonl").open("a") as log:
+                        log.write(json.dumps({"job_id":self.jid,"time":time.time(),"status":value["status"],"percent":percent,"exit_code":code,"error":error})+"\n")
+                except OSError as exc:
+                    self.diagnostic_sink(issue('NOTIFICATION_LOG', '進捗通知のログを保存できませんでした。',
+                        '出力ディレクトリの空き容量と書き込み権限を確認してください。シミュレーション結果の保存状態も確認してください。',
+                        severity='warning',path='notifications',detail=f'{type(exc).__name__}: {exc}'))
 
 
 def execute_job(root,jid):
@@ -231,7 +274,7 @@ def execute_job(root,jid):
     try:
         p = load_profile(item["profile"],text=True)
         # No file is written until the first progress callback, after run setup.
-        notifier = Notifier(p.notifications,output,jid) if p.notifications else None
+        notifier = Notifier(p.notifications,output,jid,lambda message:store.record_diagnostic(jid,message)) if p.notifications else None
         def progress(value):
             store.update_progress(jid,value)
             if notifier:
@@ -240,9 +283,12 @@ def execute_job(root,jid):
         result = sim.run()
         store.finish(jid,result["status"],result)
     except BaseException as exc:
-        output.mkdir(exist_ok=True)
-        (output/"error.log").write_text(traceback.format_exc())
-        store.finish(jid,"failed",error=f"{type(exc).__name__}: {exc}")
+        # Persist the cause before writing a log: disk/permission errors must not
+        # mask the original failure when the output directory is unavailable.
+        store.finish(jid,"failed",error=f"{type(exc).__name__}: {exc}",diagnostics=exception_diagnostics(exc))
+        with contextlib.suppress(OSError):
+            output.mkdir(exist_ok=True)
+            (output/"error.log").write_text(traceback.format_exc())
         if notifier:
             row = store.get(jid)
             notifier.push({"status":"failed","progress":row["progress"],"error":str(exc)})
