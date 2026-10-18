@@ -1,0 +1,38 @@
+[
+  {
+    "name": "01-small",
+    "status": "completed",
+    "uplinks": 54,
+    "mean_ed_prr": 0.875
+  },
+  {
+    "name": "02-collisions",
+    "status": "completed",
+    "uplinks": 48,
+    "mean_ed_prr": 0.0
+  },
+  {
+    "name": "03-mobile-learning",
+    "status": "completed",
+    "uplinks": 222,
+    "mean_ed_prr": 0.9942857142857143
+  },
+  {
+    "name": "04-scale",
+    "status": "completed",
+    "uplinks": 12000,
+    "mean_ed_prr": 0.637840909090909
+  },
+  {
+    "name": "05-adr-energy",
+    "status": "completed",
+    "uplinks": 600,
+    "mean_ed_prr": 0.9983333333333334
+  },
+  {
+    "name": "06-badr-mobility",
+    "status": "completed",
+    "uplinks": 180,
+    "mean_ed_prr": 1.0
+  }
+]

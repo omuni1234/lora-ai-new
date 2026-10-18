@@ -1,0 +1,76 @@
+{
+  "status": "completed",
+  "sim_time_s": 3600.0,
+  "duration_s": 3600.0,
+  "progress": 1.0,
+  "wall_s": 0.13149733399040997,
+  "counts": {
+    "messages_generated": 180,
+    "uplinks_sent": 180,
+    "peak_air_bytes": 1984,
+    "events_processed": 1800,
+    "rx_Received": 180,
+    "uplinks_received_any_gw": 180,
+    "attempts_finished": 180
+  },
+  "table_rows": {
+    "transmissions": 180,
+    "receptions": 180,
+    "feedback": 180,
+    "events": 720,
+    "devices": 30,
+    "uplinks": 180,
+    "energy": 1110
+  },
+  "energy": {
+    "radio_j": 56.18946524359462,
+    "mcu_j": 0.0
+  },
+  "abstract": {
+    "name": "BADR-mobile",
+    "ed_count": 30,
+    "eligible_ed_count": 30,
+    "inactive_ed_count": 0,
+    "tx_start": 1,
+    "tx_end": null,
+    "maximum_tx_index": 6,
+    "uplinks": 180,
+    "censored": 0,
+    "mean_ed_prr": 1.0,
+    "pooled_prr": 1.0,
+    "fractions": {
+      "Received": 1.0
+    },
+    "fairness": {
+      "jain": 1.0,
+      "gini": 0.0,
+      "min_max": 1.0,
+      "cv": 0.0,
+      "p10": 1.0,
+      "median": 1.0
+    },
+    "include_mcu": true,
+    "energy": {
+      "by_state_j": {
+        "radio:TX": 7.560385163071666,
+        "radio:SLEEP": 0.02902482695617388,
+        "radio:RX_ENABLED": 1.9349176319999914
+      },
+      "total_j": 9.524327622027842,
+      "mean_ed_j": 0.3174775874009281,
+      "startup_excluded_j": {
+        "radio": 46.6651376215668
+      },
+      "j_per_received_uplink": 0.05291293123348801,
+      "fairness": {
+        "jain": 0.9999999739091505,
+        "gini": 9.19153920269089e-05,
+        "min_max": 0.9994607133471829,
+        "cv": 0.00016152662415206545,
+        "p10": 0.31741347442468826,
+        "median": 0.31747628366094266
+      }
+    },
+    "series": []
+  }
+}

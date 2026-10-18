@@ -23,7 +23,7 @@ f=root/'ns3/contrib/lorawan/model/logical-lora-channel.cc'
 s=f.read_text()
 if '#include "ns3/log.h"' not in s:
     f.write_text(s.replace('#include "logical-lora-channel.h"','#include "logical-lora-channel.h"\n#include "ns3/log.h"'))
-for name in ['ns3-oracle.cc','ns3-benchmark.cc']:
+for name in ['ns3-oracle.cc','ns3-benchmark.cc','ns3-energy-oracle.cc']:
     shutil.copy(project/'validation'/name,root/'ns3/scratch'/name.replace('ns3-','lorasim-'))
 run(['./ns3','configure','--enable-tests','--enable-modules','lorawan','--disable-examples','--build-profile','release'],cwd=root/'ns3')
 run(['./ns3','build','-j',a.jobs],cwd=root/'ns3')
@@ -31,3 +31,7 @@ with (root/'oracle.csv').open('w') as out:
     run(['./ns3','run','--no-build','lorasim-oracle'],cwd=root/'ns3',stdout=out)
 run([sys.executable,str(project/'validation/compare_oracle.py'),str(root/'oracle.csv'),'--output',str(root/'oracle-result.json')])
 run(['./test.py','--suite=lorawan','--no-build'],cwd=root/'ns3')
+
+with (root/'energy-oracle.csv').open('w') as out:
+    run(['./ns3','run','--no-build','lorasim-energy-oracle'],cwd=root/'ns3',stdout=out)
+run([sys.executable,str(project/'validation/compare_energy.py'),str(root/'energy-oracle.csv'),'--output',str(root/'energy-result.json')])

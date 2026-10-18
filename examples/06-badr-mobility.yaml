@@ -1,0 +1,17 @@
+name: BADR-mobile
+seed: 6
+duration_s: 3600
+model_files: [models/research.yaml]
+energy:
+  radio: {tx_current_model: linear}
+groups:
+  - name: mobile
+    count: 30
+    tags: [pedestrian]
+    confirmed: false
+    policy: {ref: mobile-badr}
+    mobility: {ref: pedestrian}
+    timing: {ref: ten-minutes}
+assignments:
+  - ids: [0]
+    mobility: {ref: route-a}

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-from .config import load_profile
+from .config import load_profile, dump_profile
 from .engine import Simulation
 from .jobs import Store,worker,Notifier
 
@@ -18,6 +18,7 @@ def main():
         p = sub.add_parser(name); p.add_argument("--data",default=os.getenv("LORASIM_DATA","data"))
         if name in ("submit","sweep"):
             p.add_argument("profile")
+            p.add_argument("--experiment-id")
         if name=="sweep":
             p.add_argument("--seeds",nargs="+",type=int,required=True)
         if name in ("worker","start-worker"):
@@ -59,21 +60,21 @@ def main():
     else:
         store = Store(args.data)
         if args.command=="submit":
-            print(store.submit(Path(args.profile).read_text()))
+            print(store.submit(dump_profile(load_profile(args.profile,catalog=store.catalog())),args.experiment_id))
         elif args.command=="sweep":
-            from .config import dump_profile
             p = load_profile(args.profile)
+            eid = args.experiment_id or store.create_experiment(p.name)
             for seed in args.seeds:
                 q = p.model_copy(update={"seed":seed,"name":f"{p.name}-seed-{seed}"})
                 q = type(p).model_validate(q.model_dump())
-                print(store.submit(dump_profile(q)))
+                print(store.submit(dump_profile(q),eid))
         elif args.command=="jobs":
             print(json.dumps(store.list(),indent=2))
         elif args.command=="cancel":
             store.cancel(args.id)
         elif args.command=="import-examples":
             for file in sorted(Path(args.examples).glob("*.yaml")):
-                store.save_profile(file.stem,file.read_text())
+                store.save_profile(file.stem,dump_profile(load_profile(file)))
                 print(file.stem)
 
 if __name__=="__main__":

@@ -2,7 +2,7 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**研究用の初版です。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.2。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
 
 ## 起動（Ubuntu 22.04 / Docker Compose）
 
@@ -16,9 +16,10 @@ docker compose exec api lorasim import-examples --data /data
 管理画面: <http://localhost:8000>。`api`と`worker`は別コンテナで、ブラウザ／SSH切断後も動作します。サーバーが別端末なら `ssh -L 8000:localhost:8000 user@server` で接続してください。初期設定はlocalhostのみ公開します。
 
 1. 保存済みプロファイルから例を選ぶ。
-2. 基本設定、または詳細YAMLで編集する。
-3. 「検証」「保存」「実験を実行」を押す。
-4. 実行状況からジョブを選び、集計とParquetファイルを確認する。
+2. 左側の設定フォームで全項目を編集する。YAMLの直接編集も可能。
+3. Experimentを選び、「設定を検証」「保存」「バックグラウンドで実行」を押す。
+4. 中央の配置・送信・移動表示と右側アブストラクトを確認する。
+5. 「比較・分析」でExperimentを選び、送信回数範囲、フェアネス、MCU有無を指定する。
 
 `.env.example`を`.env`へコピーするとワーカー数等を変更できます。`LORASIM_WORKERS=4`は**独立した実験を4プロセスで実行**します。一つの無線ネットワークのイベントを非同期に並列化して因果関係を変えることはしません。
 
@@ -66,19 +67,39 @@ lorasim submit examples/01-small.yaml --data data
 | ED観測 | ACKの成否、成功したDLのRSSI、自己送信設定、任意で自己位置 |
 | 送信タイミング | periodic、poisson、Python拡張 |
 | 移動 | 静止、waypoints、反射境界random_walk、Python拡張 |
-| GUI / YAML | 基本フォーム、全文エディター、保存・読込・検証・投入 |
+| GUI / YAML | 全設定の型付きフォーム、モデルライブラリ、3ペイン、全文エディター |
+| 再利用 | モデル定義YAML / ref、実行時スナップショット、開発者API |
+| 比較アルゴリズム | 上流ADRサーバー計算、模擬LinkADRReq、端末backoff、Blind ADR |
+| 消費電力 | 上流無線モデルの状態積分・線形TX電流、別立てMCU推論/学習 |
 | バックグラウンド | SQLite永続キュー、独立プロセス、進捗・キャンセル |
 | 通知 | 非同期curl POST、割合閾値、終端通知、結果ログ |
 | 計測 | UL/DLごとの送信、GW/ED受信、損失要因、受信電力、伝搬損失 |
-| 分析 | 明示スキーマ付き分割Parquet、Arrow/pandas/matplotlib例 |
+| 分析 | Experiment単位、ED数別/送信回数別損失、PRR、Jain/Gini/CV、エネルギー、JSON/CSV |
 | デプロイ | Ubuntu 22.04 Dockerfile、Compose、任意GPUワーカー |
 
 実行済みの小規模結果を [sample-results/small](sample-results/small) に同梱しています。
+
+## 比較実験をすぐ実行
+
+```bash
+lorasim run examples/05-adr-energy.yaml --output runs/adr-energy
+lorasim run examples/06-badr-mobility.yaml --output runs/badr-mobile
+python scripts/seed_comparison.py --data data --counts 20 40 60 --seeds 1 2
+lorasim worker --data data --workers 2 --once
+```
+
+BADRはSemtechのBlind ADRとして実装しています。LoRaWAN標準が使用順序を一意に決める方式ではないため、比較に使ったSF列を明示してください。無線電力は上流の既定値を使用しますが、MCUの電力・時間は対象ハードウェアに合わせて設定します。
+
+![v0.2 control panel](docs/control-panel-v02.png)
 
 ## 読む順序
 
 - [モデルの根拠・適用範囲・相違点](docs/FIDELITY.md)
 - [プロファイル・プラグイン・GPU利用](docs/CONFIGURATION.md)
+- [モデル実装・再利用の開発者マニュアル](docs/DEVELOPER.md)
+- [ADR / BADRの定義と範囲](docs/ALGORITHMS.md)
+- [無線・MCU消費電力の式と検証](docs/ENERGY.md)
+- [Experiment管理・分析仕様](docs/ANALYSIS.md)
 - [パケットトラッキング仕様と分析](docs/TRACKING.md)
 - [実施した検証と性能測定](docs/VALIDATION.md)
 - [運用とデータ保全](docs/OPERATIONS.md)

@@ -1,0 +1,76 @@
+{
+  "cases": 10,
+  "passed": true,
+  "checks": [
+    {
+      "kind": "CURRENT",
+      "case": "-20",
+      "ns3": 0.014652693104429161,
+      "python": 0.014652693104429161,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "CURRENT",
+      "case": "0",
+      "ns3": 0.015315310442916185,
+      "python": 0.015315310442916185,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "CURRENT",
+      "case": "2",
+      "ns3": 0.015706785564620993,
+      "python": 0.015706785564620997,
+      "absolute_error": 3.469446951953614e-18
+    },
+    {
+      "kind": "CURRENT",
+      "case": "8",
+      "ns3": 0.018869063396952584,
+      "python": 0.018869063396952584,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "CURRENT",
+      "case": "13",
+      "ns3": 0.02800049903765795,
+      "python": 0.02800049903765795,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "CURRENT",
+      "case": "14",
+      "ns3": 0.03145831820028834,
+      "python": 0.03145831820028834,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "CURRENT",
+      "case": "20",
+      "ns3": 0.08157704429161858,
+      "python": 0.08157704429161858,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "CURRENT",
+      "case": "27",
+      "ns3": 0.3500958493230076,
+      "python": 0.3500958493230074,
+      "absolute_error": 1.6653345369377348e-16
+    },
+    {
+      "kind": "ENERGY",
+      "case": "0",
+      "ns3": 0.2412003,
+      "python": 0.2412003,
+      "absolute_error": 0.0
+    },
+    {
+      "kind": "ENERGY",
+      "case": "1",
+      "ns3": 0.26195020920173,
+      "python": 0.26195020920173,
+      "absolute_error": 0.0
+    }
+  ]
+}

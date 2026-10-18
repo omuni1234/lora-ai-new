@@ -47,3 +47,12 @@ CPU版DockerfileはUbuntu 22.04とPython3.10を使用します。ComposeはAPI�
 GPU版は`Dockerfile.gpu`＋`compose.gpu.yaml`です。CUDA12.4.1/cuDNNランタイムとPyTorch2.5.1 cu124を使用します。ホストのNVIDIAドライバーとContainer Toolkitが必要です。ホストのCUDA/cuDNNがインストール済みでもDockerへGPUを渡す設定は別に必要です。[NVIDIA Container Toolkit公式手順](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)に従って設定してください。
 
 Docker DesktopでUbuntu 22.04 / linux/amd64イメージをビルドし、BuildKitのRUN内で61件のテストが通過しました（Apple Silicon上でx86-64エミュレーション）。通常のdocker run/Compose起動は、この端末のDocker daemonでCreatedのまま開始要求が完了しなかったため未確認です。シミュレーターを起動しない/bin/trueでも同じ状態になり、原因は特定できていません。既存環境へ影響するdaemon再起動は行っていません。ローカルmacOSでのAPI・ワーカー独立実行は確認済みです。NVIDIA GPUと指定Linuxカーネル上の実機試験は未実施です。
+
+
+## v0.2の運用
+
+起動時にSQLiteへExperimentとモデルライブラリの表を追加します。既存Runは削除せず独立Experimentへ移行します。v0.1のParquetに新しい列を捏造する自動変換はありません。新しい期間指定分析には再実行が必要です。
+
+モデルライブラリ更新後も投入済みRunは埋め込み定義を使います。独自Pythonプラグインは別途バージョン固定してください。`lorasim sweep`はseed群を一つのExperimentにまとめます。`submit/sweep --experiment-id ID`で既存Experimentへ追加できます。
+
+v0.2の最新Linuxテストログは[こちら](../validation/docker-v02-test.log)。実機NVIDIA、指定Linuxカーネル、通常のComposeサービス起動は未確認です。BuildKit RUNのUbuntu/amd64実行と、macOSでのAPI/独立ワーカー/ブラウザ連携を検証しています。

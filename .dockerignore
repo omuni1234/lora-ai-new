@@ -9,3 +9,6 @@ models
 validation
 build
 sample-results
+
+!examples/models
+!examples/models/**

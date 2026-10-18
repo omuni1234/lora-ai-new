@@ -130,3 +130,51 @@ print(gw.groupby(['receiver_id', 'outcome']).size())
 ```
 
 大きい実験では全件read_parquetを避け、Arrowの列選択・predicate pushdown・batch走査を使います。[scripts/analyze.py](../scripts/analyze.py)はRAMに全行を置かず、GWごとの受信試行の損失内訳を集計します。複数GWのmessage_id重複排除など、大きな結合が必要な処理にはディスクへspillできる分析エンジンも適しています。
+
+
+## v0.2追加スキーマ（manifest.schema_version=2）
+
+従来4テーブルは保持し、以下を追加します。全て同じbatch_rows上限・原子的part確定・zstd圧縮を使います。
+
+### transmissionsの追加列
+
+`tx_index:int64`はEDごとの実送信通番。UL/DLは対応するULと同じ番号です。`adr:bool`は方策ADR、`adr_ack_req:bool`はそのULで送った要求ビット（DLはfalse）。`link_adr_sf:int32?` / `link_adr_tp_dbm:float64?`はDLに載せた要求です。失敗DLでも要求値は記録され、適用の有無は`events.LinkADRReqApplied`で区別します。
+
+### devices
+
+`device_id:int64, group:string, policy:string, mobility:string, x_m/y_m/z_m:float64`。初期座標、割当後のモデル名（refがあればその名前、なければkind）。Runごと1 ED 1行。
+
+### uplinks
+
+`packet_id/message_id/device_id/tx_index/time_ns:int64, attempt:int32, policy/outcome/gw_outcomes:string, received:bool, x_m/y_m/z_m:float64`。
+
+1実ULにつき1行。全GWの判定が出た時に確定し、終了時は残りをCensoredとして記録。`time_ns`はUL送信開始時刻、座標はその時刻の送信位置。`gw_outcomes`はGW ID→結果文字列のJSON。Receivedが1 GWでもあれば成功、全GWで同じ損失はその理由、異なる損失はMixedLoss。成功なしで未判定が残るとCensored。分析での分母・平均は[ANALYSIS.md](ANALYSIS.md)。
+
+### energy
+
+| 列 | 型 | 意味 |
+|---|---|---|
+| device_id / tx_index | int64 | ED、帰属送信番号（0は起動・未送信計算） |
+| component | string | radio / mcu |
+| state | string | SLEEP / STANDBY / TX / RX_ENABLED / RX_ACTIVE、idle / inference / training / inference_untransmitted |
+| start_ns / end_ns | int64 | 状態区間。MCU activeは呼び出し時刻で両端同値 |
+| duration_s | float64 | 状態時間、または想定/実測計算時間 |
+| power_w / energy_j | float64 | 電力と消費量 |
+| mode | string | state / baseline / fixed / declared / measured |
+
+radioは全時間区間を隙間なく被覆し、`sum(energy_j)`がsummaryのradio_jと一致します。MCUはbaselineとactive増分を足します。最初の送信前・未送信計算の扱いは[ENERGY.md](ENERGY.md)。
+
+### summary / API
+
+`summary.energy`は全時間合計。`summary.abstract`はED平均PRR、全ED数、対象ED数、判定未了、割合、フェアネス、エネルギー。無線・MCUを合算したabstract内の期間分析値はtx_index=0を除きます。`/api/jobs/{id}/abstract`は保存済みの値を返します。
+
+```python
+import pyarrow.dataset as ds
+# バッチごとのpandas変換ならRAM量を制限できます。
+scanner = ds.dataset("runs/example/uplinks", format="parquet").scanner(
+    filter=(ds.field("tx_index") >= 10) & (ds.field("tx_index") <= 100),
+    batch_size=8192)
+for batch in scanner.to_batches():
+    frame = batch.to_pandas()
+    # 必要な集約だけ更新。frameを全てリストへ貯めない。
+```

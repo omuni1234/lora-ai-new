@@ -1,0 +1,82 @@
+{
+  "status": "completed",
+  "sim_time_s": 18000.0,
+  "duration_s": 18000.0,
+  "progress": 1.0,
+  "wall_s": 0.10123333299998194,
+  "counts": {
+    "messages_generated": 600,
+    "uplinks_sent": 600,
+    "peak_air_bytes": 1344,
+    "events_processed": 7220,
+    "rx_Received": 627,
+    "uplinks_received_any_gw": 599,
+    "attempts_finished": 600,
+    "downlinks_sent": 28,
+    "rx_LostBecauseTx": 1
+  },
+  "table_rows": {
+    "transmissions": 628,
+    "receptions": 628,
+    "feedback": 600,
+    "events": 2394,
+    "devices": 20,
+    "uplinks": 600,
+    "energy": 4824
+  },
+  "energy": {
+    "radio_j": 102.93426213864713,
+    "mcu_j": 0.0018000000000000006
+  },
+  "abstract": {
+    "name": "ADR-energy",
+    "ed_count": 20,
+    "eligible_ed_count": 20,
+    "inactive_ed_count": 0,
+    "tx_start": 1,
+    "tx_end": null,
+    "maximum_tx_index": 30,
+    "uplinks": 600,
+    "censored": 0,
+    "mean_ed_prr": 0.9983333333333334,
+    "pooled_prr": 0.9983333333333333,
+    "fractions": {
+      "LostBecauseTx": 0.0016666666666666666,
+      "Received": 0.9983333333333334
+    },
+    "fairness": {
+      "jain": 0.9999470486594954,
+      "gini": 0.0015859766277126486,
+      "min_max": 0.9666666666666667,
+      "cv": 0.0072769598389660645,
+      "p10": 1.0,
+      "median": 1.0
+    },
+    "include_mcu": true,
+    "energy": {
+      "by_state_j": {
+        "mcu:inference": 0.0017999999999999859,
+        "radio:TX": 63.101244930205816,
+        "radio:SLEEP": 0.10552578170957486,
+        "radio:RX_ENABLED": 8.272640149891185,
+        "mcu:training": 0.0,
+        "radio:RX_ACTIVE": 0.8323430400000004
+      },
+      "total_j": 72.31355390180639,
+      "mean_ed_j": 3.6156776950903193,
+      "startup_excluded_j": {
+        "radio": 30.622508236840797
+      },
+      "j_per_received_uplink": 0.12072379616328278,
+      "fairness": {
+        "jain": 0.9998378771864787,
+        "gini": 0.004887077446167121,
+        "min_max": 0.9554291387689382,
+        "cv": 0.012733777977871506,
+        "p10": 3.59283473051147,
+        "median": 3.6012672330422233
+      }
+    },
+    "series": []
+  }
+}

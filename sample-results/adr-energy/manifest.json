@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "simulator_version": "0.2.0",
+  "profile_sha256": "8f35135569c1404ea283038247e7ae4165d398e8f617afdf3bbf8e77972bc06e",
+  "upstream": {
+    "lorawan": {
+      "url": "https://github.com/signetlabdei/lorawan",
+      "commit": "e45b4af428c92f30b2e6c201055809110758125f"
+    },
+    "ns3": {
+      "url": "https://github.com/nsnam/ns-3-dev-git",
+      "tag": "ns-3.48",
+      "commit": "d2add90b452d600cfb4859baed8e9ea633519447"
+    }
+  },
+  "python": "3.11.4",
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "numpy": "2.4.6",
+  "time_resolution": "ns",
+  "rng": "NumPy PCG64, SeedSequence(seed,device_id,component)",
+  "dependencies": {
+    "numpy": "2.4.6",
+    "pyarrow": "23.0.1",
+    "pydantic": "2.14.1",
+    "PyYAML": "6.0.3"
+  },
+  "source_sha256": {
+    "catalog.py": "90b26b57c1f8d8901ae9b85ffcb830f8a2908c0014c3cea10a6dc70d3003106f",
+    "interfaces.py": "9603d08974147ec16d753ce5cdb9669ab15f8ba70a73c70dc6ddab06575f8d83",
+    "algorithms.py": "52c00d85661c84d471c4b4a33d5066a95e3e6d2c961bb11880f0bd8beb36fe34",
+    "config.py": "d1185c5e7b1ddd59387c552ebea1b1ace23f30ef1783bc45f39439a9bef06aee",
+    "analysis.py": "9b77b0b66153f1393fd2dce337acb64a563255a1d96b193c32fdda666c856b8b",
+    "mobility.py": "3da3d27d1c2cb3572a54210164af8a2b9edd18f6ed6ab35627bce72dc509648f",
+    "phy.py": "eabb11ac9bdbc117d7a037fa8ba27fedd6fb99725235a0141c666f35095f7fb7",
+    "__init__.py": "9e7e2d9a005d9ff8f0be2293f9dc2454d77ac47bff167c2c79b8e424595e7adf",
+    "visualization.py": "60f3e34f8f321fc07b13cff9ca10ecb94e0d782d389a74cbd685af4f0bc00767",
+    "energy.py": "b614e41975d7cb702a77f83d02149c3aa7b9515f60285614fef1494c415237c0",
+    "jobs.py": "e8a9005c045275db7aeb23880290d6cd1eb3c7c6b9966769c979fe2fbc79370e",
+    "api.py": "d42c83cccaa041466bbdc69efb2fa43d9f471dbac81e1245e88cb2350033a1ab",
+    "engine.py": "a5d8f820e52f53ca8f7b7d9f59311a9db0a6ecac4dd49adf2a655d7b33d59b5a",
+    "timing.py": "4b5e8f66f37613552023d95f7d0db46b549ede40eaf7a42a1fe7de5402425c5d",
+    "cli.py": "bc346063f7843b0fae5636fbb8cb11cfc70bf1d6f44ab96c9e2452ba303d1248",
+    "components.py": "d7fb4d5cf0fdba25e85d1f896941db4f4d6080b251ff99d971c2e3d8bad27e02",
+    "tracking.py": "ad98be8c7c7d2449e0dc55f3be959f698dad4f830813e92489c7b7db6ed9ceb2",
+    "policies.py": "248e33114ceafaae85b4f7f2aca6c4cdcead91f47f2574e1ab4e715803795d50",
+    "__main__.py": "cf7390a2508a0fcad4777a4a629fc5212ab655cb45845975995f835676a834e3"
+  }
+}

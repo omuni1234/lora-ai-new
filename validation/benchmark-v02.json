@@ -1,0 +1,28 @@
+{
+  "python_wall_s": [
+    2.064995375010767,
+    2.004270749996067,
+    1.86443345900625
+  ],
+  "python_median_s": 2.004270749996067,
+  "python_sent": [
+    12000,
+    12000,
+    12000
+  ],
+  "python_received": [
+    12000,
+    12000,
+    12000
+  ],
+  "radio_energy_enabled": true,
+  "abstract_analysis_included": true,
+  "note": "Same deterministic scenario as v0.1; ns-3 counts events while Python writes full tracking and energy.",
+  "ns3_wall_s": [
+    4.08512,
+    4.04988,
+    4.28182
+  ],
+  "ns3_median_s": 4.08512,
+  "ratio_ns3_over_python": 2.0382076623170877
+}

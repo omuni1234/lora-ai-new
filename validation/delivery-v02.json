@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "python_tests": 76,
+  "linux_amd64_tests": 76,
+  "reference_cases": {
+    "airtime": 144,
+    "propagation": 7,
+    "interference": 864,
+    "gateway": 8,
+    "energy": 10
+  },
+  "example_profiles_completed": 6,
+  "ui_checks": [
+    "profile form",
+    "model catalog save",
+    "profile import",
+    "validation",
+    "background submit",
+    "abstract",
+    "map",
+    "experiment selection",
+    "transmission range",
+    "MCU filter"
+  ],
+  "linux_execution": "Ubuntu 22.04 amd64 under BuildKit RUN / QEMU",
+  "limitations": [
+    "NVIDIA GPU and user-specified Linux kernel not tested",
+    "ordinary Compose startup not confirmed on this Docker daemon",
+    "see docs/FIDELITY.md for MAC/model scope"
+  ],
+  "ui_last_change": "Generic option arrays support explicit element types and dictionary key removal; JavaScript syntax checked."
+}

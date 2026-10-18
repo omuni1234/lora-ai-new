@@ -1,0 +1,192 @@
+schema_version: 1
+name: BADR-mobile
+seed: 6
+duration_s: 3600.0
+area_m:
+- 2000.0
+- 2000.0
+channel:
+  exponent: 3.76
+  reference_distance_m: 1.0
+  reference_loss_db: 7.7
+  speed_m_s: 299792458.0
+  collision_matrix: goursaud
+mac:
+  rx1_delay_s: 1.0
+  rx2_delay_s: 2.0
+  rx_symbols: 8
+  rx1_sf_offset: 0
+  rx2_sf: 12
+  rx2_frequency_hz: 869525000
+  backhaul_delay_s: 0.0
+  duty_cycle: true
+sub_bands:
+- low_hz: 863000000
+  high_hz: 865000000
+  duty_cycle: 0.001
+  max_tp_dbm: 14.0
+- low_hz: 865000000
+  high_hz: 868000000
+  duty_cycle: 0.01
+  max_tp_dbm: 14.0
+- low_hz: 868000000
+  high_hz: 868600000
+  duty_cycle: 0.01
+  max_tp_dbm: 14.0
+- low_hz: 868700000
+  high_hz: 869200000
+  duty_cycle: 0.001
+  max_tp_dbm: 14.0
+- low_hz: 869400000
+  high_hz: 869650000
+  duty_cycle: 0.1
+  max_tp_dbm: 27.0
+- low_hz: 869700000
+  high_hz: 870000000
+  duty_cycle: 0.01
+  max_tp_dbm: 14.0
+gateways:
+- id: gw0
+  position:
+  - 1000.0
+  - 1000.0
+  - 15.0
+  demodulators: 8
+  frequencies_hz:
+  - 868100000
+  - 868300000
+  - 868500000
+groups:
+- name: mobile
+  count: 30
+  tags:
+  - pedestrian
+  placement: uniform
+  positions: []
+  policy:
+    kind: fixed
+    ref: mobile-badr
+    options: {}
+  timing:
+    kind: fixed
+    ref: ten-minutes
+    options: {}
+  mobility:
+    kind: fixed
+    ref: pedestrian
+    options: {}
+  payload_bytes: 20
+  confirmed: false
+  max_attempts: 1
+  observe_position: false
+  mcu: null
+assignments:
+- groups: []
+  ids:
+  - 0
+  tags: []
+  policy: null
+  timing: null
+  mobility:
+    kind: fixed
+    ref: route-a
+    options: {}
+tracking:
+  batch_rows: 4096
+  max_air_signals: 100000
+  max_air_bytes: 536870912
+notifications: []
+channel_backend: numpy
+energy:
+  radio:
+    enabled: true
+    voltage_v: 3.0
+    initial_state: STANDBY
+    sleep_current_a: 1.0e-07
+    standby_current_a: 0.0014
+    rx_current_a: 0.0108
+    tx_current_model: linear
+    tx_current_a: 0.028
+    tx_voltage_v: 3.3
+    eta: 0.45275
+    base_current_a: 0.014646
+  mcu:
+    enabled: false
+    mode: fixed
+    active_power_w: 0.015
+    idle_power_w: 0.0
+    inference_s: 0.001
+    training_s: 0.005
+models:
+  policy:
+    standard-adr:
+      kind: adr
+      ref: null
+      options:
+        initial:
+          sf: 12
+          tp_dbm: 14
+        history_range: 20
+        gateway_combine: max
+        history_combine: max
+        margin_db: 0
+        backoff: true
+    mobile-badr:
+      kind: badr
+      ref: null
+      options:
+        sequence:
+        - 12
+        - 7
+        - 10
+        - 7
+        - 10
+        - 7
+        random_phase: true
+        tp_dbm: 14
+        cr: 1
+    ack-bandit:
+      kind: bandit
+      ref: null
+      options:
+        actions:
+        - sf: 7
+          tp_dbm: 8
+        - sf: 9
+          tp_dbm: 12
+        - sf: 12
+          tp_dbm: 14
+        epsilon: 0.1
+        energy_weight: 0.02
+  mobility:
+    pedestrian:
+      kind: random_walk
+      ref: null
+      options:
+        speed_m_s: 1.5
+        step_s: 10
+    route-a:
+      kind: waypoints
+      ref: null
+      options:
+        points:
+        - - 0
+          - 100
+          - 100
+          - 1.5
+        - - 300
+          - 1900
+          - 1900
+          - 1.5
+        - - 600
+          - 100
+          - 1900
+          - 1.5
+  timing:
+    ten-minutes:
+      kind: periodic
+      ref: null
+      options:
+        interval_s: 600
+        random_phase: true
+model_files: []

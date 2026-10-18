@@ -1,0 +1,32 @@
+# Reusable definitions. Profiles reference these names, with optional overrides.
+policy:
+  standard-adr:
+    kind: adr
+    options:
+      initial: {sf: 12, tp_dbm: 14}
+      history_range: 20
+      gateway_combine: max
+      history_combine: max
+      margin_db: 0
+      backoff: true
+  mobile-badr:
+    kind: badr
+    options: {sequence: [12, 7, 10, 7, 10, 7], random_phase: true, tp_dbm: 14, cr: 1}
+  ack-bandit:
+    kind: bandit
+    options:
+      actions: [{sf: 7, tp_dbm: 8}, {sf: 9, tp_dbm: 12}, {sf: 12, tp_dbm: 14}]
+      epsilon: 0.1
+      energy_weight: 0.02
+mobility:
+  pedestrian:
+    kind: random_walk
+    options: {speed_m_s: 1.5, step_s: 10}
+  route-a:
+    kind: waypoints
+    options:
+      points: [[0, 100, 100, 1.5], [300, 1900, 1900, 1.5], [600, 100, 1900, 1.5]]
+timing:
+  ten-minutes:
+    kind: periodic
+    options: {interval_s: 600, random_phase: true}

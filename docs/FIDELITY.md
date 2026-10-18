@@ -39,7 +39,7 @@ T_air = (N_preamble + 4.25 + N_payload) * T_sym
 
 `CR=1,2,3,4`は4/5,4/6,4/7,4/8です。BW=125000 Hz、SF11/12でDE=1。他は0。上流はCR別の感度改善やBERを計算していないため、本実装も符号化利得を追加しません。CRの変更はToA、干渉の重複時間、Duty Cycleへ影響します。
 
-ULのPHYサイズは `application payload + 9 bytes`。上流の`LoraFrameHeader`はFPort込み8 bytes、MHDRが1 byteで、MICトレーラーはこのモデルにありません。ACKのPHYサイズも9 bytes。実LoRaWANの全オーバーヘッドを加えて13 bytesとすると上流比較が変わるため、9 bytesに合わせています。
+ADR MAC commandがないULのPHYサイズは `application payload + 9 bytes`。上流の`LoraFrameHeader`はFPort込み8 bytes、MHDRが1 byteで、MICトレーラーはこのモデルにありません。ACKのPHYサイズも9 bytes。v0.2ではLinkADRReqがあるDLに5 bytes、LinkADRAnsがある次のULに2 bytesを追加します。実LoRaWANの全オーバーヘッドを加えて13 bytesとすると上流比較が変わるため、9 bytesに合わせています。
 
 伝搬は `PL(d) = reference_loss_db + 10*n*log10(max(d/d0,1))`、`RSSI = TP - PL`、`delay = d/c`。初期設定は上流の例と同じ`n=3.76, d0=1m, loss0=7.7dB`です。実測環境に校正された万能値ではありません。送受信位置を**送信開始時**に取得し、そのパケット中は電力と伝搬遅延を固定します。これは`LoraChannel::Send`と同じ扱いです。
 
@@ -58,7 +58,7 @@ GW感度はSF7→12の順に `[-130,-132.5,-135,-137.5,-140,-142.5] dBm`、EDは
 
 ## 上流との差分・未対応範囲
 
-1. データ面のClass Aモデルです。OTAA/join、暗号化/MIC、フレームバイト列、MAC command、ADR command/backoff、Class B/C、エネルギーモデル、LR-FHSS/FSKは移植していません。上流のADRを有効にした実験と比較する場合は同等方策を拡張する必要があります。
+1. データ面のClass Aモデルです。v0.2でADR、論理LinkADRReq/Ans、ADRACKReq/backoff、無線状態エネルギーを追加しました。適用範囲は[ALGORITHMS.md](ALGORITHMS.md)、[ENERGY.md](ENERGY.md)を参照。OTAA/join、暗号化/MIC、フレームバイト列、任意MAC command全体、Class B/C、有限電池枯渇、LR-FHSS/FSKは対象外です。
 2. 上流の任意のns-3伝搬モデルの組合せには対応しません。建物侵入損失、相関シャドーイング、Nakagami等は未実装。モデルを無断で近似置換することはしません。
 3. GWとサーバー間のP2Pリンクは省略し、`backhaul_delay_s`という一つの応答遅延で表現します。シリアライズ・キュー・リンク損失・GatewayStatusの1ms予約余白は再現しません。
 4. アプリケーションはEDごとに一つの未完了メッセージのみを保持します。periodicの次回予定がMAC処理中に過ぎた場合、処理終了後へ延期し、一斉の追いかけ送信をしません。上流のPeriodicSenderの生成タイミング／busy時5秒延期／新パケットによる置換とは異なります。負荷の高い実験ではこの違いが重要です。
@@ -69,3 +69,7 @@ GW感度はSF7→12の順に `[-130,-132.5,-135,-137.5,-140,-142.5] dBm`、EDは
 9. `duration_s`は硬い終了時刻です。終了時刻ちょうど以降のイベントは実行しません。未完了パケットを損失と決めつけず、`SimulationEnd`/`AttemptTruncated`を保存します。
 
 研究論文で用いる際には、対象シナリオ、上流コミット、これらの差分、入力プロファイル、出力manifestを併記してください。完全なMAC軌跡の差分テスト、Linux/CUDA実機試験は今後の検証項目です。
+
+## v0.2の追加根拠
+
+ADRは`model/adr-component.cc/h`、無線エネルギーは`model/lora-radio-energy-model.cc`と`model/lora-tx-current-model.cc`を同じ固定コミットから確認しています。数値の対応と独立したMCU研究モデルの境界は[ENERGY.md](ENERGY.md)に記載しています。

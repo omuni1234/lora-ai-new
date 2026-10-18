@@ -1,0 +1,15 @@
+name: ADR-energy
+seed: 5
+duration_s: 18000
+area_m: [2000, 2000]
+model_files: [models/research.yaml]
+energy:
+  radio: {tx_current_model: linear}
+  mcu: {enabled: true, mode: fixed, active_power_w: 0.015, inference_s: 0.0002, training_s: 0}
+groups:
+  - name: static-adr
+    count: 20
+    placement: grid
+    confirmed: false
+    policy: {ref: standard-adr}
+    timing: {ref: ten-minutes}

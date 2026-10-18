@@ -3,12 +3,12 @@
   "sim_time_s": 180.0,
   "duration_s": 180.0,
   "progress": 1.0,
-  "wall_s": 0.024421750000328757,
+  "wall_s": 0.04953791700245347,
   "counts": {
     "messages_generated": 36,
     "uplinks_sent": 54,
     "peak_air_bytes": 832,
-    "events_processed": 927,
+    "events_processed": 981,
     "rx_Received": 72,
     "uplinks_received_any_gw": 45,
     "downlinks_sent": 27,
@@ -20,6 +20,62 @@
     "transmissions": 81,
     "receptions": 81,
     "feedback": 54,
-    "events": 216
+    "events": 216,
+    "devices": 12,
+    "uplinks": 54,
+    "energy": 327
+  },
+  "energy": {
+    "radio_j": 2.344370466792922,
+    "mcu_j": 0.0
+  },
+  "abstract": {
+    "name": "small-class-a",
+    "ed_count": 12,
+    "eligible_ed_count": 12,
+    "inactive_ed_count": 0,
+    "tx_start": 1,
+    "tx_end": null,
+    "maximum_tx_index": 6,
+    "uplinks": 54,
+    "censored": 0,
+    "mean_ed_prr": 0.875,
+    "pooled_prr": 0.8333333333333334,
+    "fractions": {
+      "LostBecauseTx": 0.125,
+      "Received": 0.875
+    },
+    "fairness": {
+      "jain": 0.9423076923076923,
+      "gini": 0.1071428571428572,
+      "min_max": 0.5,
+      "cv": 0.24743582965269675,
+      "p10": 0.5,
+      "median": 1.0
+    },
+    "include_mcu": true,
+    "energy": {
+      "by_state_j": {
+        "radio:TX": 0.3030773759999999,
+        "radio:SLEEP": 0.0005354643549222,
+        "radio:RX_ENABLED": 0.23888283428159993,
+        "radio:RX_ACTIVE": 0.31308042240000006
+      },
+      "total_j": 0.8555760970365222,
+      "mean_ed_j": 0.07129800808637685,
+      "startup_excluded_j": {
+        "radio": 1.4887943697564001
+      },
+      "j_per_received_uplink": 0.019012802156367158,
+      "fairness": {
+        "jain": 0.7352709342277621,
+        "gini": 0.3316465050939035,
+        "min_max": 0.1329085892279427,
+        "cv": 0.6000357334395665,
+        "p10": 0.020889750638432316,
+        "median": 0.07513482642661395
+      }
+    },
+    "series": []
   }
 }

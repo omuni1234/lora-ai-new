@@ -13,7 +13,7 @@ import threading
 import time
 import traceback
 import uuid
-from .config import load_profile, dump_profile
+from .config import load_profile, dump_profile, Component
 from .engine import Simulation
 from .tracking import atomic_json
 
@@ -34,19 +34,70 @@ class Store:
               progress REAL NOT NULL DEFAULT 0, sim_time REAL NOT NULL DEFAULT 0,
               heartbeat REAL, cancel INTEGER NOT NULL DEFAULT 0, error TEXT, summary TEXT
             );
+            CREATE TABLE IF NOT EXISTS experiments (id TEXT PRIMARY KEY, name TEXT NOT NULL,
+              description TEXT NOT NULL DEFAULT '', created REAL NOT NULL);
+            CREATE TABLE IF NOT EXISTS models (category TEXT NOT NULL, name TEXT NOT NULL,
+              definition TEXT NOT NULL, updated REAL NOT NULL, PRIMARY KEY(category,name));
             CREATE TABLE IF NOT EXISTS profiles (name TEXT PRIMARY KEY, yaml TEXT NOT NULL, updated REAL NOT NULL);
             """)
+            columns = {x[1] for x in db.execute("PRAGMA table_info(jobs)")}
+            if "experiment_id" not in columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN experiment_id TEXT")
+            for row in db.execute("SELECT id,name,created FROM jobs WHERE experiment_id IS NULL").fetchall():
+                db.execute("INSERT OR IGNORE INTO experiments(id,name,created) VALUES(?,?,?)",tuple(row))
+                db.execute("UPDATE jobs SET experiment_id=id WHERE id=?",(row['id'],))
     def connect(self):
         db = sqlite3.connect(self.root/"jobs.sqlite",timeout=30)
         db.row_factory = sqlite3.Row
         return db
-    def submit(self,text):
-        p = load_profile(text,text=True)
+    def parse_profile(self,text):
+        return load_profile(text,text=True,catalog=self.catalog())
+    def create_experiment(self,name,description=""):
+        if not name.strip() or len(name)>160 or len(description)>10000:
+            raise ValueError("invalid experiment name or description")
+        eid = uuid.uuid4().hex
+        with self.connect() as db:
+            db.execute("INSERT INTO experiments VALUES(?,?,?,?)",(eid,name,description,time.time()))
+        return eid
+    def experiments(self):
+        with self.connect() as db:
+            return [dict(x) for x in db.execute("""SELECT e.*,count(j.id) AS runs,
+                sum(CASE WHEN j.status='completed' THEN 1 ELSE 0 END) AS completed
+                FROM experiments e LEFT JOIN jobs j ON j.experiment_id=e.id
+                GROUP BY e.id ORDER BY e.created DESC LIMIT 1000""")]
+    def catalog(self):
+        result = {}
+        with self.connect() as db:
+            for row in db.execute("SELECT * FROM models ORDER BY category,name"):
+                result.setdefault(row['category'],{})[row['name']] = json.loads(row['definition'])
+        return result
+    def save_model(self,category,name,definition):
+        if category not in {'policy','mobility','timing'} or not name.strip() or len(name)>120:
+            raise ValueError("invalid category or model name")
+        component = Component.model_validate(definition)
+        if component.ref:
+            raise ValueError("catalog entries must specify an implementation, not a reference")
+        from .components import make
+        import numpy as np
+        context = {'rng':np.random.default_rng(0)}
+        if category=='mobility':
+            context.update(initial=(0.,0.,1.5),area=(2000.,2000.))
+        make(component,category,**context)
+        with self.connect() as db:
+            db.execute("INSERT INTO models VALUES(?,?,?,?) ON CONFLICT(category,name) DO UPDATE SET definition=excluded.definition,updated=excluded.updated",
+                       (category,name,component.model_dump_json(),time.time()))
+    def submit(self,text,experiment_id=None):
+        p = self.parse_profile(text)
         # Validate component construction before enqueueing (no model.select calls).
         Simulation(p,self.root/"_validation")
         jid = uuid.uuid4().hex
         with self.connect() as db:
-            db.execute("INSERT INTO jobs(id,name,profile,status,created) VALUES(?,?,?,'queued',?)",(jid,p.name,dump_profile(p),time.time()))
+            if experiment_id is None:
+                experiment_id = uuid.uuid4().hex
+                db.execute("INSERT INTO experiments(id,name,created) VALUES(?,?,?)",(experiment_id,p.name,time.time()))
+            elif not db.execute("SELECT 1 FROM experiments WHERE id=?",(experiment_id,)).fetchone():
+                raise ValueError("unknown Experiment")
+            db.execute("INSERT INTO jobs(id,name,profile,status,created,experiment_id) VALUES(?,?,?,'queued',?,?)",(jid,p.name,dump_profile(p),time.time(),experiment_id))
         return jid
     def get(self,jid):
         with self.connect() as db:
@@ -57,9 +108,9 @@ class Store:
         if result["summary"]:
             result["summary"] = json.loads(result["summary"])
         return result
-    def list(self,limit=100):
+    def list(self,limit=100,experiment_id=None):
         with self.connect() as db:
-            rows = db.execute("SELECT id,name,status,created,started,finished,progress,sim_time,error FROM jobs ORDER BY created DESC LIMIT ?",(limit,)).fetchall()
+            rows = db.execute("SELECT id,name,status,created,started,finished,progress,sim_time,error,experiment_id FROM jobs WHERE (? IS NULL OR experiment_id=?) ORDER BY created DESC LIMIT ?",(experiment_id,experiment_id,limit)).fetchall()
         return [dict(x) for x in rows]
     def claim(self):
         with self.connect() as db:
@@ -87,10 +138,10 @@ class Store:
     def save_profile(self,name,text):
         if not name.strip() or len(name)>120:
             raise ValueError("profile name must have 1..120 characters")
-        p = load_profile(text,text=True)
+        p = self.parse_profile(text)
         Simulation(p,self.root/"_validation")
         with self.connect() as db:
-            db.execute("INSERT INTO profiles VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET yaml=excluded.yaml,updated=excluded.updated",(name,dump_profile(p),time.time()))
+            db.execute("INSERT INTO profiles VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET yaml=excluded.yaml,updated=excluded.updated",(name,text,time.time()))
     def profiles(self):
         with self.connect() as db:
             return [dict(x) for x in db.execute("SELECT * FROM profiles ORDER BY name")]

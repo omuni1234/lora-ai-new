@@ -2,3 +2,7 @@ ARG BASE_IMAGE=lorasim-research:local
 FROM ${BASE_IMAGE}
 COPY tests /app/tests
 RUN python3 -m pip install --user pytest httpx && python3 -m pytest -q /app/tests -p no:cacheprovider
+
+RUN lorasim import-examples --data /tmp/lorasim-profile-smoke \
+    && lorasim validate examples/05-adr-energy.yaml \
+    && lorasim validate examples/06-badr-mobility.yaml

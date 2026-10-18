@@ -9,6 +9,8 @@ SCHEMAS = {
     "transmissions": pa.schema([
         ("packet_id",pa.int64()),("message_id",pa.int64()),("direction",pa.string()),
         ("device_id",pa.int64()),("gateway_id",pa.string()),("attempt",pa.int32()),
+        ("tx_index",pa.int64()),("adr",pa.bool_()),("adr_ack_req",pa.bool_()),
+        ("link_adr_sf",pa.int32()),("link_adr_tp_dbm",pa.float64()),
         ("start_ns",pa.int64()),("end_ns",pa.int64()),("sf",pa.int32()),("cr",pa.int32()),
         ("bandwidth_hz",pa.int64()),("frequency_hz",pa.int64()),("tx_power_dbm",pa.float64()),
         ("preamble_symbols",pa.int32()),("implicit_header",pa.bool_()),("crc",pa.bool_()),
@@ -29,7 +31,19 @@ SCHEMAS = {
         ("dl_rssi_dbm",pa.float64()),("airtime_s",pa.float64()),("tx_power_dbm",pa.float64())]),
     "events": pa.schema([
         ("time_ns",pa.int64()),("device_id",pa.int64()),("packet_id",pa.int64()),
-        ("event",pa.string()),("detail",pa.string())])
+        ("event",pa.string()),("detail",pa.string())]),
+    "devices": pa.schema([
+        ("device_id",pa.int64()),("group",pa.string()),("policy",pa.string()),
+        ("mobility",pa.string()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64())]),
+    "uplinks": pa.schema([
+        ("packet_id",pa.int64()),("message_id",pa.int64()),("device_id",pa.int64()),
+        ("tx_index",pa.int64()),("attempt",pa.int32()),("time_ns",pa.int64()),
+        ("policy",pa.string()),("outcome",pa.string()),("received",pa.bool_()),
+        ("gw_outcomes",pa.string()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64())]),
+    "energy": pa.schema([
+        ("device_id",pa.int64()),("tx_index",pa.int64()),("component",pa.string()),
+        ("state",pa.string()),("start_ns",pa.int64()),("end_ns",pa.int64()),
+        ("duration_s",pa.float64()),("power_w",pa.float64()),("energy_j",pa.float64()),("mode",pa.string())])
 }
 
 

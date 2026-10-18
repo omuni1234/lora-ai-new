@@ -136,3 +136,12 @@ policy:
 ```
 
 CPU版APIにも同じ`examples`ディレクトリを`/app/plugins`へread-onlyマウントし、`PYTHONPATH=/app/plugins`と`LORASIM_ALLOW_PLUGINS=1`を設定する必要があります（`compose.gpu.yaml`はこの設定を含みます）。GPUモデル自体のロードはAPIでは行いません。CUDA環境での実行検証は未実施です。
+
+
+## v0.2の再利用・比較・電力
+
+外部定義`model_files`、埋め込み`models`、`policy/mobility/timing.ref`を使用できます。[DEVELOPER.md](DEVELOPER.md)に定義の優先順位と不変スナップショットを記載しています。外部ファイル参照はCLIで解決し、Webではライブラリを使います。
+
+`energy.radio`は全EDの無線モデル、`energy.mcu`はMCU既定値、`groups[].mcu`はグループ上書きです。設定一覧・単位はGUIの全項目フォームと`GET /api/schema`、計算式は[ENERGY.md](ENERGY.md)。`adr`/`badr`のoptionsは[ALGORITHMS.md](ALGORITHMS.md)。
+
+Webでは配列の追加/削除、条件割当、座標、電流、Webhook、全Radio引数までフォームから変更できます。長い配列は50件ずつ表示します。任意プラグインのoptionsはキー名・型・値を追加できます。未登録のキーや不正な型はサーバーで検証されます。

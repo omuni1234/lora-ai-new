@@ -1,5 +1,20 @@
 # 検証記録
 
+## v0.2追加検証（2026-10-18）
+
+- ローカルPythonテスト **76 passed**: [pytest-v02.txt](../validation/pytest-v02.txt)。既存61件に加え、再利用参照、ADR履歴・backoff・下り喪失・要求ビット、BADR列、無線状態積分、MCU分離、未送信推論、ED平均、送信回数フィルタ、公平性、Experiment分離、描画の無副作用を検証。
+- 実上流の無線消費電力10ケースが一致。TX電流8ケースと全状態積分2ケース。最大絶対誤差1.6653e-16: [energy-result.json](../validation/energy-result.json)。
+- 既存PHY参照の144 ToA / 7伝搬 / 864干渉 / 8 GWケースも再照合して成功。
+- 同梱6プロファイルを全て完走。GUIからモデル保存、外部定義を展開したプロファイル読込、検証、Run投入、結果表示を実機ブラウザで確認。3 Experiment / 9 Runの範囲集計・MCU切替も確認。
+- Ubuntu 22.04 / linux/amd64のCPUイメージを再ビルド。BuildKit RUNのテスト結果: [docker-v02-test.log](../validation/docker-v02-test.log)。Compose CPU/GPU構成検証も成功。
+- v0.2性能は同じ1,000 ED / 12,000 ULシナリオでPython中央値2.0043秒、ns-3中央値4.0851秒（約2.04倍）。無線電力追跡と終了時分析も有効。全3回とも12,000送信・12,000受信。[benchmark-v02.json](../validation/benchmark-v02.json)。この小規模・決定的ケースの実測であり、全シナリオやNVIDIA上の性能保証ではありません。
+
+![v0.2管理画面](control-panel-v02.png)
+![v0.2分析画面](analysis-v02.png)
+
+以降はv0.1時点の検証記録です。旧版のテスト数・速度をv0.2の性能値として使用しないでください。
+
+
 ## 実施環境
 
 2026-10-18、macOS 26.3.1 / arm64、Python 3.11.4、AppleClang 17。別途、Ubuntu 22.04 / linux/amd64コンテナ内（BuildKit RUN、Apple Silicon上のエミュレーション）でもPython 3.10.12で61件が通過しました。ユーザー指定のLinuxカーネル5.15.0-190-generic上の実機とNVIDIA GPUでは未実行です。依存版は [python-environment.txt](../validation/python-environment.txt) にあります。

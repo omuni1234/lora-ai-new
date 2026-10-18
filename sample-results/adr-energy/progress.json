@@ -1,0 +1,18 @@
+{
+  "status": "completed",
+  "sim_time_s": 18000.0,
+  "duration_s": 18000.0,
+  "progress": 1.0,
+  "wall_s": 0.08094295799674,
+  "counts": {
+    "messages_generated": 600,
+    "uplinks_sent": 600,
+    "peak_air_bytes": 1344,
+    "events_processed": 7220,
+    "rx_Received": 627,
+    "uplinks_received_any_gw": 599,
+    "attempts_finished": 600,
+    "downlinks_sent": 28,
+    "rx_LostBecauseTx": 1
+  }
+}

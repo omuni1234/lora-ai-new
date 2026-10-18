@@ -23,7 +23,42 @@ class Radio(Model):
 
 class Component(Model):
     kind: str = "fixed"
+    ref: str | None = None
     options: dict = Field(default_factory=dict)
+
+
+class RadioEnergy(Model):
+    enabled: bool = True
+    voltage_v: float = Field(3.0, gt=0)
+    initial_state: Literal["STANDBY", "SLEEP"] = "STANDBY"
+    sleep_current_a: float = Field(0.1e-6, ge=0)
+    standby_current_a: float = Field(1.4e-3, ge=0)
+    rx_current_a: float = Field(10.8e-3, ge=0)
+    tx_current_model: Literal["constant", "linear"] = "constant"
+    tx_current_a: float = Field(28e-3, ge=0)
+    tx_voltage_v: float = Field(3.3, gt=0)
+    eta: float = Field(.452750, gt=0, le=1)
+    base_current_a: float = Field(.014646, ge=0)
+
+
+class MCU(Model):
+    enabled: bool = False
+    mode: Literal["fixed", "declared", "measured"] = "fixed"
+    active_power_w: float = Field(.015, ge=0)
+    idle_power_w: float = Field(0, ge=0)
+    inference_s: float = Field(.001, ge=0)
+    training_s: float = Field(.005, ge=0)
+
+    @model_validator(mode="after")
+    def powers(self):
+        if self.active_power_w < self.idle_power_w:
+            raise ValueError("MCU active_power_w must be >= idle_power_w")
+        return self
+
+
+class Energy(Model):
+    radio: RadioEnergy = Field(default_factory=RadioEnergy)
+    mcu: MCU = Field(default_factory=MCU)
 
 
 class Group(Model):
@@ -39,6 +74,7 @@ class Group(Model):
     confirmed: bool = True
     max_attempts: int = Field(1, ge=1, le=15)
     observe_position: bool = False
+    mcu: MCU | None = None
 
     @model_validator(mode="after")
     def explicit_count(self):
@@ -139,6 +175,10 @@ class Profile(Model):
     tracking: Tracking = Field(default_factory=Tracking)
     notifications: list[Notification] = Field(default_factory=list)
     channel_backend: Literal["numpy", "scalar"] = "numpy"
+    energy: Energy = Field(default_factory=Energy)
+    # Catalogs are embedded in run snapshots; files are only a CLI authoring aid.
+    models: dict[str, dict[str, Component]] = Field(default_factory=dict)
+    model_files: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def consistent(self):
@@ -160,7 +200,24 @@ class Profile(Model):
             if set(a.groups) - {g.name for g in self.groups} or any(i < 0 or i >= n for i in a.ids):
                 raise ValueError("assignment refers to unknown group/device")
         self.band(self.mac.rx2_frequency_hz)
+        if set(self.models) - {"policy", "mobility", "timing"}:
+            raise ValueError("model categories must be policy, mobility or timing")
         return self
+
+    def component(self, spec: Component, category: str) -> Component:
+        seen = set()
+        def resolve(value):
+            if value.ref is None:
+                return value.model_copy(deep=True)
+            if value.ref in seen:
+                raise ValueError(f"cyclic {category} reference: {value.ref}")
+            seen.add(value.ref)
+            try:
+                base = resolve(self.models[category][value.ref])
+            except KeyError:
+                raise ValueError(f"unknown {category} reference: {value.ref}") from None
+            return Component(kind=base.kind, options={**base.options, **value.options})
+        return resolve(spec)
 
     def band(self, frequency: int) -> int:
         for i,b in enumerate(self.sub_bands):
@@ -169,11 +226,30 @@ class Profile(Model):
         raise ValueError(f"frequency {frequency} is outside configured sub-bands")
 
 
-def load_profile(source: str | Path, *, text: bool = False) -> Profile:
+def load_profile(source: str | Path, *, text: bool = False, catalog=None) -> Profile:
     content = str(source) if text else Path(source).read_text()
     if len(content) > 2_000_000:
         raise ValueError("profile exceeds 2 MB")
-    return Profile.model_validate(yaml.safe_load(content))
+    data = yaml.safe_load(content)
+    if not isinstance(data, dict):
+        raise ValueError("profile must be a mapping")
+    merged = {k:dict(v) for k,v in (catalog or {}).items()}
+    for filename in data.get("model_files", []):
+        if text:
+            raise ValueError("model_files are CLI-only; use the model catalog or embed models in Web profiles")
+        path = (Path(source).resolve().parent / filename).resolve()
+        raw = path.read_text()
+        if len(raw) > 2_000_000:
+            raise ValueError("model file exceeds 2 MB")
+        definitions = yaml.safe_load(raw)
+        if not isinstance(definitions, dict):
+            raise ValueError("model file must map categories to named components")
+        for k,v in definitions.items():
+            merged.setdefault(k, {}).update(v)
+    for k,v in data.get("models", {}).items():
+        merged.setdefault(k, {}).update(v)
+    data["models"], data["model_files"] = merged, []
+    return Profile.model_validate(data)
 
 
 def dump_profile(profile: Profile) -> str:

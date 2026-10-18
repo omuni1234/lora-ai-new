@@ -1,4 +1,4 @@
-LoRaSim Research 0.1.0 — GPL-2.0-only
+LoRaSim Research 0.2.0 — GPL-2.0-only
 
 This implementation derives equations, numerical tables and selected behavior from:
 - signetlabdei/lorawan, commit e45b4af428c92f30b2e6c201055809110758125f
