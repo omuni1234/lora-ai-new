@@ -1,0 +1,8 @@
+{
+  "job_id": "49eb00dfb4d94e3db6ac170a9d523c86",
+  "supervisor_pid": 38003,
+  "status": "completed",
+  "uplinks": 10000,
+  "writer_processes": 2,
+  "wall_s": 1.3366783340024995
+}

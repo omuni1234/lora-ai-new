@@ -2,7 +2,16 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.3。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.4。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.4の変更
+
+- DL到着処理の集約、静止リンクの再利用、ランダムウォークの配列計算で高速化。
+- 試験機能として1実験内のArrow/Parquet保存を複数CPUプロセスで処理。GUIの「実行方式・高速化」で設定。
+- 一様ランダムWayPoint、速度と揺らぎ、地点ごとの静止時間と到着ごとの揺らぎ。
+- 添付原論文に基づくLinUCB-SF、LoRa-MAB、G-ADR。SF×TPは明示的に分離した研究拡張。
+
+[高速化と計測方法](docs/PERFORMANCE.md)、[論文との対応・未指定事項](docs/PAPERS.md)、[検証結果](docs/VALIDATION-v04.md)。実行例は`examples/09-fast-multicore.yaml`、`10-random-waypoints.yaml`、`11-paper-selectors.yaml`。
 
 ## v0.3の変更
 

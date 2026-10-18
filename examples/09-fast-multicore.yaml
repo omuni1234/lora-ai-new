@@ -1,0 +1,18 @@
+name: Fast execution - experimental writer processes
+seed: 42
+duration_s: 600
+execution:
+  optimized: true
+  geometry_cache_bytes: 67108864
+  writer_processes: 2
+tracking:
+  batch_rows: 4096
+groups:
+  - name: sensors
+    count: 500
+    confirmed: true
+    timing:
+      kind: periodic
+      options:
+        interval_s: 300
+        start: {mode: uniform, min_s: 0, max_s: 300}

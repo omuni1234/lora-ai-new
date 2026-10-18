@@ -149,3 +149,9 @@ Webでは配列の追加/削除、条件割当、座標、電流、Webhook、全
 ## v0.3のGUI定数・サブバンド
 
 `Options`による型・既定値・日本語説明の公開、グループごとの初回生成分布、UL/DLサブバンド、ID自動採番の書式は [PLUGINS.md](PLUGINS.md) を参照してください。従来のperiodic.first_s/random_phaseはstart未指定時に同じ意味で動作します。GUIの周波数候補はsub_bands[].channels_hzから生成します。
+
+## v0.4の追加設定
+
+「実行方式・高速化」の`execution.optimized`は既定true。`writer_processes`は試験的な保存並列化のプロセス数（既定0）。`geometry_cache_bytes`は静止時のリンクキャッシュ上限。詳細と実測条件は[PERFORMANCE.md](PERFORMANCE.md)。
+
+ウェイポイントの`mode=route`では、ランダム地点数、経路seed、速度、速度の揺らぎ、静止時間の割当、到着ごとの揺らぎ、周回をGUIから指定できる。従来の時刻指定は`mode=timed`。追加選択器の全OptionsもEDグループとモデルライブラリのフォームに公開する。

@@ -13,6 +13,8 @@ class Observation:
     last_sf: int | None
     last_tp_dbm: float | None
     position: tuple[float,float,float] | None
+    attempt: int = 1
+    max_attempts: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +26,9 @@ class Feedback:
     tx_power_dbm: float
     attempt: int
     downlink_received: bool = False
+    ul_rssi_dbm: float | None = None
+    ul_snr_db: float | None = None
+    ul_tx_power_dbm: float | None = None
 
 
 class Options(BaseModel):

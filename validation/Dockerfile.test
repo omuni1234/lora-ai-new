@@ -5,4 +5,7 @@ RUN python3 -m pip install --user pytest httpx && python3 -m pytest -q /app/test
 
 RUN lorasim import-examples --data /tmp/lorasim-profile-smoke \
     && lorasim validate examples/05-adr-energy.yaml \
-    && lorasim validate examples/06-badr-mobility.yaml
+    && lorasim validate examples/06-badr-mobility.yaml \
+    && lorasim run examples/09-fast-multicore.yaml --output /tmp/lorasim-multicore > /tmp/lorasim-multicore.log \
+    && lorasim run examples/10-random-waypoints.yaml --output /tmp/lorasim-waypoints > /tmp/lorasim-waypoints.log \
+    && lorasim run examples/11-paper-selectors.yaml --output /tmp/lorasim-papers > /tmp/lorasim-papers.log

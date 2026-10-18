@@ -184,3 +184,13 @@ for batch in scanner.to_batches():
 `events.RX1SubBandDisabled` はRX1の周波数が `dl_sub_bands` で禁止され、DLをRX2へ回したことを示します。送信していないDLの損失行は生成しません。EDのRXウィンドウと消費電力計算は維持します。ULで禁止帯域を選んだ場合は設定エラーでRunを失敗させます。故意にパケット損失へ置き換えないため、成功率へ紛れ込みません。
 
 manifestの`source_sha256`は `plugins/selector/adr.py` 等を含むパッケージ内の相対パスをキーにします。v0.2以前のファイル名だけのキーも分析時にはそのまま読めます。Parquetのスキーマ番号は2を維持します。
+
+## v0.4追加スキーマ（manifest.schema_version=3）
+
+既存列は維持。`transmissions.link_report_bytes`（int32）は研究用SNR/RSSI通知の追加byte数。LinUCBのDLでは9、その他とULは0。このbyte数は`phy_bytes`とairtimeに含まれる。
+
+`feedback.ul_rssi_dbm`、`feedback.ul_snr_db`、`feedback.ul_tx_power_dbm`（float64、nullable）は、**その試行のDLを正常受信して取得した**UL情報。RSSI/SNRはfloat32として通知した値をfloat64列へ格納する。ULのTPは端末が既知の値。不達時は全てnullであり、GW受信テーブルから補完していない。`dl_rssi_dbm`と混同しない。過去の受信済み情報は選択器が内部保持するが、失敗フィードバックの列へコピーしない。
+
+`policy_state.jsonl`には新選択器の最終状態を1 EDあたり1行保存する。Exp3の確率/対数重み、LinUCBの逆行列/b/θ/最終通知値を含む。時間ごとの行列をRAMへ蓄積しない。
+
+並列保存ではpart番号と行順序は逐次版と一致するが、ファイルの作成完了順序は異なり得る。実行中の末尾partを完了順で連結せず、ファイル名順で読み込むこと。実験終了は全保存プロセスの完了後。manifest/profile.yamlにexecution設定と全ソースSHAを記録する。MCU measuredモードはホスト実時間依存なので、高速化・並列化を変えた場合のMCUエネルギーの一致は保証しない。fixed/declaredモードは同じ設定で一致する。

@@ -1,0 +1,25 @@
+name: Random waypoints with speed and dwell jitter
+seed: 5
+duration_s: 1800
+area_m: [2000, 2000]
+groups:
+  - name: mobile
+    count: 20
+    observe_position: true
+    mobility:
+      kind: waypoints
+      options:
+        mode: route
+        random_count: 12
+        speed_m_s: 2
+        speed_jitter_m_s: 0.4
+        pause_mode: uniform
+        pause_min_s: 5
+        pause_max_s: 15
+        pause_jitter_s: 2
+        repeat: false
+    timing:
+      kind: periodic
+      options:
+        interval_s: 120
+        start: {mode: uniform, min_s: 0, max_s: 120}

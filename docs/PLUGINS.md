@@ -118,3 +118,15 @@ pytest -q
 ```
 
 CPU/GPU用Dockerfileは `lorasim/plugins` をパッケージとして含みます。ユーザーコードはイメージに追加インストールするか、API/workerの同じパスに読み取り専用マウントし、両方のPYTHONPATHと有効化設定を揃えてください。内蔵実装のSHA256はmanifestへ相対パス付きで記録します。外部モデルのコードと学習重みは独立にバージョン・ハッシュを管理してください。
+
+## v0.4: 移動・学習モデル
+
+`plugins/mobility/waypoints.py`の`mode=route`では、`random_count`個の地点をエリア内に一様生成できる。`speed_m_s`と`speed_jitter_m_s`は区間ごとの速度、`pause_mode`と`pause_s`または`pause_min_s/max_s`は地点へ一度割り当てる静止時間、`pause_jitter_s`は到着ごとに加える一様な揺らぎ。`repeat=true`で周回する。原点はED初期位置、ランダム点の高さは初期高さ。未指定seedは実験seedとED IDによる独立ストリーム。同じ`random_seed`を明示すると複数EDで共通の経路/乱数列を使用できる。履歴は全時刻分蓄積せず、現在の周回分のみ保持する。
+
+従来の`points: [[time,x,y,z],...]`は`mode=timed`でそのまま利用できる。独自モデルは従来どおりposition(time_s)を実装する。組込みrandom_walk専用の配列高速化は独自サブクラスには適用しない。
+
+Observationに`attempt`（1始まり）と`max_attempts`を追加した。Feedbackの`ul_rssi_dbm`、`ul_snr_db`、`ul_tx_power_dbm`はULの測定通知をDLで受信した場合のみ値を持つ。既存の`dl_rssi_dbm`は受信したDL自身の電力であり別物。
+
+選択器は任意で`requires_confirmed=True`を宣言できる。`snapshot()`がdictを返す場合は最終状態をpolicy_state.jsonlへ保存する。LinUCBの研究用通知は`link_feedback_bytes=9`で要求する。ここは標準MACの汎用コーデックではなく、現在はSNR/RSSIの固定研究用フォーマット。独自形式はエンジン側にも実装が必要。
+
+[論文と実装の対応](PAPERS.md)と[高速化の範囲](PERFORMANCE.md)を参照。Pythonスクリプトから並列保存を利用するときは、Simulation(...).run()を`if __name__ == '__main__':`内から呼び出す（spawn方式）。CLIとWebワーカーは対応済み。

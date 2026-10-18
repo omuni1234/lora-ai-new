@@ -150,6 +150,12 @@ class Tracking(Model):
     max_air_bytes: int = Field(536870912, ge=1024)
 
 
+class Execution(Model):
+    optimized: bool = Field(True, title="等価な高速処理を有効化", description="DL到着イベントの集約、静止リンクの再利用、組込みランダムウォークの配列計算を使います。オフは比較検証用です。")
+    geometry_cache_bytes: int = Field(67108864, ge=0, le=1073741824, title="静止リンクのキャッシュ上限 [byte]", description="全端末が静止している場合の距離・損失・遅延をLRUで再利用します。0で無効。電力や干渉の省略は行いません。")
+    writer_processes: int = Field(0, ge=0, le=8, title="試験機能：保存処理の並列プロセス数", description="0は逐次保存。1〜8ではArrow変換とParquet圧縮を別CPUプロセスへ分配します。イベントの因果順序は維持します。小規模実験では起動・転送コストで遅くなる場合があります。")
+
+
 class Notification(Model):
     url: str
     every_percent: float = Field(10, gt=0, le=100)
@@ -178,6 +184,7 @@ class Profile(Model):
     groups: list[Group] = Field(default_factory=lambda: [Group(name="devices", count=10)])
     assignments: list[Assignment] = Field(default_factory=list)
     tracking: Tracking = Field(default_factory=Tracking)
+    execution: Execution = Field(default_factory=Execution)
     notifications: list[Notification] = Field(default_factory=list)
     channel_backend: Literal["numpy", "scalar"] = "numpy"
     energy: Energy = Field(default_factory=Energy)

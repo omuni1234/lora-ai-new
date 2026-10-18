@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections import Counter
+from bisect import bisect_left
 from dataclasses import dataclass, field
 import hashlib
 import importlib.metadata
@@ -17,6 +18,7 @@ from .phy import NS, ns, airtime_ns, links, destroyed_by, GW_SENSITIVITY, ED_SEN
 from .tracking import Tracker, atomic_json
 from .interfaces import NetworkPolicy
 from .energy import RadioMeter, compute_duration
+from .acceleration import Geometry
 
 
 @dataclass(slots=True)
@@ -38,6 +40,7 @@ class Attempt:
     tx_index: int = 0
     outcomes: dict = field(default_factory=dict)
     xyz: tuple = (0.,0.,0.)
+    link_report: tuple | None = None
 
 
 @dataclass(slots=True)
@@ -121,7 +124,9 @@ class Simulation:
         self.gw_locked = [set() for _ in profile.gateways]
         self.positions = np.vstack([[d.mobility.position(0) for d in self.devices],self.gw_xyz])
         self.moving = [d for d in self.devices if type(d.mobility) is not Stationary]
+        self.geometry = Geometry(self) if profile.execution.optimized else None
         self.tracker = None
+        self.listening = set()
         self.pending_uplinks = {}
         self.adr_servers = {d.id:d.policy.create_server() for d in self.devices if isinstance(d.policy,NetworkPolicy)}
 
@@ -151,6 +156,8 @@ class Simulation:
                                       make(specs["timing"],"timing",rng=rngs[1]),
                                       make(specs["mobility"],"mobility",rng=rngs[2],initial=initial,area=self.p.area_m),rngs[3]))
                 d = devices[-1]
+                if getattr(d.policy,"requires_confirmed",False) and not group.confirmed:
+                    raise ValueError(f"{labels['policy']} requires confirmed uplinks for ACK learning")
                 d.policy_label,d.mobility_label = labels["policy"],labels["mobility"]
                 d.energy = RadioMeter(self.p.energy.radio)
                 d.state = self.p.energy.radio.initial_state
@@ -167,7 +174,8 @@ class Simulation:
         pos = tuple(d.mobility.position(self.now/NS)) if d.group.observe_position else None
         return Observation(self.now/NS,d.id,d.tx_count,d.last_ack,d.last_rssi,
                            d.last_radio.sf if d.last_radio else None,
-                           d.last_radio.tp_dbm if d.last_radio else None,pos)
+                           d.last_radio.tp_dbm if d.last_radio else None,pos,
+                           d.context.number if d.context else 1,d.group.max_attempts)
 
     def _state(self,d,state,ordinal=None,tp=None):
         ordinal = d.tx_count if ordinal is None else ordinal
@@ -181,6 +189,10 @@ class Simulation:
         d.mcu_last = self.now
         d.energy.transition(self.now,state,ordinal,self.tracker,d.id,tp)
         d.state = state
+        if state == "RX_ENABLED":
+            self.listening.add(d.id)
+        else:
+            self.listening.discard(d.id)
 
     def _compute(self,d,operation,callback,arg,ordinal):
         begin = time.perf_counter() if d.mcu.enabled and d.mcu.mode=="measured" else 0.
@@ -228,13 +240,13 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":2,"simulator_version":"0.3.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.4.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",
                     "dependencies":{k:importlib.metadata.version(k) for k in ("numpy","pyarrow","pydantic","PyYAML")},
                     "source_sha256":{str(p.relative_to(Path(__file__).parent)):hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(__file__).parent.rglob("*.py")}})
-        self.tracker = Tracker(self.output,self.p.tracking.batch_rows)
+        self.tracker = Tracker(self.output,self.p.tracking.batch_rows,self.p.execution.writer_processes)
         start = time.perf_counter()
         last_wall, last_percent = start,-1
         status = "completed"
@@ -288,6 +300,8 @@ class Simulation:
             for d in self.devices:
                 if hasattr(d.policy,"q") and hasattr(d.policy,"n"):
                     state_file.write(json.dumps({"device_id":d.id,"q":d.policy.q.tolist(),"n":d.policy.n.tolist()})+"\n")
+                elif callable(getattr(d.policy,"snapshot",None)):
+                    state_file.write(json.dumps({"device_id":d.id,"policy":d.policy_label,**d.policy.snapshot()},allow_nan=False)+"\n")
         summary["table_rows"] = self.tracker.counts
         summary["energy"] = {"radio_j":sum(d.energy.total for d in self.devices),"mcu_j":sum(d.mcu_total for d in self.devices)}
         from .analysis import analyze_run
@@ -392,11 +406,13 @@ class Simulation:
         self._state(d,"SLEEP")
         known_ack = bool(ack) if d.group.confirmed else None
         d.last_ack,d.last_rssi = known_ack,rssi
-        f = Feedback(self.now/NS,known_ack,rssi,ctx.duration/NS,ctx.radio.tp_dbm,ctx.number,downlink_received)
+        report = ctx.link_report if downlink_received and ctx.link_report else (None,None,None)
+        f = Feedback(self.now/NS,known_ack,rssi,ctx.duration/NS,ctx.radio.tp_dbm,ctx.number,downlink_received,*report)
         self._compute(d,"training",d.policy.observe,f,d.tx_count)
         self.tracker.write("feedback",packet_id=ctx.packet_id,message_id=ctx.message_id,device_id=d.id,
                            time_ns=self.now,attempt=ctx.number,ack=known_ack,dl_rssi_dbm=rssi,
-                           airtime_s=f.airtime_s,tx_power_dbm=f.tx_power_dbm)
+                           airtime_s=f.airtime_s,tx_power_dbm=f.tx_power_dbm,
+                           ul_rssi_dbm=f.ul_rssi_dbm,ul_snr_db=f.ul_snr_db,ul_tx_power_dbm=f.ul_tx_power_dbm)
         self.stats["attempts_finished"] += 1
         if ack:
             self.stats["ack_received"] += 1
@@ -409,13 +425,15 @@ class Simulation:
             self._next_application(d,ctx.generation_s)
 
     def _transmit(self,source,direction,ctx,p,phy_bytes):
-        for d in self.moving:
+        if self.geometry:
+            self.geometry.update(self.now/NS)
+        for d in (() if self.geometry else self.moving):
             value = np.asarray(d.mobility.position(self.now/NS),dtype=float)
             if value.shape != (3,) or not np.isfinite(value).all():
                 raise ValueError("mobility must return three finite coordinates")
             self.positions[d.id] = value
         xyz = self.positions[source].copy()
-        power,loss,distance,delay = links(xyz,self.positions,p.tp_dbm,self.p.channel,self.p.channel_backend)
+        power,loss,distance,delay = self.geometry.links(source,p.tp_dbm) if self.geometry else links(xyz,self.positions,p.tp_dbm,self.p.channel,self.p.channel_backend)
         flight = Flight(next(self.packet_seq),ctx,source,direction,self.now,airtime_ns(phy_bytes,p),p,power,loss,distance,delay)
         if len(self.flights) >= self.p.tracking.max_air_signals or self.air_bytes+flight.nbytes > self.p.tracking.max_air_bytes:
             raise MemoryError("active-air budget exceeded; reduce offered traffic or raise tracking.max_air_bytes")
@@ -431,6 +449,7 @@ class Simulation:
                            adr_ack_req=ctx.adr_ack_req if direction=="UL" else False,
                            link_adr_sf=ctx.command.sf if direction=="DL" and ctx.command else None,
                            link_adr_tp_dbm=ctx.command.tp_dbm if direction=="DL" and ctx.command else None,
+                           link_report_bytes=getattr(self.devices[ctx.ed].policy,"link_feedback_bytes",0) if direction=="DL" else 0,
                            start_ns=self.now,end_ns=self.now+flight.duration,
                            sf=p.sf,cr=p.cr,bandwidth_hz=p.bandwidth_hz,frequency_hz=p.frequency_hz,
                            tx_power_dbm=p.tp_dbm,phy_bytes=phy_bytes,preamble_symbols=p.preamble_symbols,
@@ -440,10 +459,53 @@ class Simulation:
             if rid != source:
                 self.at(self.now+int(delay[rid]),self._arrive,flight,rid)
         if direction=="DL":
-            for rid in range(self.n):
-                self.at(self.now+int(delay[rid]),self._arrive,flight,rid)
+            if self.p.execution.optimized:
+                # Reserve the original FIFO ids, including equal-time ED arrivals.
+                base = next(self.seq)
+                self.seq = itertools.count(base+self.n)
+                arrivals = sorted((self.now+int(delay[r]),base+r,r) for r in range(self.n))
+                ranks = [0]*self.n
+                for rank,(_,_,r) in enumerate(arrivals):
+                    ranks[r] = rank
+                self._schedule_arrival_batch(flight,arrivals,ranks,0)
+            else:
+                for rid in range(self.n):
+                    self.at(self.now+int(delay[rid]),self._arrive,flight,rid)
         self.at(self.now+flight.duration+int(delay.max())+1,self._expire,flight.id)
         return flight
+
+    def _schedule_arrival_batch(self,flight,arrivals,ranks,index):
+        when,seq,_ = arrivals[index]
+        heapq.heappush(self.queue,(when,seq,self._arrival_batch,(flight,arrivals,ranks,index)))
+
+    def _arrival_batch(self,flight,arrivals,ranks,index):
+        # Stop before ANY intervening event (also same-time FIFO ordering).
+        # No observation of future receiver state; no change to interference.
+        processed = 0
+        while index < len(arrivals):
+            stop = bisect_left(arrivals,(self.end,-1,-1),lo=index)
+            if self.queue:
+                stop = min(stop,bisect_left(arrivals,(*self.queue[0][:2],-1),lo=index))
+            if stop == index:
+                self._schedule_arrival_batch(flight,arrivals,ranks,index)
+                break
+            # Sleeping receivers cannot change state before the next queued event.
+            # Retain the intended ED's rejected arrival for tracking.
+            relevant = min((ranks[r] for r in self.listening | {flight.attempt.ed}
+                            if ranks[r] >= index),default=len(arrivals))
+            skip_to = min(relevant,stop)
+            if skip_to > index:
+                self.now = arrivals[skip_to-1][0]
+                processed += skip_to-index
+                index = skip_to
+                continue
+            when,seq,r = arrivals[index]
+            self.now = when
+            self._arrive(flight,r)
+            processed += 1
+            index += 1
+        # run() counts this callback once; preserve the logical event count.
+        self.stats["events_processed"] += processed-1
 
     def _expire(self,packet_id):
         flight = self.flights.pop(packet_id,None)
@@ -578,7 +640,13 @@ class Simulation:
             return
         sf = min(12,ctx.radio.sf+self.p.mac.rx1_sf_offset) if window==1 else self.p.mac.rx2_sf
         p = Radio(sf=sf,frequency_hz=freq,tp_dbm=self.p.sub_bands[band].max_tp_dbm)
-        phy_bytes = 9+(5 if ctx.command else 0)
+        telemetry_bytes = getattr(d.policy,"link_feedback_bytes",0)
+        if telemetry_bytes:
+            # Research telemetry: one type byte + two float32 link measurements.
+            # It is delivered only after successful PHY/MAC reception of this DL.
+            rssi = ctx.gateways[selected]
+            ctx.link_report = (float(np.float32(rssi)),float(np.float32(rssi+174-10*math.log10(125000)-6)),ctx.radio.tp_dbm)
+        phy_bytes = 9+(5 if ctx.command else 0)+telemetry_bytes
         duration = airtime_ns(phy_bytes,p)
         for fid in tuple(self.gw_locked[selected]):
             self._record(self.receptions[(self.n+selected,fid)],"LostBecauseTx")

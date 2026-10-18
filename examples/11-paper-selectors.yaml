@@ -1,0 +1,43 @@
+name: Paper selectors - integration smoke, not a comparative study
+seed: 13
+duration_s: 7200
+area_m: [2000, 2000]
+models:
+  timing:
+    hourly:
+      kind: periodic
+      options: {interval_s: 300, start: {mode: uniform, min_s: 0, max_s: 300}}
+  mobility:
+    walking:
+      kind: random_walk
+      options: {speed_m_s: 1, step_s: 200}
+groups:
+  - name: linucb_sf
+    count: 8
+    confirmed: true
+    observe_position: true
+    max_attempts: 2
+    policy: {kind: linucb_sf}
+    timing: {ref: hourly}
+    mobility: {ref: walking}
+  - name: lora_mab
+    count: 8
+    confirmed: true
+    policy:
+      kind: lora_mab
+      options:
+        powers_dbm: [8, 11, 14]
+        horizon: 10000000
+    timing: {ref: hourly}
+  - name: gadr
+    count: 8
+    confirmed: true
+    policy: {kind: gadr}
+    timing: {ref: hourly}
+  - name: linucb_joint_extension
+    count: 8
+    confirmed: true
+    observe_position: true
+    policy: {kind: linucb_sf_tp}
+    timing: {ref: hourly}
+    mobility: {ref: walking}

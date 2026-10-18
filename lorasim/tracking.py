@@ -1,6 +1,9 @@
 from __future__ import annotations
 import json
 import os
+import multiprocessing as mp
+from collections import deque
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -11,6 +14,7 @@ SCHEMAS = {
         ("device_id",pa.int64()),("gateway_id",pa.string()),("attempt",pa.int32()),
         ("tx_index",pa.int64()),("adr",pa.bool_()),("adr_ack_req",pa.bool_()),
         ("link_adr_sf",pa.int32()),("link_adr_tp_dbm",pa.float64()),
+        ("link_report_bytes",pa.int32()),
         ("start_ns",pa.int64()),("end_ns",pa.int64()),("sf",pa.int32()),("cr",pa.int32()),
         ("bandwidth_hz",pa.int64()),("frequency_hz",pa.int64()),("tx_power_dbm",pa.float64()),
         ("preamble_symbols",pa.int32()),("implicit_header",pa.bool_()),("crc",pa.bool_()),
@@ -28,7 +32,8 @@ SCHEMAS = {
     "feedback": pa.schema([
         ("packet_id",pa.int64()),("message_id",pa.int64()),("device_id",pa.int64()),
         ("time_ns",pa.int64()),("attempt",pa.int32()),("ack",pa.bool_()),
-        ("dl_rssi_dbm",pa.float64()),("airtime_s",pa.float64()),("tx_power_dbm",pa.float64())]),
+        ("dl_rssi_dbm",pa.float64()),("airtime_s",pa.float64()),("tx_power_dbm",pa.float64()),
+        ("ul_rssi_dbm",pa.float64()),("ul_snr_db",pa.float64()),("ul_tx_power_dbm",pa.float64())]),
     "events": pa.schema([
         ("time_ns",pa.int64()),("device_id",pa.int64()),("packet_id",pa.int64()),
         ("event",pa.string()),("detail",pa.string())]),
@@ -54,14 +59,25 @@ def atomic_json(path: Path, data):
     os.replace(tmp,path)
 
 
+def _write_part(table, rows, out):
+    """Process entry point. Paths and part numbers are allocated by the DES owner."""
+    out = Path(out)
+    tmp = out.with_suffix(".tmp")
+    pq.write_table(pa.Table.from_pylist(rows,schema=SCHEMAS[table]),tmp,compression="zstd")
+    os.replace(tmp,out)
+
+
 class Tracker:
     """Bounded Arrow batches; each closed part is independently readable after a crash."""
-    def __init__(self, root, batch_rows=4096):
+    def __init__(self, root, batch_rows=4096, processes=0):
         self.root, self.batch_rows = Path(root),batch_rows
         self.root.mkdir(parents=True,exist_ok=True)
         self.buffers = {k:[] for k in SCHEMAS}
         self.parts = {k:0 for k in SCHEMAS}
         self.counts = {k:0 for k in SCHEMAS}
+        self.executor = ProcessPoolExecutor(processes,mp_context=mp.get_context("spawn")) if processes else None
+        self.pending = deque()
+        self.pending_limit = max(1,2*processes)
         for k in SCHEMAS:
             (self.root/k).mkdir(exist_ok=True)
     def write(self, table, **row):
@@ -74,13 +90,23 @@ class Tracker:
         if not rows:
             return
         out = self.root/table/f"part-{self.parts[table]:06d}.parquet"
-        tmp = out.with_suffix(".tmp")
-        pq.write_table(pa.Table.from_pylist(rows,schema=SCHEMAS[table]),tmp,compression="zstd")
-        os.replace(tmp,out)
+        if self.executor:
+            # Backpressure bounds retained batches; worker failures propagate to the job.
+            if len(self.pending) >= self.pending_limit:
+                self.pending.popleft().result()
+            self.pending.append(self.executor.submit(_write_part,table,rows,out))
+        else:
+            _write_part(table,rows,out)
         self.parts[table] += 1
-        rows.clear()
+        self.buffers[table] = []
     def close(self):
-        for k in SCHEMAS:
-            self.flush(k)
-            if self.parts[k] == 0:
-                pq.write_table(pa.Table.from_pylist([],schema=SCHEMAS[k]),self.root/k/"part-000000.parquet")
+        try:
+            for k in SCHEMAS:
+                self.flush(k)
+                if self.parts[k] == 0:
+                    _write_part(k,[],self.root/k/"part-000000.parquet")
+            while self.pending:
+                self.pending.popleft().result()
+        finally:
+            if self.executor:
+                self.executor.shutdown(wait=True,cancel_futures=True)

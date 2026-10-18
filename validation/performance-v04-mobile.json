@@ -1,0 +1,86 @@
+{
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "python": "3.11.4 (v3.11.4:d2340ef257, Jun  6 2023, 19:15:51) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "workload": {
+    "ed_count": 500,
+    "rounds_per_ed": 40,
+    "expected_total_ul": 20000,
+    "mobility": "random_walk",
+    "batch_rows": 4096
+  },
+  "runs": [
+    {
+      "mode": "reference",
+      "repetition": 0,
+      "wall_including_setup_s": 63.239607625000644,
+      "wall_simulation_s": 62.693889582995325,
+      "self_cpu_s": 62.624321,
+      "children_cpu_s": 1.734723475976807e-18,
+      "counts": {
+        "messages_generated": 20000,
+        "uplinks_sent": 20000,
+        "peak_air_bytes": 80160,
+        "events_processed": 1984461,
+        "rx_Received": 18844,
+        "uplinks_received_any_gw": 15464,
+        "downlinks_sent": 3506,
+        "attempts_finished": 19999,
+        "ack_received": 3380,
+        "rx_Interference": 2204,
+        "rx_LostBecauseTx": 2458,
+        "rx_NotAddressed": 132,
+        "attempts_truncated": 1
+      },
+      "output": "reference-0"
+    },
+    {
+      "mode": "optimized",
+      "repetition": 0,
+      "wall_including_setup_s": 4.863184416011791,
+      "wall_simulation_s": 4.813472417008597,
+      "self_cpu_s": 4.8640720000000055,
+      "children_cpu_s": 1.734723475976807e-18,
+      "counts": {
+        "messages_generated": 20000,
+        "uplinks_sent": 20000,
+        "peak_air_bytes": 80160,
+        "events_processed": 1984461,
+        "rx_Received": 18844,
+        "uplinks_received_any_gw": 15464,
+        "downlinks_sent": 3506,
+        "attempts_finished": 19999,
+        "ack_received": 3380,
+        "rx_Interference": 2204,
+        "rx_LostBecauseTx": 2458,
+        "rx_NotAddressed": 132,
+        "attempts_truncated": 1
+      },
+      "output": "optimized-0"
+    },
+    {
+      "mode": "multicore",
+      "repetition": 0,
+      "wall_including_setup_s": 4.9420382079988485,
+      "wall_simulation_s": 4.89398137498938,
+      "self_cpu_s": 4.909174000000007,
+      "children_cpu_s": 0.9020349999999998,
+      "counts": {
+        "messages_generated": 20000,
+        "uplinks_sent": 20000,
+        "peak_air_bytes": 80160,
+        "events_processed": 1984461,
+        "rx_Received": 18844,
+        "uplinks_received_any_gw": 15464,
+        "downlinks_sent": 3506,
+        "attempts_finished": 19999,
+        "ack_received": 3380,
+        "rx_Interference": 2204,
+        "rx_LostBecauseTx": 2458,
+        "rx_NotAddressed": 132,
+        "attempts_truncated": 1
+      },
+      "output": "multicore-0"
+    }
+  ],
+  "exact_table_equality": true
+}
