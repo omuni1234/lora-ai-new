@@ -27,3 +27,21 @@ canvas#map.map-stale{opacity:.5}.map-panel .sectiontitle .actions{justify-conten
 @media(max-width:760px){#analysisView{height:auto;min-height:0}.analysis-output{height:auto;max-height:65vh}.analysis-editor{max-height:65vh}}
 
 .comparison-note{padding:12px;border-left:3px solid #ce963a;background:#fff9ee;color:#6d5429;font-size:13px;line-height:1.7}.worker-controls .sectiontitle{flex-wrap:wrap;gap:6px}.worker-controls input{width:100%}.worker-controls{margin-bottom:18px}
+
+/* Request-driven PHY calculator within the existing preflight panel. */
+.preflight-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px;padding-bottom:5px}
+.preflight-tabs button{border:0;background:transparent;color:var(--muted);font-size:11px;padding:7px 12px}
+.preflight-tabs button[aria-selected=true]{color:#155f7c;background:#eaf3f8;font-weight:700;box-shadow:inset 0 -2px #176584}
+#experimentView>.map-panel.calculator-open{height:480px;max-height:92%;min-height:320px}
+.calculator-form .calculator-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px}
+.calculator-fields label{margin:4px 0;font-size:11px}.calculator-fields input,.calculator-fields select{padding:6px;width:100%;min-width:0}
+.calculator-form .actions{margin-top:7px;flex-wrap:wrap}.calculator-options{margin-top:4px;padding-top:6px}
+.calculator-options summary{font-size:11px}.calculator-form>.calculator-fields .caption{white-space:nowrap}
+#calculatorTool>p{margin:5px 0 8px}.calculator-model{padding:6px 8px;background:#f5f8fb;border-radius:4px;font-size:10px}
+.calculator-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+.calculator-metrics>div{padding:8px 10px;background:#f6f9fb;border:1px solid #e0e9ef;border-radius:5px}
+.calculator-metrics span,.calculator-metrics small{display:block;font-size:10px;color:#61788c}.calculator-metrics strong{display:block;font-size:17px;color:#235c75;margin:4px 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.calculator-chart svg{width:100%;height:auto;display:block}.calculator-chart text{font:12px sans-serif;fill:#587183}.calculator-chart .calculator-source{fill:#176584;font-weight:700}.calculator-chart .calculator-threshold{fill:#946218;font-size:11px}
+.calculator-verdict{font-size:11px;padding:7px 10px;border-radius:4px;margin:6px 0}.calculator-verdict.meets{background:#edf7f1;color:#2d7055}.calculator-verdict.misses{background:#fff4e6;color:#8b601f}
+.calculator-caveat{font-size:11px;line-height:1.7;color:#617386;margin:7px 0}.calculator-result details{margin:8px 0}.calculator-result summary{font-size:11px}.calculator-stale{opacity:.4}
+@media(max-width:760px){#experimentView>.map-panel.calculator-open{height:auto;max-height:none}.calculator-form .calculator-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.calculator-metrics{grid-template-columns:1fr}.calculator-metrics strong{font-size:19px}.calculator-chart{overflow-x:auto}.calculator-chart svg{min-width:490px}}

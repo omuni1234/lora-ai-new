@@ -18,6 +18,7 @@ def issue(code, message, hint, *, severity='error', path='', detail=''):
 # Match only known simulator messages; user/plugin exceptions fall back to a
 # Japanese explanation plus the unmodified diagnostic, rather than a false translation.
 RULES = [
+    ('calculator numeric range exceeded', 'CALCULATOR_NUMERIC', '伝搬条件が数値計算可能な範囲を超えています。', '伝搬指数・基準距離・基準損失・伝搬速度に極端な値がないか確認してください。', 'channel'),
     ('action_space requires fixed dimension', 'ACTION_FIXED_REQUIRED', 'この選択器が固定を要求する次元に複数の候補があります。', '詳細に記載されたpowers_dbm（送信電力）またはcoding_rates（符号化率）をEDの行動空間で1値に固定してください。全体集合には複数候補を登録できます。', 'groups'),
     ('waypoint speed_max_m_s', 'WAYPOINT_SPEED_RANGE', '移動速度の最大値が最小値を下回っています。', '出発速度を0より大きくし、最大値を最小値以上に指定してください。', ''),
     ('D-LoRa dBm reward', 'DLORA_POWER_UNIT', 'D-LoRaのdBm報酬式に0以下の電力候補が指定されています。', '正のdBm候補を指定するか、TP報酬の数値単位をmwへ変更してください。採用単位を比較条件に明記してください。', ''),

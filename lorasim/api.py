@@ -20,6 +20,7 @@ from .visualization import layout, traces, packet_details, preflight
 from .catalog import DEFAULTS
 from .registry import inventory, metadata
 from .ui_metadata import describe_schema
+from .calculator import CalculatorRequest, calculate
 
 
 class YamlBody(BaseModel):
@@ -55,7 +56,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.9.0")
+    app = FastAPI(title="LoRaSim Research",version="0.9.1")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -255,6 +256,12 @@ def create_app(root=None):
         try:
             p, diagnostics = store.check_profile(body.yaml,construct=False)
             return {**preflight(p,body.horizon_s,body.limit,body.samples),"diagnostics":diagnostics}
+        except Exception as exc:
+            bad(exc)
+    @app.post("/api/calculator",dependencies=[Depends(auth)])
+    def calculator(body:CalculatorRequest):
+        try:
+            return calculate(body)
         except Exception as exc:
             bad(exc)
     @app.get("/api/jobs/{jid}/visualization",dependencies=[Depends(auth)])

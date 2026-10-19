@@ -1,6 +1,9 @@
 """Human-readable profile field documentation shared by the schema API and UI."""
 from copy import deepcopy
 FIELDS = {
+'probe_distance_m':('確認距離 [m]','Calculatorで受信電力を確認する直線距離です。'),
+'max_distance_m':('横軸の最大距離 [m]','Calculatorの表示範囲。空欄は自動設定です。'),
+'phy_bytes':('PHYパケット長 [byte]','ヘッダ等を含む送信時間計算用の長さです。'),
 'name':('名前','実験・グループ・再利用モデルを区別する表示名です。グループ名は空欄なら自動採番します。'),
 'id':('識別子（自動採番）','空欄なら既存IDと重複しない名前を自動生成します。明示したIDは維持します。'),
 'seed':('乱数シード','同じ設定とシードで乱数列を再現します。各EDと各モデルには独立した乱数系列を渡します。'),
