@@ -314,13 +314,14 @@ class Profile(Model):
             resolved = self.component(spec,'policy')
             if resolved.action_space is not None or getattr(constructor('policy',resolved.kind),'uses_action_space',False):
                 self.validate_action_space()
+                cls=constructor('policy',resolved.kind)
+                space = self.action_space
                 if resolved.action_space is not None:
-                    cls=constructor('policy',resolved.kind)
                     if not (getattr(cls,'accepts_action_space',False) or getattr(cls,'uses_action_space',False)):
                         raise ValueError('selector does not accept configurable action_space: '+resolved.kind)
                     space = self.action_space.restrict(resolved.action_space)
-                    if hasattr(cls, 'validate_action_space'):
-                        cls.validate_action_space(space)
+                if hasattr(cls, 'validate_action_space'):
+                    cls.validate_action_space(space)
         if set(self.models) - {"policy", "mobility", "timing"}:
             raise ValueError("model categories must be policy, mobility or timing")
         return self

@@ -4,15 +4,18 @@ import math
 from lorasim.config import Radio
 from lorasim.interfaces import NetworkPolicy
 from ._adr_space import ADRSpace
+from ._channel import ChannelSettings, hop
 class ADR(NetworkPolicy):
     accepts_action_space = True
     fixed_space_dimensions = ('coding_rates', 'powers_dbm')
-    space_options = ['initial', 'change_tx_power']
+    space_options = ['initial', 'change_tx_power', 'channel_selection', 'frequencies_hz']
     space_description = '比較用拡張：初期SFは候補の最大値。SNRのstep判定後、SFを許可候補へ切り上げます。TP・CRは固定、CHは送信試行ごとに一様選択。backoffも候補内に制限します。原方式のTP適応・既定3CH復帰とは異なります。'
     def __init__(self, rng, initial=None, history_range=20, gateway_combine="max",
                  history_combine="max", change_tx_power=True, margin_db=0.,
-                 ack_limit=64, ack_delay=32, backoff=True, action_space=None):
+                 ack_limit=64, ack_delay=32, backoff=True, action_space=None,
+                 channel_selection='legacy', frequencies_hz=None):
         self.rng = rng
+        self.channels = ChannelSettings(channel_selection=channel_selection, **({'frequencies_hz':frequencies_hz} if frequencies_hz is not None else {}))
         self.space = ADRSpace(action_space) if action_space is not None else None
         self.radio = (Radio(sf=self.space.sfs[-1], tp_dbm=self.space.tp, cr=self.space.cr,
                             frequency_hz=self.space.channels[0]) if self.space else
@@ -51,6 +54,8 @@ class ADR(NetworkPolicy):
             self.last_backoff = c
         if self.space:
             return self.space.hop(self.radio, self.rng)
+        if self.channels.channel_selection == 'uniform':
+            return hop(self.radio, self.rng, self.channels.frequencies_hz)
         result = self.radio.model_copy()
         if self.default_channels:
             result.frequency_hz = (868100000,868300000,868500000)[self.channel_index % 3]
@@ -59,7 +64,9 @@ class ADR(NetworkPolicy):
     def select_attempt(self, observation, new_frame=True):
         if new_frame:
             return self.select(observation)
-        return self.space.hop(self.radio, self.rng) if self.space else self.radio.model_copy()
+        if self.space:
+            return self.space.hop(self.radio, self.rng)
+        return hop(self.radio, self.rng, self.channels.frequencies_hz) if self.channels.channel_selection == 'uniform' else self.radio.model_copy()
     def sent(self, new_frame):
         if new_frame:
             self.counter += 1
@@ -112,7 +119,7 @@ from pydantic import Field
 from typing import Literal
 from lorasim.interfaces import Options
 
-class Settings(Options):
+class Settings(ChannelSettings):
     initial: Radio = Field(default_factory=lambda: Radio(sf=12,tp_dbm=14), title="初期の送信設定", description="送信電力はEUの2,4,…,14 dBm。サーバ指示がDLで届くまで用いる設定です。")
     history_range: int = Field(20, ge=1, le=100, title="履歴に保持するUL数", description="異なるアプリケーションフレームの成功受信をこの件数集めてADRを評価します。再送を重複計上しません。")
     gateway_combine: Literal['max','min','avg'] = Field('max', title="GW間の受信値の集約", description="同じULを受信したGWのRSSIを最大・最小・平均で集約します。")

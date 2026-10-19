@@ -163,3 +163,12 @@ Optionsの型・Field制約による例外は、設定パスと日本語の説�
 ## 共通空間の制約メタデータ（v0.8）
 
 `Policy.fixed_space_dimensions = ("coding_rates", "powers_dbm")`は各次元を1値に制限し、GUIを固定値プルダウンにします。`validate_action_space(space)`はProfile検証とfactoryから呼ばれる軽いクラスメソッドです。状態やRNGは生成しません。`space_description`に原制御との差分を記述すると共通空間の下に表示します。標準実装例は`selector/adr.py`と`selector/badr.py`です。
+
+
+## v0.9: 共通地点の共有とED状態の分離
+
+`Mobility`実装は `uses_mobility_environment = True` を宣言すると、コンストラクタの `environment` にRun専用の `MobilityEnvironment` を受け取れます。`environment.waypoints(area, count, seed, height)` は読み取り専用の共通地点配列です。RNG・現在区間・学習状態はこの環境へ保存せず、各EDのインスタンスで所有してください。直接生成時は `MobilityEnvironment(profile_seed)` を明示するとシミュレーションと同じ地点になります。
+
+`option_visibility = {'field':'mode', 'values':{'mode値':['表示するフィールド名', ...]}}` を宣言するとGUIは選択モードの定数のみ表示します。値は切替時にも保存されます。フォームの可視性であり、サーバのOptions検証を代替しません。`waypoints.py` が例です。
+
+D-LoRaの独立した基底腕の実装例は `plugins/selector/d_lora.py`。現在の実行環境では、EDから見えない真のUL成功を直接報酬にしないよう、ACKと未観測値を区別してください。

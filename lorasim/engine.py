@@ -132,6 +132,8 @@ class Simulation:
         self.adr_servers = {d.id:d.policy.create_server() for d in self.devices if isinstance(d.policy,NetworkPolicy)}
 
     def _devices(self):
+        from .mobility_environment import MobilityEnvironment
+        environment = MobilityEnvironment(self.p.seed)
         devices = []
         for group in self.p.groups:
             placement_rng = np.random.default_rng(np.random.SeedSequence([self.p.seed, len(devices), 900]))
@@ -155,7 +157,7 @@ class Simulation:
                 rngs = [np.random.default_rng(np.random.SeedSequence([self.p.seed,i,k])) for k in range(4)]
                 devices.append(Device(i,group,make(specs["policy"],"policy",rng=rngs[0],action_space=self.p.action_space),
                                       make(specs["timing"],"timing",rng=rngs[1]),
-                                      make(specs["mobility"],"mobility",rng=rngs[2],initial=initial,area=self.p.area_m),rngs[3]))
+                                      make(specs["mobility"],"mobility",rng=rngs[2],initial=initial,area=self.p.area_m,environment=environment),rngs[3]))
                 d = devices[-1]
                 if getattr(d.policy,'requires_position',False) and not group.observe_position:
                     raise ValueError(f"{labels['policy']} requires observe_position=true")
@@ -246,7 +248,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.8.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.9.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",

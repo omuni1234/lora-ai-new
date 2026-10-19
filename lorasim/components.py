@@ -10,6 +10,9 @@ from .registry import constructor
 
 def make(spec: Component, category: str, **context):
     cls = constructor(category,spec.kind)
+    environment = context.pop('environment', None)
+    if getattr(cls, 'uses_mobility_environment', False):
+        context['environment'] = environment
     space = context.pop('action_space',None)
     bound = category=='policy' and (spec.action_space is not None or getattr(cls,'uses_action_space',False))
     if spec.action_space is not None and category!='policy':

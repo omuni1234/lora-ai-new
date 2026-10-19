@@ -1,0 +1,79 @@
+{
+  "gui_checks": [
+    "100 shared waypoints",
+    "mode-dependent fields",
+    "Japanese invalid speed error and hint",
+    "D-LoRa warning and common action space",
+    "GUI submit and background completion",
+    "ADR uniform CH field and run"
+  ],
+  "runs": [
+    {
+      "id": "55ce513c00ce46b0a13ac0469dae5800",
+      "name": "ADR制御＋送信試行ごとの一様CH選択",
+      "status": "completed",
+      "counts": {
+        "messages_generated": 178,
+        "uplinks_sent": 177,
+        "peak_air_bytes": 832,
+        "events_processed": 3429,
+        "rx_Received": 246,
+        "uplinks_received_any_gw": 149,
+        "downlinks_sent": 97,
+        "attempts_finished": 177,
+        "ack_received": 97,
+        "rx_LostBecauseTx": 24,
+        "rx_Interference": 4,
+        "attempts_truncated": 1
+      },
+      "wall_s": 0.10343529199599288,
+      "mean_ed_prr": 0.8214226541432424,
+      "channels_used_hz": [
+        868100000,
+        868300000,
+        868500000
+      ]
+    },
+    {
+      "id": "809da5b2bda149949b3e83837d762dda",
+      "name": "D-LoRa・共通Waypoint・SF×CH×TP",
+      "status": "completed",
+      "counts": {
+        "messages_generated": 240,
+        "uplinks_sent": 240,
+        "peak_air_bytes": 1664,
+        "events_processed": 4665,
+        "rx_Received": 349,
+        "uplinks_received_any_gw": 215,
+        "downlinks_sent": 134,
+        "attempts_finished": 240,
+        "ack_received": 134,
+        "rx_LostBecauseTx": 25
+      },
+      "wall_s": 0.16940350001095794,
+      "mean_ed_prr": 0.8958333333333334,
+      "channels_used_hz": [
+        868100000,
+        868300000,
+        868500000
+      ],
+      "all_ed_start_on_shared_waypoint": true,
+      "independent_state_records": 12,
+      "updates_match_observed_feedback": true,
+      "update_counts": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ]
+    }
+  ]
+}

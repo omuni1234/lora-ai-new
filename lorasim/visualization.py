@@ -3,7 +3,11 @@ from pathlib import Path
 import math
 import numpy as np
 import pyarrow.parquet as pq
-from .components import make
+from .components import make, Stationary, Waypoints, RandomWalk
+from .mobility_environment import MobilityEnvironment, MobilityPreviewLimit
+
+_MOBILITY_ALIASES = {cls.__module__+':'+cls.__name__:key for key,cls in
+                    [('stationary',Stationary),('waypoints',Waypoints),('random_walk',RandomWalk)]}
 
 
 def layout(profile, at_s=0., limit=500):
@@ -11,6 +15,7 @@ def layout(profile, at_s=0., limit=500):
     total = sum(g.count for g in profile.groups)
     stride = max(1,math.ceil(total/limit))
     result, offset, skipped = [],0,0
+    environment = MobilityEnvironment(profile.seed, max_transitions=10000)
     for group in profile.groups:
         rng = np.random.default_rng(np.random.SeedSequence([profile.seed,offset,900]))
         # Uniform placement RNG is consumed in bounded chunks, matching Simulation.
@@ -33,19 +38,28 @@ def layout(profile, at_s=0., limit=500):
                     if (not a.groups or group.name in a.groups) and (not a.ids or i in a.ids) and (not a.tags or set(a.tags)<=set(group.tags)) and a.mobility is not None:
                         mobility = a.mobility
                 spec = profile.component(mobility,'mobility')
+                kind = _MOBILITY_ALIASES.get(spec.kind,spec.kind)
                 xyz,known = initial,at_s==0
                 # Do not execute user Python in a visualization request.
-                if spec.kind in {'stationary','waypoints','random_walk'}:
-                    steps = at_s/spec.options.get('step_s',10.) if spec.kind=='random_walk' else 0
+                if kind in {'stationary','waypoints','random_walk'}:
+                    steps = at_s/spec.options.get('step_s',10.) if kind=='random_walk' else 0
                     if steps <= 10000:
-                        model = make(spec,'mobility',initial=initial,area=profile.area_m,
-                                     rng=np.random.default_rng(np.random.SeedSequence([profile.seed,i,2])))
-                        xyz = model.position(at_s).tolist(); known = True
+                        try:
+                            model = make(spec,'mobility',initial=initial,area=profile.area_m,environment=environment,
+                                         rng=np.random.default_rng(np.random.SeedSequence([profile.seed,i,2])))
+                            xyz = model.position(at_s).tolist(); known = True
+                        except MobilityPreviewLimit:
+                            known = False
                 if not known:
                     skipped += 1
                 result.append({'id':i,'group':group.name,'xyz':list(xyz),'position_at_requested_time':known})
         offset += group.count
+    points, point_count = [], 0
+    for group_points in environment.point_sets:
+        point_count += len(group_points)
+        points.extend(group_points[:max(0,1000-len(points))].tolist())
     return {'devices':result,'ed_count':total,'sample_stride':stride,'at_s':at_s,'positions_unavailable':skipped,
+            'waypoints':points,'waypoint_count':point_count,
             'duration_s':profile.duration_s,'gateways':[g.model_dump() for g in profile.gateways],'area_m':profile.area_m}
 
 
@@ -107,6 +121,7 @@ def preflight(profile, horizon_s=None, limit=80, samples=12):
                 action_space={**profile.action_space.model_dump(), 'action_count':len(profile.action_space.radios())},
                 note='生成予定・未学習の選択例。MAC待機、再送、干渉、ACK、学習を模擬しないため実送信時刻・最終性能とは異なります。')
     groups = {g.name:g for g in profile.groups}
+    environment = MobilityEnvironment(profile.seed, max_transitions=10000)
     for d in view['devices']:
         group = groups[d['group']]
         specs = {k:getattr(group,k) for k in ('policy','timing','mobility')}
@@ -134,8 +149,11 @@ def preflight(profile, horizon_s=None, limit=80, samples=12):
                 continue
             context={'rng':np.random.default_rng(np.random.SeedSequence([profile.seed,d['id'],stream]))}
             if k=='policy':context['action_space']=profile.action_space
-            if k=='mobility':context.update(initial=d['xyz'],area=profile.area_m)
-            instances[k]=make(spec,k,**context)
+            if k=='mobility':context.update(initial=d['xyz'],area=profile.area_m,environment=environment)
+            try:
+                instances[k]=make(spec,k,**context)
+            except MobilityPreviewLimit:
+                d['warnings'].append('mobility: プレビュー全体の遷移上限に達したため軌跡を省略')
         obs=Observation(0.,d['id'],0,None,None,None,None,tuple(d['xyz']) if group.observe_position else None)
         if 'policy' in instances and callable(getattr(instances['policy'],'initialize',None)) and getattr(type(instances['policy']),'initialize',None) is not Policy.initialize:
             instances['policy'].initialize(obs)
@@ -155,7 +173,12 @@ def preflight(profile, horizon_s=None, limit=80, samples=12):
         times=sorted(set([float(t) for t in np.linspace(0,horizon,samples)]+[x['time_s'] for x in d['schedule']]))
         positions={}
         for t in times:
-            xyz=list(map(float,instances['mobility'].position(t))) if 'mobility' in instances else list(d['xyz'])
+            try:
+                xyz=list(map(float,instances['mobility'].position(t))) if 'mobility' in instances else list(d['xyz'])
+            except MobilityPreviewLimit:
+                d['warnings'].append('mobility: プレビュー全体の遷移上限に達したため以降の軌跡を省略。位置は初期地点を表示')
+                del instances['mobility']
+                xyz=list(d['xyz'])
             if len(xyz)!=3 or not all(map(math.isfinite,xyz)):
                 raise ValueError('mobility must return three finite coordinates')
             positions[t]=xyz

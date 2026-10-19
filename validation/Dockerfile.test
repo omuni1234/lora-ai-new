@@ -16,3 +16,6 @@ RUN lorasim run examples/12-sf-ch-comparison.yaml --output /tmp/lorasim-sema > /
 RUN lorasim run examples/14-unified-action-space.yaml --output /tmp/lorasim-action-space > /tmp/lorasim-action-space.log
 
 RUN lorasim run examples/15-adr-common-space.yaml --output /tmp/lorasim-adr-common > /tmp/lorasim-adr-common.log
+
+RUN lorasim run examples/16-d-lora-waypoints.yaml --output /tmp/lorasim-d-lora > /tmp/lorasim-d-lora.log \
+    && lorasim run examples/17-adr-random-channels.yaml --output /tmp/lorasim-adr-hopping > /tmp/lorasim-adr-hopping.log

@@ -68,6 +68,7 @@ def metadata(category,kind):
         except ValueError: pass
     return {'kind':kind,'module':cls.__module__+':'+cls.__name__,'label':getattr(cls,'label','') or cls.__name__,
             'description':getattr(cls,'description',''),'schema':schema,'defaults':values,
+            'option_visibility':getattr(cls,'option_visibility',None),
             'uses_action_space':getattr(cls,'uses_action_space',False),
             'accepts_action_space':getattr(cls,'accepts_action_space',False) or getattr(cls,'uses_action_space',False),
             'space_options':getattr(cls,'space_options',[]),

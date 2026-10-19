@@ -1,0 +1,144 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.test
+#1 transferring dockerfile: 1.44kB done
+#1 DONE 0.0s
+
+#2 [internal] load .dockerignore
+#2 transferring context: 214B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/lorasim-research:v09-local
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 693.57kB 0.0s done
+#4 DONE 0.0s
+
+#5 [1/8] FROM docker.io/library/lorasim-research:v09-local
+#5 DONE 0.0s
+
+#6 [2/8] COPY tests /app/tests
+#6 DONE 0.0s
+
+#7 [3/8] RUN python3 -m pip install --user pytest httpx && python3 -m pytest -q /app/tests -p no:cacheprovider
+#7 2.525 Collecting pytest
+#7 2.806   Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+#7 2.904 Collecting httpx
+#7 2.918   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+#7 2.946 Requirement already satisfied: exceptiongroup>=1 in /usr/local/lib/python3.10/dist-packages (from pytest) (1.3.1)
+#7 3.024 Collecting iniconfig>=1.0.1 (from pytest)
+#7 3.039   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+#7 3.049 Requirement already satisfied: packaging>=22 in /usr/local/lib/python3.10/dist-packages (from pytest) (26.3)
+#7 3.088 Collecting pluggy<2,>=1.5 (from pytest)
+#7 3.103   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+#7 3.191 Collecting pygments>=2.7.2 (from pytest)
+#7 3.292   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+#7 3.435 Collecting tomli>=1 (from pytest)
+#7 3.455   Downloading tomli-2.5.0-py3-none-any.whl.metadata (10 kB)
+#7 3.472 Requirement already satisfied: anyio in /usr/local/lib/python3.10/dist-packages (from httpx) (4.15.1)
+#7 3.555 Collecting certifi (from httpx)
+#7 3.572   Downloading certifi-2026.10.18-py3-none-any.whl.metadata (2.5 kB)
+#7 3.657 Collecting httpcore==1.* (from httpx)
+#7 3.672   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+#7 3.693 Requirement already satisfied: idna in /usr/local/lib/python3.10/dist-packages (from httpx) (3.20)
+#7 3.697 Requirement already satisfied: h11>=0.16 in /usr/local/lib/python3.10/dist-packages (from httpcore==1.*->httpx) (0.16.0)
+#7 3.702 Requirement already satisfied: typing-extensions>=4.6.0 in /usr/local/lib/python3.10/dist-packages (from exceptiongroup>=1->pytest) (4.16.0)
+#7 3.823 Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+#7 3.877 Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+#7 3.914 Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+#7 3.934 Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+#7 3.955 Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+#7 3.977 Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+#7 4.058    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 16.2 MB/s  0:00:00
+#7 4.075 Downloading tomli-2.5.0-py3-none-any.whl (14 kB)
+#7 4.099 Downloading certifi-2026.10.18-py3-none-any.whl (134 kB)
+#7 4.453 Installing collected packages: tomli, pygments, pluggy, iniconfig, certifi, pytest, httpcore, httpx
+#7 7.033   WARNING: The script pygmentize is installed in '/home/sim/.local/bin' which is not on PATH.
+#7 7.033   Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+#7 7.941   WARNING: The scripts py.test and pytest are installed in '/home/sim/.local/bin' which is not on PATH.
+#7 7.941   Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+#7 8.369   WARNING: The script httpx is installed in '/home/sim/.local/bin' which is not on PATH.
+#7 8.369   Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+#7 8.375 
+#7 8.381 Successfully installed certifi-2026.10.18 httpcore-1.0.9 httpx-0.28.1 iniconfig-2.3.1 pluggy-1.7.0 pygments-2.21.0 pytest-9.1.1 tomli-2.5.0
+#7 15.81 ........................................................................ [ 29%]
+#7 35.59 ........................................................................ [ 59%]
+#7 52.13 ........................................................................ [ 89%]
+#7 60.07 .........................                                                [100%]
+#7 79.04 =============================== warnings summary ===============================
+#7 79.04 ../usr/local/lib/python3.10/dist-packages/fastapi/testclient.py:1
+#7 79.04   /usr/local/lib/python3.10/dist-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+#7 79.04     from starlette.testclient import TestClient as TestClient  # noqa
+#7 79.04 
+#7 79.04 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+#7 79.04 241 passed, 1 warning in 68.97s (0:01:08)
+#7 DONE 79.6s
+
+#8 [4/8] RUN lorasim import-examples --data /tmp/lorasim-profile-smoke     && lorasim validate examples/05-adr-energy.yaml     && lorasim validate examples/06-badr-mobility.yaml     && lorasim run examples/09-fast-multicore.yaml --output /tmp/lorasim-multicore > /tmp/lorasim-multicore.log     && lorasim run examples/10-random-waypoints.yaml --output /tmp/lorasim-waypoints > /tmp/lorasim-waypoints.log     && lorasim run examples/11-paper-selectors.yaml --output /tmp/lorasim-papers > /tmp/lorasim-papers.log
+#8 1.474 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 1.474 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 2.127 01-small
+#8 2.259 02-collisions
+#8 2.486 03-mobile-learning
+#8 3.739 04-scale
+#8 3.924 05-adr-energy
+#8 4.163 06-badr-mobility
+#8 4.328 07-preflight-sub-bands
+#8 5.013 09-fast-multicore
+#8 5.152 10-random-waypoints
+#8 5.387 11-paper-selectors
+#8 5.630 12-sf-ch-comparison
+#8 5.778 13-markov
+#8 5.982 14-unified-action-space
+#8 6.152 15-adr-common-space
+#8 6.335 16-d-lora-waypoints
+#8 6.466 17-adr-random-channels
+#8 7.738 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 7.738 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 8.126 Valid: ADR-energy, 20 EDs
+#8 9.391 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 9.391 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 9.823 Valid: BADR-mobile, 30 EDs
+#8 11.15 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 11.15 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 14.42 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 14.42 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 14.67 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 14.67 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 16.81 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 16.81 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 19.86 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#8 19.86 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#8 DONE 23.1s
+
+#9 [5/8] RUN lorasim run examples/12-sf-ch-comparison.yaml --output /tmp/lorasim-sema > /tmp/lorasim-sema.log     && lorasim run examples/13-markov.yaml --output /tmp/lorasim-markov > /tmp/lorasim-markov.log
+#9 1.423 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#9 1.423 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#9 5.295 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#9 5.295 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#9 DONE 7.2s
+
+#10 [6/8] RUN lorasim run examples/14-unified-action-space.yaml --output /tmp/lorasim-action-space > /tmp/lorasim-action-space.log
+#10 1.433 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#10 1.433 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#10 DONE 2.7s
+
+#11 [7/8] RUN lorasim run examples/15-adr-common-space.yaml --output /tmp/lorasim-adr-common > /tmp/lorasim-adr-common.log
+#11 1.478 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#11 1.478 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#11 DONE 3.3s
+
+#12 [8/8] RUN lorasim run examples/16-d-lora-waypoints.yaml --output /tmp/lorasim-d-lora > /tmp/lorasim-d-lora.log     && lorasim run examples/17-adr-random-channels.yaml --output /tmp/lorasim-adr-hopping > /tmp/lorasim-adr-hopping.log
+#12 1.396 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#12 1.396 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#12 4.260 <jemalloc>: MADV_DONTNEED does not work (memset will be used instead)
+#12 4.260 <jemalloc>: (This is the expected behaviour if you are running under QEMU)
+#12 DONE 5.9s
+
+#13 exporting to image
+#13 exporting layers
+#13 exporting layers 0.2s done
+#13 writing image sha256:4c7c3ea8369d4c8558e5f20874d6c58e833cef39bcd46ed33fff02c09f86fef0 done
+#13 naming to docker.io/library/lorasim-research:v09-tested done
+#13 DONE 0.2s

@@ -1,0 +1,47 @@
+name: D-LoRa・共通Waypoint・SF×CH×TP
+seed: 7
+duration_s: 1800
+area_m: [1000, 1000]
+action_space:
+  spreading_factors: [7, 8, 9, 10, 11, 12]
+  frequencies_hz: [868100000, 868300000, 868500000]
+  powers_dbm: [2, 4, 6, 8, 10, 12, 14]
+  coding_rates: [1]
+gateways:
+  - position: [500, 500, 15]
+models:
+  mobility:
+    shared-waypoints:
+      kind: waypoints
+      options:
+        mode: random_waypoint
+        waypoint_count: 100
+        waypoint_seed: 0
+        speed_min_m_s: 0.5
+        speed_max_m_s: 2
+        pause_min_s: 5
+        pause_max_s: 30
+  policy:
+    distributed-cucb:
+      kind: d_lora
+      action_space: {}
+      # SF×CHだけを比較する場合は action_space: {powers_dbm: [14]} とする。
+      options:
+        exploration_c: 2
+        sf_weight_xi: 1
+        power_weight_eta: 1.8
+        power_reward_unit: dbm
+groups:
+  - name: mobile
+    count: 12
+    confirmed: true
+    max_attempts: 1
+    observe_position: true
+    mobility: {ref: shared-waypoints}
+    policy: {ref: distributed-cucb}
+    timing:
+      kind: periodic
+      options:
+        interval_s: 90
+        start: {mode: uniform, min_s: 0, max_s: 90}
+# 式19の成功指標はACKで観測。論文の完全なGW成否通知との差分をdocs/PAPERS_V09.mdに記載。

@@ -73,3 +73,8 @@ GW感度はSF7→12の順に `[-130,-132.5,-135,-137.5,-140,-142.5] dBm`、EDは
 ## v0.2の追加根拠
 
 ADRは`model/adr-component.cc/h`、無線エネルギーは`model/lora-radio-energy-model.cc`と`model/lora-tx-current-model.cc`を同じ固定コミットから確認しています。数値の対応と独立したMCU研究モデルの境界は[ENERGY.md](ENERGY.md)に記載しています。
+
+
+## v0.9追加範囲
+
+共通有限Waypointの移動規則は [WAYPOINTS.md](WAYPOINTS.md)、D-LoRaの数式対応とACK観測の差分は [PAPERS_V09.md](PAPERS_V09.md) を参照してください。PHY・MAC・無線電力の計算式は変更していません。LMLoRa・HybridQ-ADRの簡略代替モデルは追加していません。

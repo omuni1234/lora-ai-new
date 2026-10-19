@@ -58,3 +58,10 @@ LinkADRReqはADRでは有効SFが変わる場合だけ、G-ADRでは履歴充足
 同じ配置、移動、UL負荷、seed群、SF/CH候補、TP/CR固定値、confirmed/max_attemptsで**手法ごとに独立したRun**を作ります。各手法を混在させると相互干渉する別の実験になります。候補を揃えてもADR/GADRのネットワーク観測や制御DL、BADRの未学習という性質は同一になりません。制御DLとLinkADRAnsのairtime・干渉・エネルギーはそのまま計上します。
 
 全体TP/CRを複数にしてED側だけ固定する場合、同じ固定値を他の比較対象選択器にも渡してください。最大SFに制約があり、かつTP固定の場合、リンク不足時に原方式が可能だった復旧ができない場合があります。
+
+
+## v0.9: 原制御モードのランダムCH
+
+共通行動空間を未指定のADR/BADR/G-ADRでも、`options.channel_selection: uniform` と `options.frequencies_hz: [868100000, 868300000, 868500000]` で送信試行ごとの一様独立CH抽選ができます。各EDの専用RNGを使い、再送時も抽選します。SF巡回、SNR履歴、SF/TP制御式は変えません。ADRのbackoffが有効でも、uniform指定ではこの候補集合を使用します。
+
+既存設定の互換性のため未指定時は `legacy`：通常の固定CH、およびADR backoff時の既定3CH巡回を維持します。共通行動空間を使用する場合は従来どおりそのCH候補を一様選択し、これら2つの旧形式オプションは使いません。GUIでは候補を共通空間側だけで設定します。例は `examples/17-adr-random-channels.yaml`。

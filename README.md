@@ -2,7 +2,16 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.8。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.9。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.9の変更
+
+- Waypointを共通の有限地点集合上の独立ランダム移動に対応。初期地点、目的地、出発速度、到着後の静止時間を各EDで抽選します。地点数と上下限をGUIで設定できます。
+- D-LoRaのCF/SF/TP別CUCBを追加。表IIIの既定値と式19〜24に対応し、ACK観測との差分をWarningと仕様書に明記します。
+- ADR・BADR・G-ADRの旧制御モードでも、送信試行ごとの一様ランダムCH選択を追加。共通行動空間では従来どおり候補CHを一様選択します。
+- LMLoRa・HybridQ-ADRはユーザーの指示により今回は追加しません。
+
+[Waypoint仕様](docs/WAYPOINTS.md)、[D-LoRaの数式対応と再現境界](docs/PAPERS_V09.md)、[検証記録](docs/VALIDATION-v09.md)。実行例は `examples/10-random-waypoints.yaml`、`16-d-lora-waypoints.yaml`、`17-adr-random-channels.yaml`。
 
 ## v0.8の変更
 
@@ -62,7 +71,7 @@ docker compose exec api lorasim import-examples --data /data
 管理画面: <http://localhost:8000>。`api`と`worker`は別コンテナで、ブラウザ／SSH切断後も動作します。サーバーが別端末なら `ssh -L 8000:localhost:8000 user@server` で接続してください。初期設定はlocalhostのみ公開します。
 
 1. 保存済みプロファイルから例を選ぶ。
-2. 左側の設定フォームで全項目を編集する。YAMLの直接編集も可能。
+2. 左側のメニューで項目を選び、中央下部の設定フォームで編集する。YAMLの直接編集も可能。
 3. 中央の「設定を確認する」で配置・移動・生成予定時刻・モデル定数を確認する。
 4. Experimentを選び、「設定を検証」「保存」「バックグラウンドで実行」を押す。終了後に右側のアブストラクトを確認する。
 5. 「比較・分析」でExperimentを選び、送信回数範囲、フェアネス、MCU有無を指定する。

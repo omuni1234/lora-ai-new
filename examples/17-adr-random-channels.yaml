@@ -1,0 +1,31 @@
+name: ADR制御＋送信試行ごとの一様CH選択
+seed: 8
+duration_s: 1800
+area_m: [1000, 1000]
+gateways:
+  - position: [500, 500, 15]
+models:
+  policy:
+    hopping-adr:
+      kind: adr
+      options:
+        channel_selection: uniform
+        frequencies_hz: [868100000, 868300000, 868500000]
+        history_range: 5
+    hopping-badr:
+      kind: badr
+      options:
+        channel_selection: uniform
+        frequencies_hz: [868100000, 868300000, 868500000]
+        random_phase: true
+groups:
+  - name: devices
+    count: 12
+    policy: {ref: hopping-adr}
+    timing:
+      kind: periodic
+      options:
+        interval_s: 90
+        start: {mode: uniform, min_s: 0, max_s: 90}
+# 比較するときはpolicy.refをhopping-badrに変更。共通行動空間を使う場合は
+# v0.8から対応済みのSF/CH候補＋TP/CR固定を使用（CHは常に一様選択）。

@@ -18,7 +18,12 @@ def issue(code, message, hint, *, severity='error', path='', detail=''):
 # Match only known simulator messages; user/plugin exceptions fall back to a
 # Japanese explanation plus the unmodified diagnostic, rather than a false translation.
 RULES = [
-    ('action_space requires fixed dimension', 'ACTION_FIXED_REQUIRED', 'この選択器の共通行動空間ではTP・CRをそれぞれ1値に固定する必要があります。', 'EDの行動空間で送信電力と符号化率の固定値を選択してください。全体集合に複数候補を登録することは可能です。', 'groups'),
+    ('action_space requires fixed dimension', 'ACTION_FIXED_REQUIRED', 'この選択器が固定を要求する次元に複数の候補があります。', '詳細に記載されたpowers_dbm（送信電力）またはcoding_rates（符号化率）をEDの行動空間で1値に固定してください。全体集合には複数候補を登録できます。', 'groups'),
+    ('waypoint speed_max_m_s', 'WAYPOINT_SPEED_RANGE', '移動速度の最大値が最小値を下回っています。', '出発速度を0より大きくし、最大値を最小値以上に指定してください。', ''),
+    ('D-LoRa dBm reward', 'DLORA_POWER_UNIT', 'D-LoRaのdBm報酬式に0以下の電力候補が指定されています。', '正のdBm候補を指定するか、TP報酬の数値単位をmwへ変更してください。採用単位を比較条件に明記してください。', ''),
+    ('hopping channels must', 'CHANNEL_DUPLICATE', 'ランダム選択するCH候補が重複しています。', '同じ中心周波数を重複登録しないでください。', ''),
+    ('random waypoint mobility queries', 'WAYPOINT_TIME_ORDER', 'ウェイポイント位置を過去の時刻に戻って問い合わせました。', 'プラグインからの位置照会を時刻の昇順にしてください。', ''),
+    ('random waypoint exceeds', 'WAYPOINT_TRANSITIONS', '1回の位置照会でウェイポイント遷移が10万回を超えました。', '極端に小さいエリア、高速移動、静止時間0、長時間の一括プレビューを見直してください。', ''),
     ('concurrent workers must', 'WORKER_LIMIT', '同時実行数が不正です。', '1〜256の整数を指定してください。CPU数と各Runのメモリ使用量に応じて調整してください。', ''),
     ('ED action_space must be a subset', 'ACTION_SUBSET', 'EDの候補に全体のパラメータ空間にない値があります。', '全体集合に値を追加するか、ED側を全体の部分集合にしてください。', 'groups'),
     ('action_space candidates must', 'ACTION_CANDIDATES', 'パラメータ候補が重複、範囲外、または有限値ではありません。', 'SFは7〜12、CRは1〜4、TPは−20〜27 dBmを重複なく指定してください。', 'action_space'),
@@ -248,6 +253,10 @@ def configuration_warnings(p):
                     if bound and kind in {'adr','badr','gadr'}:
                         warn('ADR_COMPARISON_EXTENSION', path+'.policy.action_space', cls.space_description,
                              '原方式の再現ではなく共通条件での比較用拡張です。SF候補・CH候補・固定TP/CRを揃え、docs/ADR_COMPARISON.mdの制御則の差分を研究報告に記載してください。')
+                    if kind == 'd_lora':
+                        warn('DLORA_FEEDBACK', path+'.policy', 'D-LoRaの式19〜24を使用しますが、成功指標はEDが受信したACKです。論文のGW受信成否とはDL不達時に異なります。', 'ACK要求を有効にしてください。TP報酬の単位、初期探索・同点処理、既存PHYとの差分はdocs/PAPERS_V09.mdを確認してください。')
+                        if o['exploration_c'] == 0:
+                            warn('DLORA_NO_EXPLORATION', path+'.policy.options.exploration_c', 'D-LoRaは初回の全基底腕探索後、探索ボーナスを使用しません。', '移動・非定常環境で継続探索を意図する場合はcを正の値にしてください。')
                     if ignored:
                         warn('ACTION_OPTIONS_IGNORED', path+'.policy.options', '共通行動空間を使うためモデル側の候補設定は適用されません: '+', '.join(sorted(ignored)), '候補は全体・EDの行動空間に統一し、optionsには学習定数だけを指定してください。')
                     if bound and (kind.startswith('linucb') or kind in {'dqn','sema'}) and (len(space.coding_rates)>1 or len(space.powers_dbm)>1 or (kind=='linucb_sf' and len(space.frequencies_hz)>1)):

@@ -78,7 +78,7 @@ class Geometry:
                     raise ValueError('mobility must return three finite coordinates')
                 s.positions[d.id] = value
                 refreshed.add(i)
-                if type(m) is Markov:
+                if type(m) is Markov or (type(m) is Waypoints and m.options.mode == 'random_waypoint'):
                     moving = t < m.arrive
                     end = m.arrive if moving else m.leave
                 else:

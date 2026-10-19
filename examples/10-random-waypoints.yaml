@@ -1,4 +1,4 @@
-name: Random waypoints with speed and dwell jitter
+name: 共通100地点・独立ランダムWaypoint移動
 seed: 5
 duration_s: 1800
 area_m: [2000, 2000]
@@ -9,15 +9,13 @@ groups:
     mobility:
       kind: waypoints
       options:
-        mode: route
-        random_count: 12
-        speed_m_s: 2
-        speed_jitter_m_s: 0.4
-        pause_mode: uniform
+        mode: random_waypoint
+        waypoint_count: 100
+        waypoint_seed: 0
+        speed_min_m_s: 1.6
+        speed_max_m_s: 2.4
         pause_min_s: 5
         pause_max_s: 15
-        pause_jitter_s: 2
-        repeat: false
     timing:
       kind: periodic
       options:
