@@ -11,7 +11,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
 import yaml
 from .diagnostics import exception_diagnostics, issue
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from .config import Profile, load_profile, dump_profile
 from .jobs import Store
@@ -21,6 +20,7 @@ from .catalog import DEFAULTS
 from .registry import inventory, metadata
 from .ui_metadata import describe_schema
 from .calculator import CalculatorRequest, calculate
+from .web_assets import mount_ui
 
 
 class YamlBody(BaseModel):
@@ -56,7 +56,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.9.1")
+    app = FastAPI(title="LoRaSim Research",version="0.9.2")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -273,9 +273,5 @@ def create_app(root=None):
         if traffic:
             value.update(traces(store.root/'runs'/jid,limit=min(2000,limit*2),before_s=when))
         return value
-    static = Path(__file__).with_name("static")
-    app.mount("/static",StaticFiles(directory=static),name="static")
-    @app.get("/")
-    def index():
-        return FileResponse(static/"index.html")
+    mount_ui(app, Path(__file__).with_name("static"))
     return app

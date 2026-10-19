@@ -45,3 +45,8 @@ canvas#map.map-stale{opacity:.5}.map-panel .sectiontitle .actions{justify-conten
 .calculator-verdict{font-size:11px;padding:7px 10px;border-radius:4px;margin:6px 0}.calculator-verdict.meets{background:#edf7f1;color:#2d7055}.calculator-verdict.misses{background:#fff4e6;color:#8b601f}
 .calculator-caveat{font-size:11px;line-height:1.7;color:#617386;margin:7px 0}.calculator-result details{margin:8px 0}.calculator-result summary{font-size:11px}.calculator-stale{opacity:.4}
 @media(max-width:760px){#experimentView>.map-panel.calculator-open{height:auto;max-height:none}.calculator-form .calculator-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.calculator-metrics{grid-template-columns:1fr}.calculator-metrics strong{font-size:19px}.calculator-chart{overflow-x:auto}.calculator-chart svg{min-width:490px}}
+
+/* Fit the world with one scale, never stretch a fixed-resolution bitmap. */
+#mapViewport{height:clamp(240px,32vh,360px);width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f5f9fc;border:1px solid #e0e9f2;border-radius:6px}
+#preflightPanel #mapViewport canvas#map{display:block;flex:none;max-width:none;max-height:none;aspect-ratio:auto;border:0;border-radius:0}
+@media(min-width:761px){#experimentView>.map-panel:not(.calculator-open){height:clamp(390px,50vh,520px);max-height:75%;min-height:300px}}

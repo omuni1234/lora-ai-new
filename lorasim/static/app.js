@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id), clone=x=>structuredClone(x);
 let profile={}, schema={}, defaults={}, catalog={}, savedProfiles=[], experiments=[], currentView='experiment', selectedJob=null, selectedItem=null, mapData=null, analysisData=null, modelSpec={kind:'fixed',options:{}}, previewVisible=true, busyPoll=false, analysisBusy=false;
 const pageOffsets=new Map();
-let calculator=null, preflightTab="layout";
+let calculator=null, mapRenderer=null, mapFrame=null, preflightTab="layout";
 const labels={name:'名前',seed:'乱数seed',duration_s:'シミュレーション時間 [s]',area_m:'エリア [m]',channel:'伝搬・干渉',mac:'Class A MAC',sub_bands:'サブバンド',gateways:'Gateway',groups:'EDグループ',assignments:'条件による割り当て',tracking:'ストリーミング・メモリ上限',notifications:'進捗Webhook',channel_backend:'伝搬計算バックエンド',energy:'消費電力',models:'プロファイル内のモデル定義',policy:'選択アルゴリズム',mobility:'移動モデル',timing:'送信タイミング',count:'ED数',placement:'初期配置',positions:'初期座標 [x,y,z]',position:'座標 [x,y,z]',payload_bytes:'ペイロード [byte]',confirmed:'Confirmed UL',max_attempts:'最大送信試行数',observe_position:'EDに位置観測を許可',tags:'タグ',ids:'ED ID',radio:'無線',mcu:'MCU（null＝全体設定）',options:'パラメータ',kind:'実装',ref:'ライブラリ参照',enabled:'有効',initial:'初期送信設定',mode:'計算方式'};
 const colors={Received:'#238aa0',Interference:'#db9952',NoMoreReceivers:'#a885be',UnderSensitivity:'#da7083',LostBecauseTx:'#6e91c4',WrongFrequency:'#a2aebd',MixedLoss:'#807d88',Censored:'#bec7d0',Cancelled:'#aab4bf',SimulationEnd:'#aab4bf'};
 const causeLabel={Received:'受信成功',Interference:'干渉',NoMoreReceivers:'復調器不足',UnderSensitivity:'感度未満',LostBecauseTx:'GW送信中',WrongFrequency:'周波数不一致',MixedLoss:'複合損失',Censored:'判定未了'};
@@ -153,12 +153,11 @@ function renderResult(j){$('selectedRun').textContent=j.name+' · '+j.id.slice(0
 async function renderFiles(){if(!selectedJob)return;const id=selectedJob,files=await api('/api/jobs/'+id+'/files');if(id!==selectedJob)return;$('files').replaceChildren(...files.slice(0,100).map(f=>el('button',{onclick:action(async()=>{const r=await fetch('/api/jobs/'+id+'/files/'+f.name,{headers:sessionStorage.getItem('lorasim-token')?{Authorization:'Bearer '+sessionStorage.getItem('lorasim-token')}:{}});if(!r.ok){let data;try{data=await r.json();}catch{}throw new DiagnosticError(data?.diagnostics||[{severity:'error',code:'DOWNLOAD',message:'出力ファイルをダウンロードできませんでした。',hint:'接続設定とファイルの有無を確認してください。',detail:'HTTP '+r.status}]);}const url=URL.createObjectURL(await r.blob());el('a',{href:url,download:f.name.split('/').pop()}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);})},f.name)));}
 async function runPreview(){if(!$('visualEnabled').checked)return;newAutoIds();const revision=configRevision;$('preview').disabled=true;try{const result=await api('/api/preview','POST',{yaml:JSON.stringify(profile),horizon_s:Number($('previewHorizon').value),limit:Number($('previewLimit').value)});if(revision!==configRevision){notice('確認中に設定が変更されたため、プレビューを更新しませんでした。もう一度「設定を確認する」を押してください。');return;}mapData=result;$('map').classList.remove('map-stale');setConfigDiagnostics(mapData.diagnostics||[]);previewDirty=false;$('mapInfo').textContent=`確認用 · ${mapData.devices.length} / ${mapData.ed_count} ED`;$('mapTime').max=mapData.horizon_s;$('mapTime').value=0;$('mapTimeValue').textContent='0 s';$('previewNote').textContent='確認用サンプル · MAC待機・干渉・ACK・学習を含みません。'+(mapData.warnings.length?' 一部のモデルは省略。EDの詳細を確認してください。':'');$('previewNote').title=mapData.note;$('previewDevices').replaceChildren(...mapData.devices.map(d=>el('option',{value:d.id},'ED '+d.id+' · '+d.group)));drawMap();inspectDevice(mapData.devices[0]);}finally{$('preview').disabled=false;}}
 function inspectDevice(d){if(!d)return;$('previewDevices').value=d.id;$('coordinates').textContent=`ED ${d.id} · ${d.group}`;$('previewInspector').replaceChildren(el('h3',{},`ED ${d.id} の設定確認`));for(const[k,v]of Object.entries(d.models||{}))$('previewInspector').append(el('div',{class:'detailrow'},labels[k],el('b',{},v.label+' ('+v.kind+')')));for(const warning of d.warnings||[])$('previewInspector').append(el('p',{class:'hint'},warning));const table=el('table',{},el('thead',{},el('tr',{},['生成回数','予定時刻 [s]','SF / TP / CR','周波数 [MHz]'].map(x=>el('th',{},x)))),el('tbody',{},(d.schedule||[]).map(r=>el('tr',{},[r.tx_index,r.time_s.toFixed(3),r.radio?`${r.radio.sf} / ${r.radio.tp_dbm} dBm / 4/${r.radio.cr+4}`:'プレビュー非対応',r.radio?(r.radio.frequency_hz/1e6).toFixed(3):'—'].map(x=>el('td',{},x))))));$('previewInspector').append(el('p',{class:'hint'},`初回生成時刻: ${num(d.first_generation_s)} s。モデルの定数は下記で確認できます。`),table,el('details',{},el('summary',{},'適用されたモデルと定数'),el('pre',{},JSON.stringify(d.models,null,2))));}
-function drawMap(){const c=$('map'),ctx=c.getContext('2d');const w=c.width,h=c.height,pad=52;ctx.clearRect(0,0,w,h);if(!mapData)return;const[a,b]=mapData.area_m;const x=v=>pad+v/a*(w-2*pad),y=v=>h-pad-v/b*(h-2*pad);ctx.fillStyle='#f5f9fc';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#e1eaf2';ctx.font='16px sans-serif';ctx.fillStyle='#8da2b4';for(let i=0;i<=5;i++){const xx=x(a*i/5),yy=y(b*i/5);ctx.beginPath();ctx.moveTo(xx,pad);ctx.lineTo(xx,h-pad);ctx.moveTo(pad,yy);ctx.lineTo(w-pad,yy);ctx.stroke();ctx.fillText(Math.round(a*i/5)+'m',xx-15,h-pad+23);ctx.fillText(Math.round(b*i/5),6,yy+4);}
- const at=Number($('mapTime').value);
- if($('showWaypoints').checked){ctx.fillStyle='#a3abb7';for(const p of mapData.waypoints||[]){ctx.fillRect(x(p[0])-2,y(p[1])-2,4,4);}}
- for(const d of mapData.devices){const path=d.path||[];if($('showPaths').checked&&path.length){ctx.strokeStyle='#8da9c566';ctx.beginPath();path.forEach((p,i)=>i?ctx.lineTo(x(p.xyz[0]),y(p.xyz[1])):ctx.moveTo(x(p.xyz[0]),y(p.xyz[1])));ctx.stroke();}let pos=path.findLast(p=>p.time_s<=at)?.xyz||d.xyz;d.display_xyz=pos;ctx.fillStyle=d.warnings?.length?'#93a4b4':'#2b86ab';ctx.beginPath();ctx.arc(x(pos[0]),y(pos[1]),3.5,0,Math.PI*2);ctx.fill();}
- if($('showTraffic').checked)for(const r of mapData.transmissions||[]){ctx.fillStyle='#9875bd80';ctx.beginPath();ctx.arc(x(r.x_m),y(r.y_m),2,0,Math.PI*2);ctx.fill();}
- for(const g of mapData.gateways){const xx=x(g.position[0]),yy=y(g.position[1]);ctx.fillStyle='#e4a04a25';ctx.beginPath();ctx.arc(xx,yy,20,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d88e31';ctx.beginPath();ctx.moveTo(xx,yy-9);ctx.lineTo(xx+8,yy+6);ctx.lineTo(xx-8,yy+6);ctx.closePath();ctx.fill();ctx.fillStyle='#936327';ctx.fillText(g.id,xx+13,yy+5);}}
+function drawMap(){
+ if(!previewVisible||currentView!=='experiment'||preflightTab!=='layout'||document.hidden)return;
+ mapRenderer?.draw(mapData,{at:Number($('mapTime').value),paths:$('showPaths').checked,traffic:$('showTraffic').checked,waypoints:$('showWaypoints').checked});
+}
+function scheduleMapDraw(){if(mapFrame===null)mapFrame=requestAnimationFrame(()=>{mapFrame=null;drawMap();});}
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function stacked(target,items,labels,xTitle){const width=800,height=290,L=48,R=16,T=18,B=65,pw=width-L-R,ph=height-T-B;let svg=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(xTitle)}">`;for(let i=0;i<=4;i++){const y=T+ph*(1-i/4);svg+=`<line x1="${L}" x2="${width-R}" y1="${y}" y2="${y}" stroke="#e4ebf2"/><text x="5" y="${y+3}">${i*25}%</text>`;}const step=pw/Math.max(1,items.length),bw=Math.max(1,step*.74),keys=[...new Set(items.flatMap(o=>Object.keys(o)))].sort((a,b)=>a==='Received'?-1:b==='Received'?1:a.localeCompare(b));items.forEach((parts,i)=>{let base=0;for(const k of keys){const v=parts[k]||0;svg+=`<rect x="${L+i*step+(step-bw)/2}" y="${T+ph*(1-base-v)}" width="${bw}" height="${ph*v}" fill="${color(k)}"><title>${esc(labels[i])}: ${esc(causeLabel[k]||k)} ${pct(v)}</title></rect>`;base+=v;}if(i%Math.max(1,Math.ceil(items.length/12))===0)svg+=`<text text-anchor="middle" x="${L+(i+.5)*step}" y="${T+ph+18}">${esc(labels[i])}</text>`;});svg+=`<text text-anchor="middle" x="${L+pw/2}" y="${height-7}">${esc(xTitle)}</text></svg>`;$(target).innerHTML=svg;$(target).append(el('div',{class:'chartlegend'},keys.map(k=>el('span',{},el('i',{style:'background:'+color(k)}),causeLabel[k]||k))));}
 function bars(target,items,label){const w=500,h=Math.max(180,items.length*32+65),L=130,R=45,ph=h-45,max=Math.max(1e-12,...items.map(x=>x.value??0));let svg=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">`;items.forEach((x,i)=>{const y=20+i*32;svg+=`<text x="0" y="${y+12}">${esc(x.label.slice(0,22))}</text><rect x="${L}" y="${y}" width="${(w-L-R)*(x.value??0)/max}" height="18" rx="3" fill="#3887a5"/><text x="${L+5+(w-L-R)*(x.value??0)/max}" y="${y+12}">${x.value===null?'N/A':num(x.value)}</text>`;});svg+=`<text x="${L}" y="${h-5}">${esc(label)}</text></svg>`;$(target).innerHTML=svg;}
@@ -194,7 +193,7 @@ $('modelCategory').onchange=()=>{const cat=$('modelCategory').value,kind=Object.
 $('modelSearch').oninput=renderLibrary;
 $('preview').onclick=action(runPreview);
 $('showTraffic').onchange=$('showPaths').onchange=$('showWaypoints').onchange=drawMap;
-$('visualEnabled').onchange=()=>{previewVisible=$('visualEnabled').checked;$('map').hidden=!previewVisible;$('mapInfo').textContent=previewVisible?'手動で設定を確認できます':'プレビューOFF';};
+$('visualEnabled').onchange=()=>{previewVisible=$('visualEnabled').checked;$('mapViewport').hidden=!previewVisible;if(previewVisible)scheduleMapDraw();$('mapInfo').textContent=previewVisible?'手動で設定を確認できます':'プレビューOFF';};
 $('mapTime').oninput=()=>{$('mapTimeValue').textContent=$('mapTime').value+' s';drawMap();};
 $('previewDevices').onchange=()=>inspectDevice(mapData?.devices.find(d=>d.id===Number($('previewDevices').value)));
 $('experimentInfo').append(info(()=> $('experiment').value?experimentText($('experiment').value):'実行時にプロファイル名で新規Experimentを作成します。','選択したExperimentの情報'));
@@ -265,10 +264,21 @@ function selectPreflightTab(tab) {
  for(const [id,selected] of [['layoutTab',!calculating],['calculatorTab',calculating]]){
   $(id).setAttribute('aria-selected',String(selected));$(id).tabIndex=selected?0:-1;
  }
- calculator.setVisible(calculating&&currentView==='experiment');
+ if(calculating){
+  try{
+   if(!calculator){
+    if(typeof PropagationCalculator!=='function')throw new Error('Calculatorの画面ファイルを読み込めませんでした。画面を再読み込みし、APIと画面ファイルを同じ版へ更新してください。');
+    $('calculatorTool').replaceChildren();
+    calculator=new PropagationCalculator({root:$('calculatorTool'),api,el,info,getProfile:()=>profile,editChannel:()=>selectSection('radio')});
+   }
+   calculator.setVisible(currentView==='experiment');
+  }catch(e){$('calculatorTool').replaceChildren(el('p',{class:'diagnostic error',role:'alert'},e.message));}
+ }else calculator?.setVisible(false);
  if(!calculating)drawMap();
 }
-calculator=new PropagationCalculator({root:$('calculatorTool'),api,el,info,getProfile:()=>profile,editChannel:()=>selectSection('radio')});
+mapRenderer=new PreviewMap($('map'),$('mapViewport'));
+new ResizeObserver(scheduleMapDraw).observe($('mapViewport'));
+window.addEventListener('resize',scheduleMapDraw);
 $('layoutTab').onclick=()=>selectPreflightTab('layout');
 $('calculatorTab').onclick=()=>selectPreflightTab('calculator');
 for(const id of ['layoutTab','calculatorTab'])$(id).addEventListener('keydown',e=>{
@@ -280,7 +290,7 @@ for(const id of ['layoutTab','calculatorTab'])$(id).addEventListener('keydown',e
 
 action(async()=>{[schema,defaults]=await Promise.all([api('/api/schema'),api('/api/defaults')]);Object.assign(pluginSchemas,defaults.plugins);analysisModules=await api('/api/analysis/modules');moduleSelections=['outcomes','convergence','fairness','energy'].map(kind=>({kind,enabled:true,options:clone(analysisModules[kind].defaults)}));renderModuleEditor();profile=clone(defaults.profile);modelSpec=newComponent('policy','fixed');await Promise.all([refreshCatalog(),refreshProfiles(),refreshExperiments()]);await loadSchemas();renderAll();await checkConfiguration();await runPreview();await poll();setInterval(poll,4000);})();
 
-$('map').onclick=event=>{if(!mapData)return;const rect=$('map').getBoundingClientRect(),xx=(event.clientX-rect.left)*1000/rect.width,yy=(event.clientY-rect.top)*360/rect.height;const[w,h]=mapData.area_m,x=v=>52+v/w*896,y=v=>308-v/h*256;let nearest=null,distance=200;for(const d of mapData.devices){const pos=d.display_xyz||d.xyz,delta=(x(pos[0])-xx)**2+(y(pos[1])-yy)**2;if(delta<distance){nearest=d;distance=delta;}}if(nearest)inspectDevice(nearest);};
+$('map').onclick=event=>{if(!mapData)return;const nearest=mapRenderer.pick(event.clientX,event.clientY,mapData.devices);if(nearest)inspectDevice(nearest);};
 
 const staticHelp={profiles:'保存した実験条件を読み込みます。モデル定義は読み込み時に参照先を解決します。',importProfile:'YAMLまたはJSONのプロファイルを取り込みます。',txStart:'各EDの実送信通番は1始まり。累積収束だけは表示の開始位置で、集計は常に1〜t回です。他のモジュールはこの開始回数で区間を絞ります。',txEnd:'終了通番を含みます。空欄なら記録の最後まで集計します。',edCount:'このED数のRunだけを分析します。空欄なら全てのED数が対象です。',bins:'累積曲線の表示点数を制限します。各点は1〜tの全履歴で計算し、メモリ上限に応じて点数を減らします。',includeMCU:'無線電力に加えて推論・学習・待機のMCUエネルギーを集計します。',fairness:'各EDのPRR分布から公平性を評価します。全EDが成功ゼロの場合はN/Aです。',modelCategory:'モデルの責務に合わせて種類を選択してください。',modelSearch:'内蔵・保存済みモデルの名前または実装名で絞り込みます。',modelName:'再利用定義の名前。同名で保存すると更新されます。既存Runのスナップショットは変更されません。',visualEnabled:'配置確認パネルの表示を切り替えます。実験中のポーリングや追跡処理は実行しません。',showTraffic:'MACの待機を含まない、アプリケーションメッセージの生成予定地点です。',showWaypoints:'確認対象の移動モデルが共有する地点集合を最大1000点表示。EDはこれらの地点上から開始します。',showPaths:'確認対象EDの軌跡を有限個の座標サンプルで表示します。',previewHorizon:'プレビューだけの時間範囲です。実験時間を超える部分は切り詰めます。',previewLimit:'大規模実験でも、この上限まで等間隔にEDを抽出します。',previewDevices:'抽出されたEDを選び、適用されたモデルと定数、生成予定時刻を確認します。',mapTime:'すでに計算した軌跡をブラウザ内で切り替えます。サーバ通信は発生しません。',token:'必要な場合だけAPIのBearer tokenを指定します。このタブのセッション内に保存します。'};
 for(const[id,help]of Object.entries(staticHelp)){const input=$(id),label=input?.closest('label');if(label)label.insertBefore(info(help,(label.textContent.trim()||id)+'の説明'),input);}
@@ -289,4 +299,4 @@ $('yaml').addEventListener('input',()=>{yamlDraft=true;});
 window.addEventListener('unhandledrejection',event=>{reportError(event.reason instanceof Error?event.reason:Error(String(event.reason)));});
 
 window.addEventListener('error',event=>{if(event.error)reportError(event.error);});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){poll();if(previewDirty)checkConfiguration();}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){poll();scheduleMapDraw();if(previewDirty)checkConfiguration();}});
