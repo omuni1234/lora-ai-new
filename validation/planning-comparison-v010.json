@@ -1,0 +1,997 @@
+[
+  {
+    "name": "sf7-ack",
+    "profile": {
+      "schema_version": 1,
+      "name": "sf7-ack",
+      "seed": 4,
+      "duration_s": 18000.0,
+      "area_m": [
+        2000.0,
+        2000.0
+      ],
+      "channel": {
+        "exponent": 3.76,
+        "reference_distance_m": 1.0,
+        "reference_loss_db": 7.7,
+        "speed_m_s": 299792458.0,
+        "collision_matrix": "goursaud"
+      },
+      "mac": {
+        "rx1_delay_s": 1.0,
+        "rx2_delay_s": 2.0,
+        "rx_symbols": 8,
+        "rx1_sf_offset": 0,
+        "rx2_sf": 12,
+        "rx2_frequency_hz": 869525000,
+        "backhaul_delay_s": 0.0,
+        "duty_cycle": true
+      },
+      "sub_bands": [
+        {
+          "id": "band0",
+          "low_hz": 863000000,
+          "high_hz": 865000000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band1",
+          "low_hz": 865000000,
+          "high_hz": 868000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band2",
+          "low_hz": 868000000,
+          "high_hz": 868600000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        },
+        {
+          "id": "band3",
+          "low_hz": 868700000,
+          "high_hz": 869200000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band4",
+          "low_hz": 869400000,
+          "high_hz": 869650000,
+          "duty_cycle": 0.1,
+          "max_tp_dbm": 27.0,
+          "channels_hz": [
+            869525000
+          ]
+        },
+        {
+          "id": "band5",
+          "low_hz": 869700000,
+          "high_hz": 870000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        }
+      ],
+      "ul_sub_bands": null,
+      "dl_sub_bands": null,
+      "action_space": {
+        "spreading_factors": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "frequencies_hz": [
+          868100000,
+          868300000,
+          868500000
+        ],
+        "coding_rates": [
+          1
+        ],
+        "powers_dbm": [
+          14.0
+        ]
+      },
+      "gateways": [
+        {
+          "id": "gw0",
+          "position": [
+            1000.0,
+            1000.0,
+            15.0
+          ],
+          "demodulators": 8,
+          "frequencies_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "group0",
+          "count": 500,
+          "tags": [],
+          "placement": "uniform",
+          "positions": [],
+          "policy": {
+            "kind": "fixed",
+            "ref": null,
+            "options": {
+              "sf": 7
+            },
+            "action_space": null
+          },
+          "timing": {
+            "kind": "periodic",
+            "ref": null,
+            "options": {
+              "interval_s": 600,
+              "random_phase": true
+            },
+            "action_space": null
+          },
+          "mobility": {
+            "kind": "stationary",
+            "ref": null,
+            "options": {},
+            "action_space": null
+          },
+          "payload_bytes": 20,
+          "confirmed": true,
+          "max_attempts": 1,
+          "observe_position": false,
+          "mcu": null
+        }
+      ],
+      "assignments": [],
+      "tracking": {
+        "batch_rows": 4096,
+        "max_air_signals": 100000,
+        "max_air_bytes": 536870912
+      },
+      "execution": {
+        "optimized": true,
+        "geometry_cache_bytes": 67108864,
+        "writer_processes": 0
+      },
+      "notifications": [],
+      "channel_backend": "numpy",
+      "energy": {
+        "radio": {
+          "enabled": false,
+          "voltage_v": 3.0,
+          "initial_state": "STANDBY",
+          "sleep_current_a": 1e-07,
+          "standby_current_a": 0.0014,
+          "rx_current_a": 0.0108,
+          "tx_current_model": "constant",
+          "tx_current_a": 0.028,
+          "tx_voltage_v": 3.3,
+          "eta": 0.45275,
+          "base_current_a": 0.014646
+        },
+        "mcu": {
+          "enabled": false,
+          "mode": "fixed",
+          "active_power_w": 0.015,
+          "idle_power_w": 0.0,
+          "inference_s": 0.001,
+          "training_s": 0.005
+        }
+      },
+      "models": {},
+      "model_files": []
+    },
+    "forecast": {
+      "id": "profile",
+      "label": "現在の選択分布（仮定）",
+      "changes": {},
+      "fractions": {
+        "Received": 0.8369588404635121,
+        "Interference": 0.056452157312306205,
+        "LostBecauseTx": 0.10658900222417989,
+        "UnderSensitivity": 0.0,
+        "NoMoreReceivers": 1.9407418014553956e-15,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 3.1974423109204506e-17
+      },
+      "packet_fractions": {
+        "Received": 0.8369588404635119,
+        "Interference": 0.056452157312306205,
+        "LostBecauseTx": 0.10658900222417986,
+        "UnderSensitivity": 0.0,
+        "NoMoreReceivers": 1.940741801455395e-15,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 3.19744231092045e-17
+      },
+      "success_bounds": [
+        0.8369588404635121,
+        0.8369588404635121
+      ],
+      "uplinks_per_s": 0.8333333333333336,
+      "downlinks_per_s": 0.24921415293172142,
+      "mean_airtime_ms": 66.81599999999997,
+      "gateway_tx_fraction": [
+        0.09030233250714045
+      ],
+      "mean_attempts": 1.0,
+      "load_limited": false,
+      "converged": true,
+      "iterations": 28,
+      "residual": 8.890222837787398e-06,
+      "sampling_error_note": "重複試行 512 回／候補。配置・行動・近似式の誤差を含む信頼区間ではありません。"
+    },
+    "forecast_wall_s": 0.10762533301021904,
+    "simulation_wall_s": 1.167771874985192,
+    "observed_fractions": {
+      "Interference": 0.06,
+      "LostBecauseTx": 0.12566666666666668,
+      "Received": 0.8143333333333332
+    },
+    "uplinks": 15000
+  },
+  {
+    "name": "sf12-ack",
+    "profile": {
+      "schema_version": 1,
+      "name": "sf12-ack",
+      "seed": 4,
+      "duration_s": 18000.0,
+      "area_m": [
+        2000.0,
+        2000.0
+      ],
+      "channel": {
+        "exponent": 3.76,
+        "reference_distance_m": 1.0,
+        "reference_loss_db": 7.7,
+        "speed_m_s": 299792458.0,
+        "collision_matrix": "goursaud"
+      },
+      "mac": {
+        "rx1_delay_s": 1.0,
+        "rx2_delay_s": 2.0,
+        "rx_symbols": 8,
+        "rx1_sf_offset": 0,
+        "rx2_sf": 12,
+        "rx2_frequency_hz": 869525000,
+        "backhaul_delay_s": 0.0,
+        "duty_cycle": true
+      },
+      "sub_bands": [
+        {
+          "id": "band0",
+          "low_hz": 863000000,
+          "high_hz": 865000000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band1",
+          "low_hz": 865000000,
+          "high_hz": 868000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band2",
+          "low_hz": 868000000,
+          "high_hz": 868600000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        },
+        {
+          "id": "band3",
+          "low_hz": 868700000,
+          "high_hz": 869200000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band4",
+          "low_hz": 869400000,
+          "high_hz": 869650000,
+          "duty_cycle": 0.1,
+          "max_tp_dbm": 27.0,
+          "channels_hz": [
+            869525000
+          ]
+        },
+        {
+          "id": "band5",
+          "low_hz": 869700000,
+          "high_hz": 870000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        }
+      ],
+      "ul_sub_bands": null,
+      "dl_sub_bands": null,
+      "action_space": {
+        "spreading_factors": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "frequencies_hz": [
+          868100000,
+          868300000,
+          868500000
+        ],
+        "coding_rates": [
+          1
+        ],
+        "powers_dbm": [
+          14.0
+        ]
+      },
+      "gateways": [
+        {
+          "id": "gw0",
+          "position": [
+            1000.0,
+            1000.0,
+            15.0
+          ],
+          "demodulators": 8,
+          "frequencies_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "group0",
+          "count": 500,
+          "tags": [],
+          "placement": "uniform",
+          "positions": [],
+          "policy": {
+            "kind": "fixed",
+            "ref": null,
+            "options": {
+              "sf": 12
+            },
+            "action_space": null
+          },
+          "timing": {
+            "kind": "periodic",
+            "ref": null,
+            "options": {
+              "interval_s": 600,
+              "random_phase": true
+            },
+            "action_space": null
+          },
+          "mobility": {
+            "kind": "stationary",
+            "ref": null,
+            "options": {},
+            "action_space": null
+          },
+          "payload_bytes": 20,
+          "confirmed": true,
+          "max_attempts": 1,
+          "observe_position": false,
+          "mcu": null
+        }
+      ],
+      "assignments": [],
+      "tracking": {
+        "batch_rows": 4096,
+        "max_air_signals": 100000,
+        "max_air_bytes": 536870912
+      },
+      "execution": {
+        "optimized": true,
+        "geometry_cache_bytes": 67108864,
+        "writer_processes": 0
+      },
+      "notifications": [],
+      "channel_backend": "numpy",
+      "energy": {
+        "radio": {
+          "enabled": false,
+          "voltage_v": 3.0,
+          "initial_state": "STANDBY",
+          "sleep_current_a": 1e-07,
+          "standby_current_a": 0.0014,
+          "rx_current_a": 0.0108,
+          "tx_current_model": "constant",
+          "tx_current_a": 0.028,
+          "tx_voltage_v": 3.3,
+          "eta": 0.45275,
+          "base_current_a": 0.014646
+        },
+        "mcu": {
+          "enabled": false,
+          "mode": "fixed",
+          "active_power_w": 0.015,
+          "idle_power_w": 0.0,
+          "inference_s": 0.001,
+          "training_s": 0.005
+        }
+      },
+      "models": {},
+      "model_files": []
+    },
+    "forecast": {
+      "id": "profile",
+      "label": "現在の選択分布（仮定）",
+      "changes": {},
+      "fractions": {
+        "Received": 0.20504711994954486,
+        "Interference": 0.6160833786409626,
+        "LostBecauseTx": 0.1787969549912615,
+        "UnderSensitivity": 0.0,
+        "NoMoreReceivers": 7.254641823102426e-05,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 4.618527782440651e-17
+      },
+      "packet_fractions": {
+        "Received": 0.20504711994954475,
+        "Interference": 0.6160833786409624,
+        "LostBecauseTx": 0.17879695499126144,
+        "UnderSensitivity": 0.0,
+        "NoMoreReceivers": 7.254641823102426e-05,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 4.61852778244065e-17
+      },
+      "success_bounds": [
+        0.20504711994954483,
+        0.20504711994954483
+      ],
+      "uplinks_per_s": 0.8333333333333336,
+      "downlinks_per_s": 0.0705528714190996,
+      "mean_airtime_ms": 1646.5920000000006,
+      "gateway_tx_fraction": [
+        0.06993664327261326
+      ],
+      "mean_attempts": 1.0,
+      "load_limited": false,
+      "converged": true,
+      "iterations": 26,
+      "residual": 8.953994977911606e-06,
+      "sampling_error_note": "重複試行 512 回／候補。配置・行動・近似式の誤差を含む信頼区間ではありません。"
+    },
+    "forecast_wall_s": 0.09077187502407469,
+    "simulation_wall_s": 0.9335859170241747,
+    "observed_fractions": {
+      "Interference": 0.5678,
+      "LostBecauseTx": 0.24106666666666668,
+      "Received": 0.19113333333333332
+    },
+    "uplinks": 14997
+  },
+  {
+    "name": "mixed-edge",
+    "profile": {
+      "schema_version": 1,
+      "name": "mixed-edge",
+      "seed": 4,
+      "duration_s": 18000.0,
+      "area_m": [
+        10000.0,
+        10000.0
+      ],
+      "channel": {
+        "exponent": 3.76,
+        "reference_distance_m": 1.0,
+        "reference_loss_db": 7.7,
+        "speed_m_s": 299792458.0,
+        "collision_matrix": "goursaud"
+      },
+      "mac": {
+        "rx1_delay_s": 1.0,
+        "rx2_delay_s": 2.0,
+        "rx_symbols": 8,
+        "rx1_sf_offset": 0,
+        "rx2_sf": 12,
+        "rx2_frequency_hz": 869525000,
+        "backhaul_delay_s": 0.0,
+        "duty_cycle": true
+      },
+      "sub_bands": [
+        {
+          "id": "band0",
+          "low_hz": 863000000,
+          "high_hz": 865000000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band1",
+          "low_hz": 865000000,
+          "high_hz": 868000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band2",
+          "low_hz": 868000000,
+          "high_hz": 868600000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        },
+        {
+          "id": "band3",
+          "low_hz": 868700000,
+          "high_hz": 869200000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band4",
+          "low_hz": 869400000,
+          "high_hz": 869650000,
+          "duty_cycle": 0.1,
+          "max_tp_dbm": 27.0,
+          "channels_hz": [
+            869525000
+          ]
+        },
+        {
+          "id": "band5",
+          "low_hz": 869700000,
+          "high_hz": 870000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        }
+      ],
+      "ul_sub_bands": null,
+      "dl_sub_bands": null,
+      "action_space": {
+        "spreading_factors": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "frequencies_hz": [
+          868100000,
+          868300000,
+          868500000
+        ],
+        "coding_rates": [
+          1
+        ],
+        "powers_dbm": [
+          14.0
+        ]
+      },
+      "gateways": [
+        {
+          "id": "gw0",
+          "position": [
+            5000.0,
+            5000.0,
+            15.0
+          ],
+          "demodulators": 8,
+          "frequencies_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "group0",
+          "count": 500,
+          "tags": [],
+          "placement": "uniform",
+          "positions": [],
+          "policy": {
+            "kind": "random",
+            "ref": null,
+            "options": {},
+            "action_space": {
+              "spreading_factors": null,
+              "frequencies_hz": null,
+              "coding_rates": null,
+              "powers_dbm": null
+            }
+          },
+          "timing": {
+            "kind": "periodic",
+            "ref": null,
+            "options": {
+              "interval_s": 600,
+              "random_phase": true
+            },
+            "action_space": null
+          },
+          "mobility": {
+            "kind": "stationary",
+            "ref": null,
+            "options": {},
+            "action_space": null
+          },
+          "payload_bytes": 20,
+          "confirmed": true,
+          "max_attempts": 1,
+          "observe_position": false,
+          "mcu": null
+        }
+      ],
+      "assignments": [],
+      "tracking": {
+        "batch_rows": 4096,
+        "max_air_signals": 100000,
+        "max_air_bytes": 536870912
+      },
+      "execution": {
+        "optimized": true,
+        "geometry_cache_bytes": 67108864,
+        "writer_processes": 0
+      },
+      "notifications": [],
+      "channel_backend": "numpy",
+      "energy": {
+        "radio": {
+          "enabled": false,
+          "voltage_v": 3.0,
+          "initial_state": "STANDBY",
+          "sleep_current_a": 1e-07,
+          "standby_current_a": 0.0014,
+          "rx_current_a": 0.0108,
+          "tx_current_model": "constant",
+          "tx_current_a": 0.028,
+          "tx_voltage_v": 3.3,
+          "eta": 0.45275,
+          "base_current_a": 0.014646
+        },
+        "mcu": {
+          "enabled": false,
+          "mode": "fixed",
+          "active_power_w": 0.015,
+          "idle_power_w": 0.0,
+          "inference_s": 0.001,
+          "training_s": 0.005
+        }
+      },
+      "models": {},
+      "model_files": []
+    },
+    "forecast": {
+      "id": "profile",
+      "label": "現在の選択分布（仮定）",
+      "changes": {},
+      "fractions": {
+        "Received": 0.7013859956182806,
+        "Interference": 0.024030523884660197,
+        "LostBecauseTx": 0.14844985122709017,
+        "UnderSensitivity": 0.1261336076808683,
+        "NoMoreReceivers": 2.1589100731441667e-08,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 2.4646951146678476e-17
+      },
+      "packet_fractions": {
+        "Received": 0.7013859956182806,
+        "Interference": 0.024030523884660197,
+        "LostBecauseTx": 0.14844985122709017,
+        "UnderSensitivity": 0.12613360768086826,
+        "NoMoreReceivers": 2.158910073144167e-08,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 2.4646951146678472e-17
+      },
+      "success_bounds": [
+        0.7013859956182806,
+        0.7013859956182806
+      ],
+      "uplinks_per_s": 0.8333333333333334,
+      "downlinks_per_s": 0.11033428621074731,
+      "mean_airtime_ms": 557.8352639999999,
+      "gateway_tx_fraction": [
+        0.09269658452686785
+      ],
+      "mean_attempts": 1.0,
+      "load_limited": false,
+      "converged": true,
+      "iterations": 30,
+      "residual": 9.97004995384465e-06,
+      "sampling_error_note": "重複試行 512 回／候補。配置・行動・近似式の誤差を含む信頼区間ではありません。"
+    },
+    "forecast_wall_s": 0.36466183300944977,
+    "simulation_wall_s": 1.0701666669920087,
+    "observed_fractions": {
+      "Interference": 0.022268965517241376,
+      "LostBecauseTx": 0.1572022988505747,
+      "Received": 0.6982482758620691,
+      "UnderSensitivity": 0.12228045977011494
+    },
+    "uplinks": 14999
+  },
+  {
+    "name": "mixed-noack",
+    "profile": {
+      "schema_version": 1,
+      "name": "mixed-noack",
+      "seed": 4,
+      "duration_s": 18000.0,
+      "area_m": [
+        10000.0,
+        10000.0
+      ],
+      "channel": {
+        "exponent": 3.76,
+        "reference_distance_m": 1.0,
+        "reference_loss_db": 7.7,
+        "speed_m_s": 299792458.0,
+        "collision_matrix": "goursaud"
+      },
+      "mac": {
+        "rx1_delay_s": 1.0,
+        "rx2_delay_s": 2.0,
+        "rx_symbols": 8,
+        "rx1_sf_offset": 0,
+        "rx2_sf": 12,
+        "rx2_frequency_hz": 869525000,
+        "backhaul_delay_s": 0.0,
+        "duty_cycle": true
+      },
+      "sub_bands": [
+        {
+          "id": "band0",
+          "low_hz": 863000000,
+          "high_hz": 865000000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band1",
+          "low_hz": 865000000,
+          "high_hz": 868000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band2",
+          "low_hz": 868000000,
+          "high_hz": 868600000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        },
+        {
+          "id": "band3",
+          "low_hz": 868700000,
+          "high_hz": 869200000,
+          "duty_cycle": 0.001,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        },
+        {
+          "id": "band4",
+          "low_hz": 869400000,
+          "high_hz": 869650000,
+          "duty_cycle": 0.1,
+          "max_tp_dbm": 27.0,
+          "channels_hz": [
+            869525000
+          ]
+        },
+        {
+          "id": "band5",
+          "low_hz": 869700000,
+          "high_hz": 870000000,
+          "duty_cycle": 0.01,
+          "max_tp_dbm": 14.0,
+          "channels_hz": []
+        }
+      ],
+      "ul_sub_bands": null,
+      "dl_sub_bands": null,
+      "action_space": {
+        "spreading_factors": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "frequencies_hz": [
+          868100000,
+          868300000,
+          868500000
+        ],
+        "coding_rates": [
+          1
+        ],
+        "powers_dbm": [
+          14.0
+        ]
+      },
+      "gateways": [
+        {
+          "id": "gw0",
+          "position": [
+            5000.0,
+            5000.0,
+            15.0
+          ],
+          "demodulators": 8,
+          "frequencies_hz": [
+            868100000,
+            868300000,
+            868500000
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "group0",
+          "count": 500,
+          "tags": [],
+          "placement": "uniform",
+          "positions": [],
+          "policy": {
+            "kind": "random",
+            "ref": null,
+            "options": {},
+            "action_space": {
+              "spreading_factors": null,
+              "frequencies_hz": null,
+              "coding_rates": null,
+              "powers_dbm": null
+            }
+          },
+          "timing": {
+            "kind": "periodic",
+            "ref": null,
+            "options": {
+              "interval_s": 600,
+              "random_phase": true
+            },
+            "action_space": null
+          },
+          "mobility": {
+            "kind": "stationary",
+            "ref": null,
+            "options": {},
+            "action_space": null
+          },
+          "payload_bytes": 20,
+          "confirmed": false,
+          "max_attempts": 1,
+          "observe_position": false,
+          "mcu": null
+        }
+      ],
+      "assignments": [],
+      "tracking": {
+        "batch_rows": 4096,
+        "max_air_signals": 100000,
+        "max_air_bytes": 536870912
+      },
+      "execution": {
+        "optimized": true,
+        "geometry_cache_bytes": 67108864,
+        "writer_processes": 0
+      },
+      "notifications": [],
+      "channel_backend": "numpy",
+      "energy": {
+        "radio": {
+          "enabled": false,
+          "voltage_v": 3.0,
+          "initial_state": "STANDBY",
+          "sleep_current_a": 1e-07,
+          "standby_current_a": 0.0014,
+          "rx_current_a": 0.0108,
+          "tx_current_model": "constant",
+          "tx_current_a": 0.028,
+          "tx_voltage_v": 3.3,
+          "eta": 0.45275,
+          "base_current_a": 0.014646
+        },
+        "mcu": {
+          "enabled": false,
+          "mode": "fixed",
+          "active_power_w": 0.015,
+          "idle_power_w": 0.0,
+          "inference_s": 0.001,
+          "training_s": 0.005
+        }
+      },
+      "models": {},
+      "model_files": []
+    },
+    "forecast": {
+      "id": "profile",
+      "label": "現在の選択分布（仮定）",
+      "changes": {},
+      "fractions": {
+        "Received": 0.8308202895438626,
+        "Interference": 0.030179686666423202,
+        "LostBecauseTx": 0.0,
+        "UnderSensitivity": 0.139,
+        "NoMoreReceivers": 2.3789714204166027e-08,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 1.6653345369377347e-18
+      },
+      "packet_fractions": {
+        "Received": 0.8308202895438626,
+        "Interference": 0.030179686666423206,
+        "LostBecauseTx": 0.0,
+        "UnderSensitivity": 0.13899999999999998,
+        "NoMoreReceivers": 2.3789714204166034e-08,
+        "WrongFrequency": 0.0,
+        "MixedLoss": 1.6653345369377347e-18
+      },
+      "success_bounds": [
+        0.8308202895438626,
+        0.8308202895438626
+      ],
+      "uplinks_per_s": 0.8333333333333334,
+      "downlinks_per_s": 0.0,
+      "mean_airtime_ms": 557.8352639999999,
+      "gateway_tx_fraction": [
+        0.0
+      ],
+      "mean_attempts": 1.0,
+      "load_limited": false,
+      "converged": true,
+      "iterations": 1,
+      "residual": 0.0,
+      "sampling_error_note": "重複試行 512 回／候補。配置・行動・近似式の誤差を含む信頼区間ではありません。"
+    },
+    "forecast_wall_s": 0.10900433399365284,
+    "simulation_wall_s": 0.8725072080269456,
+    "observed_fractions": {
+      "Interference": 0.02820229885057471,
+      "Received": 0.8361172413793103,
+      "UnderSensitivity": 0.13568045977011498
+    },
+    "uplinks": 14999
+  }
+]

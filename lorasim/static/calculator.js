@@ -1,7 +1,7 @@
 'use strict';
 
 // Independent, request-driven preflight tool. Does not edit profiles or run jobs.
-class PropagationCalculator {
+class LinkBudgetCalculator {
  constructor({root, api, el, info, getProfile, editChannel}) {
   Object.assign(this,{root,api,el,info,getProfile});
   this.visible=false;this.serial=0;this.initialized=false;this.timer=null;
@@ -114,4 +114,25 @@ class PropagationCalculator {
   if(d.probe.distance_m>d.max_distance_m)this.result.append(el('p',{class:'hint'},'確認距離は表示範囲外です。数値はその距離で計算しています。'));
   this.result.append(el('p',{class:'calculator-caveat'},d.notes[0]),el('details',{},el('summary',{},'計算式・読み方'),el('p',{class:'hint'},'PL(d) = L₀ + 10n log₁₀(max(d/d₀, 1))、受信電力 = TP − PL。受信電力 ≥ 受信感度 ＋ 必要な余裕の距離を表示します。'),...d.notes.slice(1).map(n=>el('p',{class:'hint'},n))));
  }
+}
+
+// One Calculator entry, three independent preflight tools.
+class PropagationCalculator {
+ constructor(context){
+  this.visible=false;this.selected='link';const {root,el}=context;
+  this.panes={};this.buttons={};this.tools={};
+  const tabs=el('div',{class:'preflight-tabs',role:'tablist','aria-label':'Calculatorの機能'});
+  for(const [key,label] of [['link','伝搬距離'],['forecast','トレードオフ予測'],['consultant','AIコンサルタント']]){
+   this.panes[key]=el('div',{role:'tabpanel',id:'planning-'+key,'aria-label':label,hidden:key!=='link'});
+   this.buttons[key]=el('button',{type:'button',role:'tab','aria-controls':'planning-'+key,'aria-selected':String(key==='link'),onclick:()=>this.select(key)},label);
+   tabs.append(this.buttons[key]);
+  }
+  root.append(tabs,...Object.values(this.panes));
+  this.tools.link=new LinkBudgetCalculator({...context,root:this.panes.link});
+  this.tools.forecast=new TradeoffCalculator({...context,root:this.panes.forecast});
+  this.tools.consultant=new ConsultantPanel({...context,root:this.panes.consultant,getForecastOptions:()=>this.tools.forecast.options()});
+ }
+ select(key){this.selected=key;for(const k of Object.keys(this.panes)){this.panes[k].hidden=k!==key;this.buttons[k].setAttribute('aria-selected',String(k===key));this.tools[k].setVisible(this.visible&&k===key);}}
+ setVisible(v){this.visible=v;this.select(this.selected);}
+ invalidate(){for(const t of Object.values(this.tools))t.invalidate();}
 }

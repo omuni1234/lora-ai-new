@@ -1,0 +1,27 @@
+# 500 ED / 600 s、SF・CH候補と感度境界のトレードオフを確認する例。
+# Calculator → トレードオフ予測で先に確認。学習器の性能比較ではありません。
+name: tradeoff-planning
+seed: 4
+duration_s: 6000
+area_m: [10000, 10000]
+gateways:
+  - position: [5000, 5000, 15]
+action_space:
+  spreading_factors: [7, 8, 9, 10, 11, 12]
+  frequencies_hz: [868100000, 868300000, 868500000]
+  coding_rates: [1]
+  powers_dbm: [8, 14]
+groups:
+  - name: devices
+    count: 500
+    confirmed: true
+    max_attempts: 1
+    policy:
+      kind: random
+      action_space: {}
+    timing:
+      kind: periodic
+      options:
+        interval_s: 600
+        start: {mode: uniform, min_s: 0, max_s: 600}
+    mobility: {kind: stationary}

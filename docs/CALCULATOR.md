@@ -1,6 +1,8 @@
-# 伝搬距離 Calculator（v0.9.2）
+# 伝搬距離 Calculator（v0.10.0）
 
-実験ワークスペース中央上部の **実験前の設定確認 → Calculator · 伝搬距離** で利用します。実験やworkerを起動する必要はありません。
+実験ワークスペース中央上部の **実験前の設定確認 → Calculator → 伝搬距離** で利用します。実験やworkerを起動する必要はありません。
+
+v0.10.0では同じCalculator内に [トレードオフ予測](TRADEOFF_FORECAST.md) と [AIコンサルタント](AI_CONSULTANT.md) を追加しています。
 
 ## 更新時の表示不具合への対応（v0.9.2）
 

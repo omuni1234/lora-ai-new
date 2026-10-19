@@ -21,6 +21,8 @@ from .registry import inventory, metadata
 from .ui_metadata import describe_schema
 from .calculator import CalculatorRequest, calculate
 from .web_assets import mount_ui
+from .tradeoff import ForecastOptions, ForecastError, forecast
+from .consultant import configuration as ai_configuration, bounded_context, consult, ConsultantError
 
 
 class YamlBody(BaseModel):
@@ -37,6 +39,17 @@ class PreviewBody(YamlBody):
     horizon_s: float | None = Field(None,ge=0,le=1e9)
     limit: int = Field(80,ge=1,le=200)
     samples: int = Field(12,ge=2,le=30)
+
+class ForecastBody(YamlBody):
+    options: ForecastOptions = Field(default_factory=ForecastOptions)
+
+class ConsultantPreviewBody(YamlBody):
+    job_id: str | None = Field(None,max_length=128)
+    forecast_options: ForecastOptions | None = None
+
+class ConsultantAskBody(BaseModel):
+    context: dict
+    question: str = Field(min_length=1,max_length=6000)
 
 class ExperimentBody(BaseModel):
     name: str = Field(min_length=1,max_length=160)
@@ -56,7 +69,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.9.2")
+    app = FastAPI(title="LoRaSim Research",version="0.10.1")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -258,6 +271,38 @@ def create_app(root=None):
             return {**preflight(p,body.horizon_s,body.limit,body.samples),"diagnostics":diagnostics}
         except Exception as exc:
             bad(exc)
+    def planning_error(exc, code):
+        raise HTTPException(422,[issue(code,str(exc),"画面の説明に従って入力・接続設定を確認してください。")]) from exc
+    @app.post("/api/calculator/forecast",dependencies=[Depends(auth)])
+    def forecast_profile(body:ForecastBody):
+        try:
+            return forecast(store.parse_profile(body.yaml),body.options)
+        except ForecastError as exc: planning_error(exc,'FORECAST')
+        except Exception as exc: bad(exc)
+    @app.get("/api/consultant/config",dependencies=[Depends(auth)])
+    def consultant_config():
+        return ai_configuration()
+    @app.post("/api/consultant/preview",dependencies=[Depends(auth)])
+    def consultant_preview(body:ConsultantPreviewBody):
+        try:
+            item=job(body.job_id) if body.job_id else None
+            p=store.parse_profile(item['profile'] if item else body.yaml)
+            context={'source':'saved_run' if item else 'current_profile','profile':p.model_dump(mode='json')}
+            if item:
+                context['run']={k:item[k] for k in ('id','name','status','created','started','finished','summary','diagnostics') if k in item}
+            if body.forecast_options is not None:
+                prediction=forecast(p,body.forecast_options)
+                prediction.pop('wall_s',None)
+                context['approximate_forecast']=prediction
+            return {'context':bounded_context(context),'connection':ai_configuration()}
+        except (ConsultantError,ForecastError) as exc: planning_error(exc,'CONSULTANT')
+        except HTTPException: raise
+        except Exception as exc: bad(exc)
+    @app.post("/api/consultant/ask",dependencies=[Depends(auth)])
+    def consultant_ask(body:ConsultantAskBody):
+        try: return consult(body.context,body.question)
+        except ConsultantError as exc: planning_error(exc,'CONSULTANT')
+        except Exception as exc: bad(exc)
     @app.post("/api/calculator",dependencies=[Depends(auth)])
     def calculator(body:CalculatorRequest):
         try:

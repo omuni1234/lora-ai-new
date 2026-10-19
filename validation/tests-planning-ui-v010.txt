@@ -1,0 +1,14 @@
+✔ equal metric scale within 1200 x 300, area 2000,2000 (0.800291ms)
+✔ equal metric scale within 320 x 240, area 4000,1000 (0.062583ms)
+✔ equal metric scale within 800 x 450, area 1000,5000 (0.060792ms)
+✔ drawing and ED picking agree at pixel ratio 1 (33.852167ms)
+✔ drawing and ED picking agree at pixel ratio 2 (0.520084ms)
+✔ drawing and ED picking agree at pixel ratio 3 (0.482958ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117.120375

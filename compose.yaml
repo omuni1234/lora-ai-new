@@ -9,6 +9,10 @@ services:
       - results:/data
     environment:
       LORASIM_API_TOKEN: ${LORASIM_API_TOKEN:-}
+      LORASIM_AI_BASE_URL: ${LORASIM_AI_BASE_URL:-https://api.openai.com/v1}
+      LORASIM_AI_MODEL: ${LORASIM_AI_MODEL:-}
+      LORASIM_AI_API_KEY: ${LORASIM_AI_API_KEY:-}
+      LORASIM_AI_MAX_TOKENS: ${LORASIM_AI_MAX_TOKENS:-2000}
       LORASIM_ALLOW_PLUGINS: ${LORASIM_ALLOW_PLUGINS:-0}
     restart: unless-stopped
     healthcheck:

@@ -2,7 +2,21 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.9.2。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.10.1。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.10.1の修正
+
+AIコンサルタントの既定接続先をOpenAI APIにしました。サーバーの `.env` に `LORASIM_AI_MODEL` と `LORASIM_AI_API_KEY` を設定し、APIコンテナへ反映して利用します。キー・モデル未設定、出力上限・URL不正、APIの認証・利用枠エラーを日本語で案内します。[OpenAI接続手順](docs/AI_CONSULTANT.md)。
+
+## v0.10.0の追加
+
+Calculatorへ「トレードオフ予測」「AIコンサルタント」を追加しました。
+
+- プロファイルから、干渉・GW送信中・感度未満などのUL損失を近似し、SF・CH・TP・送信間隔・ED数・ACK有無の変更を比較します。GW送信によって隠れる潜在干渉も表示します。
+- 全送信履歴を生成せず、標本化した配置とPoisson重複電波・ACK可用性を計算します。予測の仮定・未対応機構・収束状態を明示します。
+- 現在の条件や保存済みRunを、任意のChat Completions互換AIへ相談できます。送信前にデータを表示し、キーはサーバー環境変数で設定します。未設定でも他の機能は利用できます。
+
+[予測の数式・使い方](docs/TRADEOFF_FORECAST.md)、[AI接続手順](docs/AI_CONSULTANT.md)、[本体との比較検証](docs/VALIDATION-v010.md)。例は `examples/18-tradeoff-planning.yaml`。PHY/MACと実験結果の計算は変更していません。
 
 ## v0.9.2の修正
 
