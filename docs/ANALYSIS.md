@@ -1,6 +1,6 @@
 # Experiment管理・分析仕様
 
-v0.7: [分析モジュール開発](ANALYSIS_PLUGINS.md) / [指標・文献・累積の定義](METRICS.md)。
+v0.12: [分析モジュール開発](ANALYSIS_PLUGINS.md) / [指標・文献・累積の定義](METRICS.md)。
 
 ## ExperimentとRun
 
@@ -27,7 +27,7 @@ ED iの範囲内判定済みUL数を`N_i`、分類cの件数を`N_i,c`としま�
 - EDが1回でも送っていれば、全て失敗したEDも0として含みます。
 - `N_i=0`のEDは未定義のため平均から除き、inactive_ed_countとして表示します。
 - `pooled_prr = sum_i(success_i)/sum_i(N_i)`も別に保存します。EDの送信回数が不均一ならED平均と異なります。
-- 同じExperiment/ED数の複数Runでは、対象EDの総数で重み付けします。Run間で同じIDでも異なるED標本です。
+- 従来のoutcomes/convergenceでは、同じExperiment/ED数の複数Runを対象EDの総数で重み付けします。PRR対ED数の新しい折れ線はRun等重みです。Run間で同じIDでも異なるED標本です。
 
 ## UL分類
 
@@ -39,6 +39,10 @@ ED iの範囲内判定済みUL数を`N_i`、分類cの件数を`N_i,c`としま�
 4. 全GWで失敗し、理由が混在したら`MixedLoss`。個々の理由は`gw_outcomes`および`receptions`に残します。
 
 `Censored`を他の損失として割り振りません。LostBecauseTx/NoMoreReceivers等のGWごとの総件数をそのままUL損失率にすると、複数GWで二重に数えてしまうため使用しません。PRRはULの到達率です。ACK受信率とは異なります。
+
+## v0.12の追加
+
+[新しい8モジュールの定義](RESEARCH_ANALYSIS.md)を参照してください。初期表示に数値一覧とPRR対ED数を追加しました。収束は連続した積み上げ面グラフ、表は個別CSV保存に対応します。
 
 ## グラフ
 

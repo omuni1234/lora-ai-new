@@ -1,4 +1,6 @@
-# トラッキング仕様 v1
+# トラッキング仕様（v0.12 / schema 4）
+
+現行Runのmanifest.schema_versionは4です。以下の基本表に加え、v0.2以降の追記列と末尾のv0.12追加表を使用します。旧版への対応を確認できるよう、導入版を節名に残しています。
 
 ## 出力構成
 
@@ -9,6 +11,7 @@ runs/<job-id>/
   progress.json                   # 最新進捗、atomic replace
   summary.json                    # 正常完了・キャンセル時の集計
   policy_state.jsonl              # built-in banditの最終Q値・選択回数（EDごと）
+  selector_states/part-000000.parquet # SEMAの初期状態・消去時だけ記録
   transmissions/part-000000.parquet
   receptions/part-000000.parquet
   feedback/part-000000.parquet
@@ -202,3 +205,22 @@ Parquetの物理列形式（schema_version=3）は変更していません。共
 SEMA/DQNは `policy_state.jsonl` にED別学習集計を記録します。SEMAの `arms` は `(静止候補,移動候補)` の順で、`arm_counts` / `arm_rewards` は腕ID順です。`eliminated` の `experience` は当該EDのメタ試行累計。`selected_algorithms` は選択時の回数なので、終了時点で未送信・未確定の選択を含み得ます。`learners.*.experiences` はACKの成否が確定した経験のみです。`last_ack_rssi_dbm` は失敗時には保持値であり、その失敗試行で観測できたRSSIではありません。終端の未確定試行は学習しません。
 
 SEMAの消去履歴は最大5件、DQNの再生配列は容量制限付きです。1送信ごとのニューラルネット重みや勾配のログは蓄積しません。重みを保存して途中再開する機能は含みません。
+
+## v0.12追加スキーマ（manifest.schema_version=4）
+
+既存の列を削除せず、`uplinks`と`transmissions`へ`motion_state: string`を追加しました。UL送信開始時の`stationary` / `moving` / `unknown`です。DLのtransmissionsではnull。選択器の観測や学習には渡さず、解析専用です。`uplinks`では判定完了時刻でなく送信開始時の状態を保持します。既存ファイルに列がなければ、組み込みStationaryへの割り当てだけ安全に推定し、他はunknownです。
+
+新表`selector_states`:
+
+| 列 | 型 | 意味 |
+|---|---|---|
+| device_id | int64 | 独立エージェントのED番号 |
+| time_ns | int64 | 初期化時刻またはフィードバック後の状態変更時刻 |
+| tx_index | int64 | 当該EDの実送信通番。初期状態は0 |
+| experience | int64 | SEMAがACK成功/失敗を学習した累積回数 |
+| arms | string | 静止/移動アルゴリズムの組のJSON配列。順序がアームID |
+| active_arms | list<int32> | この時点以後に残存するアームID |
+
+SEMAは初期状態＋消去のある時点だけ出力します（内蔵6アームはEDあたり最大6行）。同じ時点で複数アームを消去した場合は結果を1行にまとめます。最大送信回数に比例したスナップショット保存を行いません。空表は非対応選択器のRunでも生成されます。旧`policy_state.jsonl`は引き続き最終状態の保存用です。旧Runに過去の時刻を捏造する移行は行いません。
+
+新表も既存Trackerのバッチ/バックプレッシャーを使用します。分析は[RESEARCH_ANALYSIS.md](RESEARCH_ANALYSIS.md)。

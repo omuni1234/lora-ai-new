@@ -78,3 +78,9 @@ lorasim sweep examples/15-adr-common-space.yaml --data data --seeds 1 2 3 4
 API: `GET /api/worker`で状態とRun→PIDの`processes`、`PUT /api/worker/settings`に`{"workers":4}`で変更、`DELETE /api/worker/settings`で起動設定へ戻します。既存APIと同じBearer認証を適用します。
 
 各RunはそれぞれRAM・GPUメモリ・出力I/Oを必要とします。保存用`writer_processes`は別枠で、4 Run × writer_processes=2ならDES4＋保存8プロセスです。DQN等のGPU学習はGPUを共有し、GPUごとの振り分けは行いません。CPU枠超過はGUIで注意を表示します。固定/宣言済みMCU時間を使う条件の計算結果は並列順に依存しませんが、`energy.mcu.mode: measured`の実測時間とエネルギーは競合負荷で変化し得ます。任意の独自プラグインが外部の共有状態を使う場合の再現性はプラグイン実装側の責任です。
+
+## v0.12の更新
+
+上部の「ドキュメント」から同梱mdを検索・閲覧・保存できます。GET /api/documents（本文検索用一覧）とGET /api/documents/content?id=docs/INDEX.mdは既存Bearer認証に従います。任意パスの読み出しや外部HTML実行は許可しません。変更を配布する際はdocker compose up -d --buildでAPI/workerを更新してください。依存にmarkdown-it-pyを追加しています。過去の検証記録は現行版の検証結果ではありません。
+
+[操作ガイド](GUI.md) / [文書一覧](INDEX.md)

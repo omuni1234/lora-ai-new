@@ -133,3 +133,9 @@ lorasim run examples/06-badr-mobility.yaml --output runs/badr
 ```
 
 最低限、同一seedの再現、複数ED間の状態独立、合法なRadio返却、欠損ACK/RSSI、長いDuty Cycle延期、時刻の重複問い合わせを検証してください。独自モデルのGPU推論はCUDA/cuDNN/重み版も記録してください。モデルはOS、ディスク、ネットワークにアクセスできる信頼済みPythonコードです。プラグインを有効にした管理APIはアクセス可能な利用者を制限して運用してください。
+
+## v0.12の更新
+
+分析はlorasim/analysis_modulesの独立クラス、共通描画はstatic/analysis-charts.jsです。新指標の追加はANALYSIS_PLUGINS.mdを参照してください。GUI文書はdocuments.pyがREADME.mdとdocs/*.mdを読み、MarkdownIt（HTML無効）で表示します。wheelにはshare/lorasim/docs、Dockerには/app/docsとして同梱します。編集元はdocs/*.mdだけで、生成コピーを直接編集しません。
+
+[操作ガイド](GUI.md) / [文書一覧](INDEX.md)

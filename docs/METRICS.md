@@ -1,4 +1,4 @@
-# 研究用評価指標と文献対応（v0.7）
+# 研究用評価指標と文献対応（v0.12）
 
 一次文献を調べ、平均到達率だけでは見えない端末間の偏り、資源使用量、成功通信量とエネルギーの関係を比較できるようにしました。論文ごとにPHY/MAC、再送、成功の分母が違うため、本シミュレータの集計定義を下記に固定します。以下は指標の採用理由であり、各論文の実験全体の再現を主張するものではありません。
 
@@ -8,7 +8,7 @@
 2. Kim, Yoo, **Contention-Aware Adaptive Data Rate for Throughput Optimization in LoRaWAN**, Sensors 18(6), 1716 (2018)。SFへの集中と競合が総スループットに影響する問題を扱っています。SF/CH別の通信時間配分・平均airtime・再送割合・受信通信量の併読に採用しました。CH配分と再送割合の追加は本実装の診断用拡張です。[原論文](https://pmc.ncbi.nlm.nih.gov/articles/PMC6022063/)
 3. Kufakunesu, Hancke, Abu-Mahfouz, **A Fuzzy-Logic Based Adaptive Data Rate Scheme for Energy-Efficient LoRaWAN Communication**, JSAN 11(4),65 (2022)。評価に総エネルギー、Confirmed Packet Success Rate、UL-PDR、干渉、GW busy、エネルギー効率を使っています。本実装は既存UL損失分類に加え、受信ペイロードと消費量の比を提供します。CPSRをUL-PRRと取り違えないことが必要です。[原論文](https://www.mdpi.com/2224-2708/11/4/65)
 
-## 利用可能な7モジュール
+## 基本7モジュール（追加8モジュールは後述）
 
 | kind | 内容 | 集計定義 |
 |---|---|---|
@@ -39,3 +39,7 @@
 UL行数をP、ED数をN、表示点数をB、損失分類数をCとすると、追加の累積スキャンは概ね`O(P log B + NBC)`、メモリは`O(NBC + 8192行)`です。Bは最大500、N×Bが100万セル程度となるよう間引きます（N自体が100万を超える場合は少なくともNセルが必要）。間引くのは表示点であり、点に含める過去の送信データではありません。基本摘要を含めてもスキャン回数は表示点数に依存しません。
 
 モジュール追加手順は[ANALYSIS_PLUGINS.md](ANALYSIS_PLUGINS.md)、トラッキングの列定義は[TRACKING.md](TRACKING.md)を参照してください。
+
+## v0.12の追加指標
+
+全15モジュール。追加は`abstract`, `prr_by_count`, `spatial_sf`, `sema_pool`, `stationary_distance`, `channel_distribution`, `channel_js`, `mobility_outcomes`です。数式・分母・旧データへの対応は[RESEARCH_ANALYSIS.md](RESEARCH_ANALYSIS.md)を参照してください。KL/JSは分布差の記述統計であり、小さい方策が常に高PRRであることを意味しません。

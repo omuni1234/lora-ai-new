@@ -18,7 +18,8 @@ SCHEMAS = {
         ("start_ns",pa.int64()),("end_ns",pa.int64()),("sf",pa.int32()),("cr",pa.int32()),
         ("bandwidth_hz",pa.int64()),("frequency_hz",pa.int64()),("tx_power_dbm",pa.float64()),
         ("preamble_symbols",pa.int32()),("implicit_header",pa.bool_()),("crc",pa.bool_()),
-        ("phy_bytes",pa.int32()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64())]),
+        ("phy_bytes",pa.int32()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64()),
+        ("motion_state",pa.string())]),
     "receptions": pa.schema([
         ("packet_id",pa.int64()),("message_id",pa.int64()),("direction",pa.string()),
         ("device_id",pa.int64()),("receiver_kind",pa.string()),("receiver_id",pa.string()),
@@ -44,7 +45,11 @@ SCHEMAS = {
         ("packet_id",pa.int64()),("message_id",pa.int64()),("device_id",pa.int64()),
         ("tx_index",pa.int64()),("attempt",pa.int32()),("time_ns",pa.int64()),
         ("policy",pa.string()),("outcome",pa.string()),("received",pa.bool_()),
-        ("gw_outcomes",pa.string()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64())]),
+        ("gw_outcomes",pa.string()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64()),
+        ("motion_state",pa.string())]),
+    "selector_states": pa.schema([
+        ("device_id",pa.int64()),("time_ns",pa.int64()),("tx_index",pa.int64()),
+        ("experience",pa.int64()),("arms",pa.string()),("active_arms",pa.list_(pa.int32()))]),
     "energy": pa.schema([
         ("device_id",pa.int64()),("tx_index",pa.int64()),("component",pa.string()),
         ("state",pa.string()),("start_ns",pa.int64()),("end_ns",pa.int64()),

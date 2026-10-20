@@ -1,4 +1,4 @@
-# モデルの開発とGUIへの設定公開（v0.3）
+# モデルの開発とGUIへの設定公開（v0.12）
 
 ## 共通構成
 
@@ -179,3 +179,9 @@ D-LoRaの独立した基底腕の実装例は `plugins/selector/d_lora.py`。現
 副作用のないモデルは`preview_safe = True`を宣言すると、経験分布の事前確認で呼び出せます。Mobilityには任意の`motion_state(time_s)`を追加しました。Calculatorが同じ時刻の`position(time_s)`を呼んだ直後に、`stationary`、`moving`、`unknown`のいずれかを返してください。時間を進めたり、乱数を引いたり、モデル状態を変更したりしない読み取り専用メソッドです。独自クラス自身に実装がなければ、親クラスがStationaryでも`unknown`として扱います。サンプル間の同一座標から静止とは推測しません。
 
 独自モデルは`preview_cost(options, horizon)`で処理量の上界を返すこともできます。宣言はプロセス隔離・強制タイムアウトを意味しません。モデル内部の処理も有界にしてください。送信タイミングの観測にはACK/RSSI/SF/TPをNone、tx_countには生成回数を渡します。通信フィードバックが必要なモデルでは事前確認結果は本実験と異なります。仕様と出力は[EXPERIENCE_DISTRIBUTION.md](EXPERIENCE_DISTRIBUTION.md)を参照してください。
+
+## v0.12の更新
+
+motion_stateは経験分布Calculatorだけでなく、実送信開始時の解析用記録でも呼びます。時刻を進めず乱数を使わない契約は同じです。選択器は任意のtrace_revision（変更時に増える整数）とpool_trace()を実装できます。現契約はSEMA型のarms / active_arms / experienceを返し、engineはrevisionが変わったときだけ記録します。初期状態は通番0です。
+
+[操作ガイド](GUI.md) / [文書一覧](INDEX.md)

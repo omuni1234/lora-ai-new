@@ -1,0 +1,24 @@
+✔ experience map preserves metric aspect ratio and includes empty/outside bins (0.781417ms)
+✔ timeline stacks states as counts and handles no transmissions (0.231666ms)
+✔ equal metric scale within 1200 x 300, area 2000,2000 (0.794833ms)
+✔ equal metric scale within 320 x 240, area 4000,1000 (0.073292ms)
+✔ equal metric scale within 800 x 450, area 1000,5000 (0.06025ms)
+✔ drawing and ED picking agree at pixel ratio 1 (12.4835ms)
+✔ drawing and ED picking agree at pixel ratio 2 (0.485417ms)
+✔ drawing and ED picking agree at pixel ratio 3 (0.48625ms)
+✔ continuous cumulative area, grids and per-endpoint hover are present (13.657ms)
+✔ lines show gaps, ranges, sample counts and safely escaped labels (0.645542ms)
+✔ spatial map reports counts and uses equal distance scales (1.076042ms)
+✔ profile name uses effective assignments, Japan clock and explicit unique suffix (4.590042ms)
+✔ summary flatten preserves nested values, booleans, null and leaf labels (0.897917ms)
+✔ three preflight panels and dedicated chart assets are wired (1.45875ms)
+✔ SEMA survival separates overlapping algorithms into labelled rows (0.455583ms)
+✔ generated profile names fit the stored-profile name limit for custom classes (0.153542ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.8135

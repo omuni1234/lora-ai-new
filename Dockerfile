@@ -7,6 +7,7 @@ WORKDIR /app
 COPY pyproject.toml LICENSE README.md NOTICE ./
 COPY lorasim ./lorasim
 COPY examples ./examples
+COPY docs ./docs
 RUN python3 -m pip install --no-cache-dir --upgrade 'pip>=25,<27' 'setuptools>=68,<81' wheel \
     && python3 -m pip install --no-cache-dir --no-build-isolation . \
     && lorasim --help >/dev/null && useradd --create-home --uid 10001 sim \

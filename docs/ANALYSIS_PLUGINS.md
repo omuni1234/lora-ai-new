@@ -1,4 +1,4 @@
-# 分析モジュール開発ガイド（v0.7）
+# 分析モジュール開発ガイド（v0.12）
 
 ## 構成と責務
 
@@ -97,3 +97,16 @@ PLUGIN = MeanPRR
 `POST /api/analysis`で実行。`GET /api/analysis/modules`は内蔵メタデータ、`GET /api/analysis/modules/schema?kind=my_package:Metric`は独自メタデータを返します。modules省略は従来の4指標。全オフ・重複指定はErrorです。応答の`modules`にはkind、options、status、定義、参考文献とdataを保存します。GUIのJSON出力が新指標を含む完全な出力です。既存CSVはRun別の基本集計用で、全モジュールの任意データを表現する形式ではありません。
 
 テストでは、分母0・未送信ED・Censored・unequal ED counts・再送・複数GW・MCUの切り替え・範囲の両端・中断horizonを確認してください。`tests/test_analysis_modules.py`には手計算・ランダムデータの素朴な累積計算との比較、選択モジュールだけのスキャン、独自モジュールと例外隔離の例があります。
+
+## v0.12の表示形式・読み取り契約
+
+`lines`（折れ線・階段）、`stacked_area`（連続した累積割合）、`heatmap`（位置SF）、`survival`（行別の時系列残存率）を追加しました。`table`はページ分割と全行CSV、`lines`はグリッド・ホバー・数値ラベルに対応します。描画は`static/analysis-charts.js`に分離しています。
+
+```python
+{"type":"lines", "title":"PRR", "x_label":"ED数", "y_label":"PRR", "y_max":1,
+ "series":[{"label":"fixed", "color_key":"fixed", "points":[{"x":100,"y":0.8,"n":3,"low":0.7,"high":0.9}]}]}
+```
+
+`step: True`は左側の値を次の点まで保持します。y=Noneは線を切り、0として接続しません。nの意味はモジュールの定義で説明してください。low/highは必ずしも信頼区間ではありません。notesの文字列配列は画面へ注記として表示します。詳しいheatmapの契約は`spatial_sf.py`、連続面は`convergence.py`が例です。
+
+`_common.py`は参照解決、旧形式の移動状態、必要列のバッチ読み込みを共通化します。`channel_distribution.py`のCHカウンタはJSでも再利用します。全パケットを配列・辞書で保持する実装は避けてください。`sema_pool.py`は変更時だけ記録された小さな状態列を読みます。旧ファイルの新列欠落はN/A/unknownとして扱い、将来の状態から補完しません。

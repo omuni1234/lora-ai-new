@@ -2,7 +2,13 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.11.0。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.12.0。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.12.0の追加
+
+比較・分析を15モジュールへ拡張しました。ED数別の数値一覧・PRR折れ線、位置別SF地図、SEMAの残存履歴、距離別の静止時PRR、CH分布のKL/JS、静止/移動別成績を追加。収束は連続した積み上げ面グラフになり、ホバー・標本数・数値ラベル・表CSVを利用できます。
+
+名前入力に「名称を反映」、事前確認に「Abstruct · 設定一覧」、上部に「ドキュメント」を追加しました。[操作ガイド](docs/GUI.md)、[指標の定義](docs/RESEARCH_ANALYSIS.md)、[文書一覧](docs/INDEX.md)、[検証記録](docs/VALIDATION-v012.md)。新規Runは追記型のschema_version=4で、旧結果の不足する履歴は推測しません。
 
 ## v0.11.0の追加
 
@@ -197,7 +203,7 @@ EDごとのQ表・学習状態の独立性を検証し、SF×CH×CR×TPの全体
 
 - [行動空間とEDの独立性](docs/ACTION_SPACE.md)
 - [分析モジュール開発ガイド](docs/ANALYSIS_PLUGINS.md)
-- [7つの分析モジュール・定義・文献](docs/METRICS.md)
+- [分析モジュール・定義・文献](docs/METRICS.md)
 - [検証結果](docs/VALIDATION-v07.md)
 - [実行例](examples/14-unified-action-space.yaml)
 

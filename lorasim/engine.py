@@ -41,6 +41,7 @@ class Attempt:
     outcomes: dict = field(default_factory=dict)
     xyz: tuple = (0.,0.,0.)
     link_report: tuple | None = None
+    motion_state: str = "unknown"
 
 
 @dataclass(slots=True)
@@ -68,6 +69,7 @@ class Device:
     last_radio: Radio | None = None
     context: Attempt | None = None
     duty: dict = field(default_factory=dict)
+    trace_revision: int = -1
 
 
 @dataclass(slots=True)
@@ -235,7 +237,15 @@ class Simulation:
         self.tracker.write("uplinks",packet_id=ctx.packet_id,message_id=ctx.message_id,device_id=ctx.ed,
                            tx_index=ctx.tx_index,attempt=ctx.number,time_ns=ctx.start,policy=d.policy_label,
                            outcome=outcome,received=outcome=="Received",gw_outcomes=json.dumps(ctx.outcomes),
-                           x_m=ctx.xyz[0],y_m=ctx.xyz[1],z_m=ctx.xyz[2])
+                           x_m=ctx.xyz[0],y_m=ctx.xyz[1],z_m=ctx.xyz[2],motion_state=ctx.motion_state)
+
+    def _selector_trace(self, d):
+        """Optional read-only change trace. No per-packet learner snapshots."""
+        revision = getattr(d.policy, "trace_revision", None)
+        if revision is not None and revision != d.trace_revision:
+            self.tracker.write("selector_states", device_id=d.id, time_ns=self.now,
+                               tx_index=d.tx_count, **d.policy.pool_trace())
+            d.trace_revision = revision
 
     def event(self,name,ctx=None,detail=""):
         self.tracker.write("events",time_ns=self.now,device_id=ctx.ed if ctx else None,
@@ -248,7 +258,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":3,"simulator_version":"0.11.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":4,"simulator_version":"0.12.0",
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",
@@ -262,6 +272,7 @@ class Simulation:
             for d in self.devices:
                 xyz = self.positions[d.id]
                 self.tracker.write("devices",device_id=d.id,group=d.group.name,policy=d.policy_label,mobility=d.mobility_label,x_m=xyz[0],y_m=xyz[1],z_m=xyz[2])
+                self._selector_trace(d)
                 self._next_application(d,None)
             self._progress("running",start)
             while self.queue:
@@ -419,6 +430,7 @@ class Simulation:
         report = ctx.link_report if downlink_received and ctx.link_report else (None,None,None)
         f = Feedback(self.now/NS,known_ack,rssi,ctx.duration/NS,ctx.radio.tp_dbm,ctx.number,downlink_received,*report)
         self._compute(d,"training",d.policy.observe,f,d.tx_count)
+        self._selector_trace(d)
         self.tracker.write("feedback",packet_id=ctx.packet_id,message_id=ctx.message_id,device_id=d.id,
                            time_ns=self.now,attempt=ctx.number,ack=known_ack,dl_rssi_dbm=rssi,
                            airtime_s=f.airtime_s,tx_power_dbm=f.tx_power_dbm,
@@ -443,6 +455,10 @@ class Simulation:
                 raise ValueError("mobility must return three finite coordinates")
             self.positions[d.id] = value
         xyz = self.positions[source].copy()
+        if direction == "UL":
+            mobility = self.devices[source].mobility
+            state = mobility.motion_state(self.now/NS) if "motion_state" in type(mobility).__dict__ else "unknown"
+            ctx.motion_state = state if state in ("stationary", "moving") else "unknown"
         power,loss,distance,delay = self.geometry.links(source,p.tp_dbm) if self.geometry else links(xyz,self.positions,p.tp_dbm,self.p.channel,self.p.channel_backend)
         flight = Flight(next(self.packet_seq),ctx,source,direction,self.now,airtime_ns(phy_bytes,p),p,power,loss,distance,delay)
         if len(self.flights) >= self.p.tracking.max_air_signals or self.air_bytes+flight.nbytes > self.p.tracking.max_air_bytes:
@@ -463,7 +479,8 @@ class Simulation:
                            start_ns=self.now,end_ns=self.now+flight.duration,
                            sf=p.sf,cr=p.cr,bandwidth_hz=p.bandwidth_hz,frequency_hz=p.frequency_hz,
                            tx_power_dbm=p.tp_dbm,phy_bytes=phy_bytes,preamble_symbols=p.preamble_symbols,
-                           implicit_header=p.implicit_header,crc=p.crc,x_m=xyz[0],y_m=xyz[1],z_m=xyz[2])
+                           implicit_header=p.implicit_header,crc=p.crc,x_m=xyz[0],y_m=xyz[1],z_m=xyz[2],
+                           motion_state=ctx.motion_state if direction=="UL" else None)
         for gi in range(len(self.p.gateways)):
             rid = self.n+gi
             if rid != source:

@@ -161,3 +161,9 @@ Webでは配列の追加/削除、条件割当、座標、電流、Webhook、全
 `action_space` がSF×CH対応モデルの共通実験条件です。`spreading_factors`、登録済みCHから選ぶ `frequencies_hz`、固定 `tp_dbm` / `cr` を設定します。説明は [SEMA.md](SEMA.md)。モデルライブラリのsf_chモデルはこの集合を内部に複製せず、利用先の実験から受け取ります。
 
 マルコフ移動は `kind: markov`。行列の編集は移動モデルの「遷移確率行列 P」で行い、空なら自己滞在確率と一様な退出先から生成します。詳細は [MARKOV.md](MARKOV.md)。
+
+## v0.12の更新
+
+名前欄の「名称を反映」はED数・実効選択器・移動モデル・日本時間mmddHHMM・一意IDから名前を生成します。複数実装はmixed-N。自動保存はしません。Abstructタブで入力値と参照展開後のモデル定数を一覧できます。
+
+[操作ガイド](GUI.md) / [文書一覧](INDEX.md)

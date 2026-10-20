@@ -64,7 +64,7 @@ function info(textOrLoad,label='設定の説明'){
 function caption(key,s={}){const name=s.title||labels[key]||(/^\d+$/.test(key)?'項目 '+(Number(key)+1):key);return el('span',{class:'caption'},name,info(s.description||name+' の設定値です。',name+'の説明'));}
 function inlineSchema(s,defs=s.$defs||{},seen=[]){if(!s||typeof s!=='object')return s;if(Array.isArray(s))return s.map(x=>inlineSchema(x,defs,seen));if(s.$ref){const key=s.$ref.split('/').pop();if(seen.includes(key))return {type:'object'};return {...inlineSchema(defs[key]||{},defs,[...seen,key]),...Object.fromEntries(Object.entries(s).filter(([k])=>k!=='$ref'))};}return Object.fromEntries(Object.entries(s).filter(([k])=>k!=='$defs').map(([k,v])=>[k,inlineSchema(v,defs,seen)]));}
 function componentValue(value,cat,seen=[]){if(!value.ref)return value;if(seen.includes(value.ref))throw Error('循環したモデル参照です');const base={...(catalog[cat]||{}),...(profile.models?.[cat]||{})}[value.ref];if(!base)throw Error('モデル参照が見つかりません: '+value.ref);const resolved=componentValue(base,cat,[...seen,value.ref]);return {...resolved,action_space:value.action_space??resolved.action_space,options:{...resolved.options,...value.options}};}
-function dirty(){calculator?.invalidate();previewDirty=true;$('map').classList.add('map-stale');configRevision++;++diagnosticSeq;$('mapInfo').textContent='設定変更あり · 再確認してください';$('validationState').textContent='変更あり・確認待ち';$('validationState').className='badge';$('validationNote').textContent='前回の診断は変更前の設定に対するものです。入力を止めると再チェックします。';syncYaml();clearTimeout(diagnosticTimer);diagnosticTimer=setTimeout(checkConfiguration,900);}
+function dirty(){if(preflightTab==='abstract')$('abstractTool').dataset.stale='true';calculator?.invalidate();previewDirty=true;$('map').classList.add('map-stale');configRevision++;++diagnosticSeq;$('mapInfo').textContent='設定変更あり · 再確認してください';$('validationState').textContent='変更あり・確認待ち';$('validationState').className='badge';$('validationNote').textContent='前回の診断は変更前の設定に対するものです。入力を止めると再チェックします。';syncYaml();clearTimeout(diagnosticTimer);diagnosticTimer=setTimeout(checkConfiguration,900);}
 function newAutoIds(){for(const [collection,key,prefix] of [['gateways','id','gw'],['groups','name','group'],['sub_bands','id','band']]){const rows=profile[collection]||[],used=new Set(rows.map(x=>x[key]).filter(Boolean));let i=0;for(const row of rows)if(!row[key]){while(used.has(prefix+i))i++;row[key]=prefix+i;used.add(row[key]);}}}
 function frequencyOptions(direction){const allowed=profile[direction+'_sub_bands'];return (profile.sub_bands||[]).filter(b=>allowed===null||allowed===undefined||allowed.includes(b.id)).flatMap(b=>(b.channels_hz||[]).map(f=>({value:f,label:`${(f/1e6).toFixed(3)} MHz · ${b.id}`})));}
 function buildField(parent,key,value,s,path,onChange){
@@ -126,7 +126,7 @@ function buildField(parent,key,value,s,path,onChange){
  else if(s.type==='boolean')input=el('input',{...attrs,type:'checkbox',checked:value,onchange:e=>onChange(e.target.checked)});
  else{const numeric=s.type==='integer'||s.type==='number';input=el('input',{...attrs,type:numeric?'number':'text',value,step:s.type==='integer'?'1':'any',oninput:e=>onChange(numeric?e.target.valueAsNumber:e.target.value)});if(s.minimum!==undefined)input.min=s.minimum;if(s.maximum!==undefined)input.max=s.maximum;}
  if(key==='id')input.placeholder='空欄で自動採番';if(path.startsWith('sub_bands.'))input.addEventListener('change',()=>{newAutoIds();renderAll();});
- const label=el('label',{class:s.type==='boolean'?'check':''});if(s.type==='boolean')label.append(input,title);else label.append(title,input);parent.append(label);
+ const label=el('label',{class:s.type==='boolean'?'check':''});if(s.type==='boolean')label.append(input,title);else label.append(title,input);if(path==='name'){const row=el('div',{class:'fieldrow'},input,el('button',{type:'button',onclick:()=>{try{const name=ProfileSummary.name(profile,componentValue);input.value=name;onChange(name);}catch(e){reportError(e);}},title:'ED数・選択器・移動モデル・日本時間・一意IDから名称を反映'},'名称を反映'));label.append(row);}parent.append(label);
 }
 function renderAll(){if(Object.keys(analysisModules).length)renderModuleEditor();const open=new Set([...document.querySelectorAll('#configForm details[open]')].map(e=>e.dataset.path));$('configForm').replaceChildren();const section=sections.find(s=>s.id===selectedSection);$('editorTitle').textContent=section.title;$('editorDescription').textContent=section.description;$('editorIndex').textContent=String(sections.indexOf(section)+1).padStart(2,'0');$('profileManagement').hidden=section.id!=='general';$('yamlPanel').hidden=section.id!=='yaml';
  for(const k of section.keys){const v=profile[k];if(v===undefined)continue;buildField($('configForm'),k,v,schema.properties?.[k]||infer(v),k,nv=>{profile[k]=nv;dirty();});}for(const d of $('configForm').querySelectorAll('details'))if(open.has(d.dataset.path)||section.keys.includes(d.dataset.path))d.open=true;
@@ -140,7 +140,7 @@ const experimentInfoCache=new Map();
 async function experimentText(id){let item=experimentInfoCache.get(id);if(!item||Date.now()-item.at>10000){item={at:Date.now(),data:await api('/api/experiments/'+id+'/info')};experimentInfoCache.set(id,item);}const e=item.data,r=e.latest_run,env=e.environment,fmt=v=>v?new Date(v*1000).toLocaleString('ja-JP'):'未実行';return [e.name,'ID: '+e.id,e.description,`作成: ${fmt(e.created)}`,`開始: ${fmt(e.first_started)} / 最終終了: ${fmt(e.last_finished)}`,`実行時間の合計: ${num(e.wall_total_s)} s`,Object.entries(e.statuses).map(([k,v])=>k+': '+v).join(' · '),r?`最新Run: ${r.ed_count} ED / ${r.gw_count} GW / 仮想時間 ${r.duration_s} s / seed ${r.seed}`:'Runなし',r?Object.entries(r.models).slice(0,4).map(([k,v])=>k+': '+Object.values(v).join(' / ')).join('\n'):'',env?`最後に実行した環境 (${e.environment_run_id.slice(0,8)}):\n${env.platform}\nPython ${env.python} / NumPy ${env.numpy} / LoRaSim ${env.simulator_version}`:'実行環境: 記録なし'].filter(Boolean).join('\n');}
 async function refreshProfiles(){savedProfiles=await api('/api/profiles');const current=$('profiles').value;$('profiles').replaceChildren(el('option',{value:''},'新しいプロファイル'),...savedProfiles.map((p,i)=>el('option',{value:String(i)},p.name)));$('profiles').value=current;}
 async function refreshExperiments(){experiments=await api('/api/experiments');const chosen=$('experiment').value,checked=new Set([...$('experimentChecks').querySelectorAll('input:checked')].map(x=>x.value));$('experiment').replaceChildren(el('option',{value:''},'新規作成（プロファイル名）'),...experiments.map(e=>el('option',{value:e.id},e.name+' · '+e.runs+' Runs · '+e.id.slice(0,6))));$('experiment').value=chosen;$('experimentChecks').replaceChildren(...experiments.map(e=>el('label',{class:'check experimentcheck'},el('input',{type:'checkbox',value:e.id,checked:checked.has(e.id),onchange:analysisChanged}),el('span',{},e.name,el('small',{class:'hint'},` · ${e.completed}/${e.runs} 完了 · ${e.id.slice(0,6)}`)),info(()=>experimentText(e.id),e.name+'の実験情報'))));}
-function switchView(view){currentView=view;calculator?.setVisible(view==='experiment'&&preflightTab==='calculator');$('runActions').hidden=view!=='experiment';$('resultHeading').textContent=view==='analysis'?'選択中の個別Run結果':'結果・アブストラクト';for(const id of ['experiment','analysis','models']){$(id==='experiment'?'settingsPane':id+'Pane').hidden=view!==id;$(id+'View').hidden=view!==id;}document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('pageTitle').textContent={experiment:'実験ワークスペース',analysis:'比較・分析',models:'モデルライブラリ'}[view];if(view==='analysis')action(refreshExperiments)();if(view==='models')renderLibrary();}
+function switchView(view){currentView=view;calculator?.setVisible(view==='experiment'&&preflightTab==='calculator');$('runActions').hidden=view!=='experiment';$('resultHeading').textContent=view==='analysis'?'選択中の個別Run結果':'結果・アブストラクト';for(const id of ['experiment','analysis','models','documents']){$(id==='experiment'?'settingsPane':id+'Pane').hidden=view!==id;$(id+'View').hidden=view!==id;}document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===view));document.querySelector('.pagehead p').textContent=view==='documents'?'左で本文を検索・選択し、中央で仕様と使い方を確認できます。':view==='analysis'?'左でExperimentを選択し、下で分析モジュールを構成します。上に結果が表示されます。':'左で項目を選び、中央で編集・確認。進捗と結果は右側で確認できます。';$('pageTitle').textContent={experiment:'実験ワークスペース',analysis:'比較・分析',models:'モデルライブラリ',documents:'ドキュメント'}[view];if(view==='analysis')action(refreshExperiments)();if(view==='models')renderLibrary();document.querySelector('main').classList.toggle('documents-open',view==='documents');if(view==='documents')action(()=>documents.open())();}
 const statusLabel={queued:'待機中',running:'実行中',completed:'完了',failed:'失敗',cancelled:'停止済み',interrupted:'中断'};
 async function refreshJobs(){const jobs=await api('/api/jobs');$('jobs').replaceChildren(...jobs.slice(0,50).map(j=>el('article',{class:'job-item'+(j.id===selectedJob?' selected':'')},el('div',{class:'job-top'},el('button',{class:'quiet',onclick:action(()=>selectJob(j.id))},j.name),el('span',{class:'status '+j.status},statusLabel[j.status]||j.status)),el('div',{class:'job-bottom'},el('span',{},j.id.slice(0,8)+' · '+(100*j.progress).toFixed(1)+'%'),['queued','running'].includes(j.status)?el('button',{class:'small',onclick:action(async()=>{await api('/api/jobs/'+j.id+'/cancel','POST');await refreshJobs();})},'停止'):el('button',{class:'small',onclick:action(()=>selectJob(j.id))},j.status==='failed'||j.status==='interrupted'?'原因を確認':'結果を表示')))));
  if(!jobs.length)$('jobs').append(el('p',{class:'hint'},'登録されたRunはありません。'));if(jobs.length>50)$('jobs').append(el('p',{class:'hint'},'最新50 Runを表示しています。全件の分析はExperimentから選択できます。'));
@@ -168,16 +168,16 @@ function renderAnalysis(){
   if(result.status==='failed'){const d=el('div',{id:'module-error-'+$('analysisCharts').children.length});panel.append(d);renderDiagnostics(d.id,result.diagnostics);continue;}
   for(const [i,v] of (result.data.views||[]).entries()){
    const id='analysis-chart-'+$('analysisCharts').children.length+'-'+i,box=el('div',{class:'chart'},el('h3',{},v.title),el('div',{id}));panel.append(box);
-   if(v.type==='stacked')stacked(id,v.items,v.labels,v.unit||'');
-   else if(v.type==='bars')bars(id,v.items,v.unit||'');
-   else if(v.type==='table')$(id).append(el('div',{class:'tablewrap'},el('table',{},el('thead',{},el('tr',{},v.columns.map(x=>el('th',{},x)))),el('tbody',{},v.rows.map(row=>el('tr',{},row.map(x=>el('td',{},x??'N/A'))))))));
+   if(v.type==='stacked'){stacked(id,v.items,v.labels,v.unit||'');for(const t of $(id).querySelectorAll('title')){t.parentElement.dataset.tip=t.textContent;t.parentElement.setAttribute('tabindex','0');}AnalysisCharts.tooltips($(id));}
+   else if(['bars','table','lines','stacked_area','heatmap','survival'].includes(v.type))AnalysisCharts.render($(id),v);
    else $(id).textContent='未対応の表示形式です。JSON出力でデータを確認してください。';
   }
+  for(const note of result.data?.notes||[])panel.append(el('p',{class:'analysis-note'},note));
   if(result.sources?.length)panel.append(el('p',{class:'hint'},'指標の参考文献: ',result.sources.filter(url=>/^https?:\/\//.test(url)).map((url,i)=>el('a',{href:url,target:'_blank',rel:'noopener'},`[${i+1}] `))));
  }
  if(!analysisData.modules?.length)$('analysisCharts').append(el('p',{class:'empty panel'},'分析モジュールが選択されていません。'));
  $('analysisState').textContent=`${analysisData.runs.length} Run・${analysisData.modules?.length||0} モジュールを集計`;
- $('analysisDefinitions').textContent='送信回数はEDごとの実送信通番（再送込み）。収束は1〜tの累積、他の指標は指定区間。判定未了はPRRの分母から除外。対象EDを等しく重み付けします。起動時の消費は区間外です。';
+ $('analysisDefinitions').textContent='送信回数はEDごとの実送信通番（再送込み）。通常の収束は1〜t累積。PRR・反復Run・時刻軸の分母は各モジュールの定義を参照してください。判定未了はPRRの分母から除外します。';
 }
 
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
@@ -259,9 +259,9 @@ for(const id of ['txStart','txEnd','edCount','bins','includeMCU'])$(id).addEvent
 function selectPreflightTab(tab) {
  preflightTab=tab;
  const calculating=tab==='calculator';
- $('layoutTool').hidden=calculating;$('calculatorTool').hidden=!calculating;$('mapActions').hidden=calculating;
- $('preflightPanel').classList.toggle('calculator-open',calculating);
- for(const [id,selected] of [['layoutTab',!calculating],['calculatorTab',calculating]]){
+ $('layoutTool').hidden=tab!=='layout';$('calculatorTool').hidden=!calculating;$('abstractTool').hidden=tab!=='abstract';$('mapActions').hidden=tab!=='layout';
+ $('preflightPanel').classList.toggle('calculator-open',tab!=='layout');
+ for(const [id,selected] of [['layoutTab',tab==='layout'],['calculatorTab',calculating],['abstractTab',tab==='abstract']]){
   $(id).setAttribute('aria-selected',String(selected));$(id).tabIndex=selected?0:-1;
  }
  if(calculating){
@@ -274,21 +274,40 @@ function selectPreflightTab(tab) {
    calculator.setVisible(currentView==='experiment');
   }catch(e){$('calculatorTool').replaceChildren(el('p',{class:'diagnostic error',role:'alert'},e.message));}
  }else calculator?.setVisible(false);
- if(!calculating)drawMap();
+ if(tab==='abstract')renderProfileAbstract();
+ if(tab==='layout')drawMap();
 }
 mapRenderer=new PreviewMap($('map'),$('mapViewport'));
 new ResizeObserver(scheduleMapDraw).observe($('mapViewport'));
 window.addEventListener('resize',scheduleMapDraw);
 $('layoutTab').onclick=()=>selectPreflightTab('layout');
 $('calculatorTab').onclick=()=>selectPreflightTab('calculator');
-for(const id of ['layoutTab','calculatorTab'])$(id).addEventListener('keydown',e=>{
+$('abstractTab').onclick=()=>selectPreflightTab('abstract');
+for(const [i,id] of ['layoutTab','calculatorTab','abstractTab'].entries())$(id).addEventListener('keydown',e=>{
  if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){
-  e.preventDefault();const tab=e.key==='Home'?'layout':e.key==='End'?'calculator':preflightTab==='layout'?'calculator':'layout';
-  selectPreflightTab(tab);$(tab==='layout'?'layoutTab':'calculatorTab').focus();
+  e.preventDefault();const tabs=['layout','calculator','abstract'],j=e.key==='Home'?0:e.key==='End'?2:(i+(e.key==='ArrowRight'?1:2))%3;
+  selectPreflightTab(tabs[j]);$(tabs[j]+'Tab').focus();
  }
 });
+function renderProfileAbstract(){
+ const root=$('abstractTool');delete root.dataset.stale;root.replaceChildren(el('div',{class:'sectiontitle'},el('h3',{},'入力された実験設定'),el('button',{type:'button',onclick:renderProfileAbstract},'最新の入力値で更新')),el('p',{class:'hint'},'GUIへ反映済みの入力値です。モデル参照は展開して表示します。検証・保存・実行は行いません。YAMLの未適用編集は含みません。'));
+ try{
+  const models=ProfileSummary.models(profile,componentValue),overview=el('div');root.append(overview);
+  AnalysisCharts.table(overview,{title:'実験条件の概要',columns:['項目','値'],rows:[['プロファイル',profile.name],['ED数',(profile.groups||[]).reduce((n,g)=>n+g.count,0)],['選択器',models.policy.join(', ')],['移動モデル',models.mobility.join(', ')],['時間 [s]',profile.duration_s],['seed',profile.seed],['エリア [m]',JSON.stringify(profile.area_m)],['GW数',profile.gateways?.length||0]]});
+  for(const section of sections.filter(s=>s.keys.length)){
+   const box=el('details',{},el('summary',{},section.title)),target=el('div');box.append(target);root.append(box);const rows=[];
+   for(const k of section.keys)if(k in profile)rows.push(...ProfileSummary.flatten(profile[k],schema.properties?.[k]||{},k,resolve));
+   let rendered=false;box.addEventListener('toggle',()=>{if(box.open&&!rendered){AnalysisCharts.table(target,{title:section.title,columns:['項目','設定パス','入力値'],rows});rendered=true;}});
+  }
+  const expanded=[];
+  function visit(v,path){if(!v||typeof v!=='object')return;if(v.kind&&v.options){const cat=categoryFor(path),spec=componentValue(v,cat),meta=pluginSchemas[cat][spec.kind];expanded.push([path,spec.kind,JSON.stringify({...meta?.defaults,...spec.options}),JSON.stringify(spec.action_space??null)]);return;}for(const[k,x]of Object.entries(v))visit(x,path?path+'.'+k:k);}
+  for(const k of ['groups','assignments'])visit(profile[k],k);
+  const box=el('details',{},el('summary',{},'参照展開後のモデル定数（既定値を含む）')),target=el('div');box.append(target);root.append(box);let ready=false;box.addEventListener('toggle',()=>{if(box.open&&!ready){AnalysisCharts.table(target,{title:'モデル定数',columns:['設定箇所','実装','定数','行動空間の上書き'],rows:expanded});ready=true;}});
+ }catch(e){root.append(el('p',{class:'diagnostic error'},e.message));}
+}
 
-action(async()=>{[schema,defaults]=await Promise.all([api('/api/schema'),api('/api/defaults')]);Object.assign(pluginSchemas,defaults.plugins);analysisModules=await api('/api/analysis/modules');moduleSelections=['outcomes','convergence','fairness','energy'].map(kind=>({kind,enabled:true,options:clone(analysisModules[kind].defaults)}));renderModuleEditor();profile=clone(defaults.profile);modelSpec=newComponent('policy','fixed');await Promise.all([refreshCatalog(),refreshProfiles(),refreshExperiments()]);await loadSchemas();renderAll();await checkConfiguration();await runPreview();await poll();setInterval(poll,4000);})();
+
+action(async()=>{[schema,defaults]=await Promise.all([api('/api/schema'),api('/api/defaults')]);Object.assign(pluginSchemas,defaults.plugins);analysisModules=await api('/api/analysis/modules');moduleSelections=['abstract','outcomes','convergence','prr_by_count','fairness','energy'].map(kind=>({kind,enabled:true,options:clone(analysisModules[kind].defaults)}));renderModuleEditor();profile=clone(defaults.profile);modelSpec=newComponent('policy','fixed');await Promise.all([refreshCatalog(),refreshProfiles(),refreshExperiments()]);await loadSchemas();renderAll();await checkConfiguration();await runPreview();await poll();setInterval(poll,4000);})();
 
 $('map').onclick=event=>{if(!mapData)return;const nearest=mapRenderer.pick(event.clientX,event.clientY,mapData.devices);if(nearest)inspectDevice(nearest);};
 
@@ -300,3 +319,5 @@ window.addEventListener('unhandledrejection',event=>{reportError(event.reason in
 
 window.addEventListener('error',event=>{if(event.error)reportError(event.error);});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){poll();scheduleMapDraw();if(previewDirty)checkConfiguration();}});
+
+const documents=new DocumentationReader({api,el,download,reportError});

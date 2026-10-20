@@ -1,0 +1,23 @@
+{
+  "runs": 9,
+  "modules": {
+    "abstract": "completed",
+    "airtime": "completed",
+    "channel_distribution": "completed",
+    "channel_js": "completed",
+    "convergence": "completed",
+    "efficiency": "completed",
+    "energy": "completed",
+    "fairness": "completed",
+    "mobility_outcomes": "completed",
+    "outcomes": "completed",
+    "prr_by_count": "completed",
+    "reliability": "completed",
+    "sema_pool": "completed",
+    "spatial_sf": "completed",
+    "stationary_distance": "completed"
+  },
+  "analysis_wall_s": 0.506191458000103,
+  "total_uplinks": 10073,
+  "note": "GUI動作確認用の小規模Run。アルゴリズムの性能比較ではない。"
+}

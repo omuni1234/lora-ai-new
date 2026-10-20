@@ -29,6 +29,7 @@ class SEMA(DQN):
         self.rewards = np.zeros(6)
         self.selected_counts = {x:0 for x in ('A','B','C','epsilon')}
         self.eliminated = []
+        self.trace_revision = 0
         self.greedy_q = np.zeros(len(self.actions))
         self.greedy_steps = self.greedy_resets = 0
         self.rssi = o.initial_rssi_dbm
@@ -76,6 +77,7 @@ class SEMA(DQN):
             if upper[k] < threshold:
                 self.active.remove(k)
                 self.eliminated.append(dict(arm=k,experience=total))
+                self.trace_revision += 1
     def observe(self,f):
         if self.pending is None or f.ack is None: return
         x,a,arm,name,moving = self.pending
@@ -95,6 +97,12 @@ class SEMA(DQN):
             arm_counts=self.counts.tolist(),arm_rewards=self.rewards.tolist(),eliminated=self.eliminated,
             selected_algorithms=self.selected_counts,greedy_resets=self.greedy_resets,
             greedy_q=self.greedy_q.tolist(),learners={k:v.snapshot() for k,v in self.learners.items()})
+
+    def pool_trace(self):
+        """Read-only compact state, emitted initially and only on elimination."""
+        import json
+        return dict(experience=int(self.counts.sum()), arms=json.dumps(self.arms),
+                    active_arms=list(self.active))
 
 
 PLUGIN = SEMA
