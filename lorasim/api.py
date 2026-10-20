@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import time
 from fastapi import FastAPI, HTTPException, Request, Depends, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
@@ -23,6 +23,9 @@ from .calculator import CalculatorRequest, calculate
 from .web_assets import mount_ui
 from .tradeoff import ForecastOptions, ForecastError, forecast
 from .consultant import configuration as ai_configuration, bounded_context, consult, ConsultantError
+from .ai_settings import SettingsUpdate, SettingsError, save_settings, reset_settings
+from .consultant import stream_request, stream_events
+from .consultant_analysis import snapshot as analysis_snapshot, read_snapshot, profile_context
 from .experience import ExperienceOptions, ExperienceError, experience
 
 
@@ -55,6 +58,15 @@ class ConsultantAskBody(BaseModel):
     context: dict
     question: str = Field(min_length=1,max_length=6000)
 
+class ChatMessage(BaseModel):
+    role: str = Field(pattern='^(user|assistant)$')
+    content: str = Field(min_length=1,max_length=100000)
+
+class ConsultantStreamBody(ConsultantAskBody):
+    context: dict = Field(default_factory=dict)
+    analysis_id: str | None = Field(None,max_length=32)
+    history: list[ChatMessage] = Field(default_factory=list,max_length=24)
+
 class ExperimentBody(BaseModel):
     name: str = Field(min_length=1,max_length=160)
     description: str = Field(default="",max_length=10000)
@@ -73,7 +85,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.13.0")
+    app = FastAPI(title="LoRaSim Research",version="0.14.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -256,6 +268,9 @@ def create_app(root=None):
                 raise ValueError("Select at most 200 runs per analysis request")
             result = compare_runs(runs,body.tx_start,body.tx_end,body.include_mcu,body.bins,body.ed_count,body.modules)
             result["skipped_runs"] = skipped
+            try: result['consultant_snapshot'] = analysis_snapshot(store,result,body.model_dump(mode='json'))
+            except (ConsultantError,OSError) as exc:
+                result['consultant_snapshot'] = {'error':str(exc) if isinstance(exc,ConsultantError) else 'AI相談用データの保存に失敗しました。データ領域の空き容量・書き込み権限を確認してください。'}
             return result
         except Exception as exc:
             bad(exc)
@@ -289,7 +304,7 @@ def create_app(root=None):
         except Exception as exc: bad(exc)
     @app.get("/api/consultant/config",dependencies=[Depends(auth)])
     def consultant_config():
-        return ai_configuration()
+        return ai_configuration(store.root)
     @app.post("/api/calculator/experience",dependencies=[Depends(auth)])
     def experience_profile(body:ExperienceBody):
         try: return experience(store.parse_profile(body.yaml),body.options)
@@ -299,23 +314,47 @@ def create_app(root=None):
     def consultant_preview(body:ConsultantPreviewBody):
         try:
             item=job(body.job_id) if body.job_id else None
-            p=store.parse_profile(item['profile'] if item else body.yaml)
-            context={'source':'saved_run' if item else 'current_profile','profile':p.model_dump(mode='json')}
+            p=load_profile(item['profile'],text=True) if item else store.parse_profile(body.yaml)
+            context={'source':'saved_run' if item else 'current_profile','profile':profile_context(p)}
             if item:
                 context['run']={k:item[k] for k in ('id','name','status','created','started','finished','summary','diagnostics') if k in item}
             if body.forecast_options is not None:
                 prediction=forecast(p,body.forecast_options)
                 prediction.pop('wall_s',None)
                 context['approximate_forecast']=prediction
-            return {'context':bounded_context(context),'connection':ai_configuration()}
+            return {'context':bounded_context(context),'connection':ai_configuration(store.root)}
         except (ConsultantError,ForecastError) as exc: planning_error(exc,'CONSULTANT')
         except HTTPException: raise
         except Exception as exc: bad(exc)
     @app.post("/api/consultant/ask",dependencies=[Depends(auth)])
     def consultant_ask(body:ConsultantAskBody):
-        try: return consult(body.context,body.question)
+        try: return consult(body.context,body.question,root=store.root)
         except ConsultantError as exc: planning_error(exc,'CONSULTANT')
         except Exception as exc: bad(exc)
+    @app.put('/api/consultant/config',dependencies=[Depends(auth)])
+    def consultant_save_config(body:SettingsUpdate):
+        try: return save_settings(store.root,body)
+        except SettingsError as exc: planning_error(exc,'CONSULTANT_SETTINGS')
+        except OSError: planning_error(ConsultantError('AI設定を保存できません。データ領域の空き容量・書き込み権限を確認してください。'),'CONSULTANT_SETTINGS')
+    @app.delete('/api/consultant/config',dependencies=[Depends(auth)])
+    def consultant_reset_config():
+        try: return reset_settings(store.root)
+        except OSError: planning_error(ConsultantError('保存されたAI設定を削除できません。書き込み権限を確認してください。'),'CONSULTANT_SETTINGS')
+    @app.get('/api/consultant/analysis/{sid}',dependencies=[Depends(auth)])
+    def consultant_analysis_preview(sid:str):
+        try: return {'context':read_snapshot(store.root,sid),'connection':ai_configuration(store.root)}
+        except ConsultantError as exc: planning_error(exc,'CONSULTANT')
+    @app.post('/api/consultant/stream',dependencies=[Depends(auth)])
+    async def consultant_stream(body:ConsultantStreamBody):
+        try:
+            context=read_snapshot(store.root,body.analysis_id) if body.analysis_id else body.context
+            prepared=stream_request(store.root,context,body.question,[m.model_dump() for m in body.history])
+        except (ConsultantError,SettingsError) as exc: planning_error(exc,'CONSULTANT')
+        async def events():
+            async for event in stream_events(prepared):
+                yield 'data: '+json.dumps(event,ensure_ascii=False)+'\n\n'
+        return StreamingResponse(events(),media_type='text/event-stream',headers={
+            'Cache-Control':'no-store','X-Accel-Buffering':'no'})
     @app.post("/api/calculator",dependencies=[Depends(auth)])
     def calculator(body:CalculatorRequest):
         try:

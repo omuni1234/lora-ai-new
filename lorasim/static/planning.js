@@ -67,30 +67,19 @@ class ConsultantPanel{
  constructor({root,api,el,getProfile,getForecastOptions}){
   Object.assign(this,{root,api,el,getProfile,getForecastOptions});this.serial=0;
   this.source=el('select',{'aria-label':'AI相談の対象'},el('option',{value:''},'現在編集中のプロファイル'));
-  this.include=el('input',{type:'checkbox'});
-  this.status=el('p',{class:'hint',role:'status'});this.error=el('div',{role:'alert'});
+  this.include=el('input',{type:'checkbox'});this.error=el('div',{role:'alert'});
   this.preview=el('pre',{class:'consultant-context',tabindex:0});
-  this.question=el('textarea',{'aria-label':'AIへの質問',rows:3,maxlength:6000},'干渉・GW送信中・感度未満のトレードオフを比較できる実験条件にしたいです。現在の条件の問題点と、優先して試す設定変更を提案してください。');
-  this.send=el('button',{type:'button',class:'primary',disabled:true,onclick:()=>this.ask()},'確認したデータと質問をAIへ送信');
-  this.answer=el('pre',{class:'consultant-answer','aria-live':'polite'});
   this.prepare=el('button',{type:'button',class:'small',onclick:()=>this.prepareContext()},'送信データを確認する');
-  this.source.onchange=this.include.onchange=()=>this.invalidate();
-  root.append(el('p',{class:'calculator-caveat'},'プロファイルや保存済みRunのアブストラクトをAIに相談します。送信ボタンを押したときだけ接続先へ送ります。生パケット記録は添付しません。提案の自動適用や実験実行は行いません。'),
-   this.status,el('label',{},'相談対象',this.source),el('label',{class:'check'},this.include,'近似予測を添付する'),el('button',{type:'button',class:'quiet small',onclick:()=>{this.loaded=false;this.source.replaceChildren(el('option',{value:''},'現在編集中のプロファイル'));this.invalidate();this.setVisible(true);}},'相談対象のRun一覧を更新'),this.prepare,this.error,
-   el('details',{},el('summary',{},'送信するデータ（通知URL・認証情報は除外）'),this.preview),
-   el('label',{},'質問',this.question),this.send,this.answer);
+  this.source.onchange=this.include.onchange=()=>this.invalidate();const chat=el('div');
+  root.append(el('p',{class:'calculator-caveat'},'プロファイルや保存済みRunのアブストラクトをAIに相談します。送信ボタンを押したときだけ接続先へ送ります。生パケット記録は添付しません。'),
+   el('label',{},'相談対象',this.source),el('label',{class:'check'},this.include,'近似予測を添付する'),el('button',{type:'button',class:'quiet small',onclick:()=>{this.loaded=false;this.source.replaceChildren(el('option',{value:''},'現在編集中のプロファイル'));this.invalidate();this.setVisible(true);}},'相談対象のRun一覧を更新'),this.prepare,this.error,
+   el('details',{},el('summary',{},'送信するデータ（通知URL・認証情報は除外）'),this.preview),chat);
+  this.chat=new AIConversation({root:chat,api,el,defaultQuestion:'干渉・GW送信中・感度未満のトレードオフを比較できる実験条件にしたいです。現在の条件の問題点と、優先して試す設定変更を提案してください。'});
  }
- async setVisible(v){this.visible=v;if(v&&!this.loaded){try{const[config,jobs]=await Promise.all([this.api('/api/consultant/config'),this.api('/api/jobs')]);this.config=config;this.loaded=true;
-   this.status.textContent=config.configured?`送信先：${config.base_url} · モデル：${config.model}`:'AIは未接続です。'+config.hint;
-   for(const j of jobs)this.source.append(this.el('option',{value:j.id},`${j.name} · ${j.id.slice(0,8)} · ${j.status}`));
-  }catch(e){planningErrors(this.error,e,this.el);}}}
- invalidate(){++this.serial;this.context=null;this.send.disabled=true;this.answer.textContent='';this.preview.textContent='設定または対象が変更されました。「送信データを確認する」を押してください。';}
- async prepareContext(){const serial=++this.serial;this.prepare.disabled=true;this.send.disabled=true;this.error.replaceChildren();
+ async setVisible(v){this.visible=v;if(v){this.chat.refreshConfig();if(!this.loaded){try{const jobs=await this.api('/api/jobs');this.loaded=true;for(const j of jobs)this.source.append(this.el('option',{value:j.id},`${j.name} · ${j.id.slice(0,8)} · ${j.status}`));}catch(e){planningErrors(this.error,e,this.el);}}}}
+ invalidate(){++this.serial;this.chat.invalidate();this.preview.textContent='設定または対象が変更されました。「送信データを確認する」を押してください。';}
+ async prepareContext(){const serial=++this.serial;this.prepare.disabled=true;this.chat.invalidate();this.error.replaceChildren();
   try{const d=await this.api('/api/consultant/preview','POST',{yaml:JSON.stringify(this.getProfile()),job_id:this.source.value||null,forecast_options:this.include.checked?this.getForecastOptions():null});
-   if(serial!==this.serial)return;this.context=d.context;this.config=d.connection;this.preview.textContent=JSON.stringify(d.context,null,2);this.preview.parentElement.open=true;this.send.disabled=!d.connection.configured;
-   this.status.textContent=d.connection.configured?`送信先：${d.connection.base_url} · モデル：${d.connection.model} · 下記のデータと質問だけを送信します。`:'AIは未接続です。'+d.connection.hint;
+   if(serial!==this.serial)return;this.preview.textContent=JSON.stringify(d.context,null,2);this.chat.setContext(d.context,{config:d.connection,source:this.source.value?'保存Run':'編集中の設定'});
   }catch(e){if(serial===this.serial)planningErrors(this.error,e,this.el);}finally{this.prepare.disabled=false;}}
- async ask(){if(!this.context||!this.question.value.trim())return;const serial=this.serial;this.send.disabled=true;this.answer.textContent='AIの応答を待っています…';this.error.replaceChildren();
-  try{const d=await this.api('/api/consultant/ask','POST',{context:this.context,question:this.question.value});if(serial!==this.serial)return;this.answer.textContent=d.answer+(d.finish_reason==='length'?'\n\n応答長の上限に達しました。質問を絞るかLORASIM_AI_MAX_TOKENSを調整してください。':'');
-  }catch(e){if(serial===this.serial){this.answer.textContent='';planningErrors(this.error,e,this.el);}}finally{this.send.disabled=!this.context||!this.config?.configured;}}
 }

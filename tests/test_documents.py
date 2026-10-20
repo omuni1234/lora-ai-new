@@ -18,7 +18,7 @@ def test_all_shipped_documents_render_with_headings_and_source():
     assert 'data-document="docs/GUI.md"' in index['html']
     assert read_document(root,'docs/VALIDATION-v07.md')['historical']
     assert read_document(root,'docs/VALIDATION-v012.md')['historical']
-    assert not read_document(root,'docs/VALIDATION-v013.md')['historical']
+    assert not read_document(root,'docs/VALIDATION-v014.md')['historical']
 
 
 def test_html_is_disabled_links_are_local_and_arbitrary_files_are_unavailable(tmp_path):

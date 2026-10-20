@@ -143,3 +143,7 @@ lorasim run examples/06-badr-mobility.yaml --output runs/badr
 ## ハイパーパラメータ探索（v0.13）
 
 `lorasim/tuning.py` が通常のジョブ基盤の上で候補評価を管理します。モデル実装に専用の学習ループを追加する必要はありません。Optionsから公開される定数を指定し、最終結果は通常のライブラリComponentに変換します。[設計・API・指標](TUNING.md)を参照してください。
+
+## v0.14：AI相談の拡張
+
+`ai_settings.py` が秘密設定、`consultant_analysis.py` が既存分析結果からの固定根拠生成、`consultant.py` がOpenAI通信と会話、`static/consultant.js` が設定・会話UIを担当します。分析モジュールのdata/viewsは既存契約のまま相談対象へ含まれます。[送信データ・SSE/API仕様](AI_CONSULTANT.md)。

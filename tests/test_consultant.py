@@ -10,7 +10,7 @@ from lorasim import consultant as ai
 
 @pytest.fixture(autouse=True)
 def isolated_ai_environment(monkeypatch):
-    for name in ('BASE_URL','MODEL','API_KEY','MAX_TOKENS'):
+    for name in ('BASE_URL','MODEL','API_KEY','MAX_TOKENS','API_TYPE','TIMEOUT_S'):
         monkeypatch.delenv('LORASIM_AI_'+name,raising=False)
 
 
@@ -82,7 +82,7 @@ def test_saved_run_uses_its_snapshot_and_endpoint_invokes_provider(tmp_path,monk
     assert context['profile']['name']=='saved-condition'
     assert context['run']['summary']['abstract']['mean_ed_prr']==.75
     captured={}
-    def fake_consult(ctx,question):
+    def fake_consult(ctx,question,root=None):
         captured['context']=ctx
         return {'answer':'検証用の応答','model':'test'}
     monkeypatch.setattr('lorasim.api.consult',fake_consult)

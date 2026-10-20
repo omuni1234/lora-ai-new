@@ -88,3 +88,7 @@ API: `GET /api/worker`で状態とRun→PIDの`processes`、`PUT /api/worker/set
 ## チューニングworker（v0.13）
 
 探索も通常workerの並列枠を使います。GUI・SSH切断後も継続し、探索状態はSQLiteに保存します。APIとworkerの両方を同じリリースへ更新してください。途中Runのチェックポイント復元はありません。中止は探索に属するRunだけを対象にします。詳細は [TUNING.md](TUNING.md)。
+
+## v0.14：AI設定とストリーミング
+
+GUI保存値はデータ領域の `private/ai-settings.json`（0600）に保存し、環境変数より優先します。APIの再起動なしで次の相談へ適用します。環境変数へ戻す操作もGUIにあります。分析相談用スナップショットは `consultant/analyses/` に直近20件。会話はページ内メモリーのみで保持します。SSEを利用するためプロキシのバッファリングを無効にしてください。HTTPクライアント依存httpxを追加しました。[仕様・接続手順](AI_CONSULTANT.md)。

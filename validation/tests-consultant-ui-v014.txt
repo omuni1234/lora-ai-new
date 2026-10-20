@@ -1,0 +1,30 @@
+✔ SSE framing handles arbitrary chunks and Japanese text (2.431ms)
+✔ SSE catches malformed and unfinished responses (0.174041ms)
+✔ UTF-8 decoding survives multibyte splits before SSE parsing (0.462833ms)
+✔ experience map preserves metric aspect ratio and includes empty/outside bins (1.107959ms)
+✔ timeline stacks states as counts and handles no transmissions (0.239166ms)
+✔ equal metric scale within 1200 x 300, area 2000,2000 (0.807667ms)
+✔ equal metric scale within 320 x 240, area 4000,1000 (0.061292ms)
+✔ equal metric scale within 800 x 450, area 1000,5000 (0.057292ms)
+✔ drawing and ED picking agree at pixel ratio 1 (13.41825ms)
+✔ drawing and ED picking agree at pixel ratio 2 (0.49575ms)
+✔ drawing and ED picking agree at pixel ratio 3 (0.471166ms)
+✔ continuous cumulative area, grids and per-endpoint hover are present (14.317583ms)
+✔ lines show gaps, ranges, sample counts and safely escaped labels (0.906167ms)
+✔ spatial map reports counts and uses equal distance scales (1.200625ms)
+✔ profile name uses effective assignments, Japan clock and explicit unique suffix (4.280042ms)
+✔ summary flatten preserves nested values, booleans, null and leaf labels (0.902334ms)
+✔ three preflight panels and dedicated chart assets are wired (0.418875ms)
+✔ SEMA survival separates overlapping algorithms into labelled rows (0.459709ms)
+✔ generated profile names fit the stored-profile name limit for custom classes (0.167ms)
+✔ linear/log candidates include endpoints, are finite and can be discrete (2.8015ms)
+✔ registered options are parsed as JSON, never executable expressions (0.315458ms)
+✔ default horizons are capped while preserving short profiles (0.4905ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 114.933625

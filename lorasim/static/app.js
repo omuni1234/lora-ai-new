@@ -1,6 +1,6 @@
 'use strict';
 const $=id=>document.getElementById(id), clone=x=>structuredClone(x);
-let profile={}, schema={}, defaults={}, catalog={}, savedProfiles=[], experiments=[], currentView='experiment', selectedJob=null, selectedItem=null, mapData=null, analysisData=null, modelSpec={kind:'fixed',options:{}}, previewVisible=true, busyPoll=false, analysisBusy=false;
+let profile={}, schema={}, defaults={}, catalog={}, savedProfiles=[], experiments=[], currentView='experiment', selectedJob=null, selectedItem=null, mapData=null, analysisData=null, modelSpec={kind:'fixed',options:{}}, previewVisible=true, busyPoll=false, analysisBusy=false, analysisRevision=0;
 const pageOffsets=new Map();
 let calculator=null, mapRenderer=null, mapFrame=null, preflightTab="layout";
 const labels={name:'名前',seed:'乱数seed',duration_s:'シミュレーション時間 [s]',area_m:'エリア [m]',channel:'伝搬・干渉',mac:'Class A MAC',sub_bands:'サブバンド',gateways:'Gateway',groups:'EDグループ',assignments:'条件による割り当て',tracking:'ストリーミング・メモリ上限',notifications:'進捗Webhook',channel_backend:'伝搬計算バックエンド',energy:'消費電力',models:'プロファイル内のモデル定義',policy:'選択アルゴリズム',mobility:'移動モデル',timing:'送信タイミング',count:'ED数',placement:'初期配置',positions:'初期座標 [x,y,z]',position:'座標 [x,y,z]',payload_bytes:'ペイロード [byte]',confirmed:'Confirmed UL',max_attempts:'最大送信試行数',observe_position:'EDに位置観測を許可',tags:'タグ',ids:'ED ID',radio:'無線',mcu:'MCU（null＝全体設定）',options:'パラメータ',kind:'実装',ref:'ライブラリ参照',enabled:'有効',initial:'初期送信設定',mode:'計算方式'};
@@ -198,7 +198,7 @@ $('mapTime').oninput=()=>{$('mapTimeValue').textContent=$('mapTime').value+' s';
 $('previewDevices').onchange=()=>inspectDevice(mapData?.devices.find(d=>d.id===Number($('previewDevices').value)));
 $('experimentInfo').append(info(()=> $('experiment').value?experimentText($('experiment').value):'実行時にプロファイル名で新規Experimentを作成します。','選択したExperimentの情報'));
 $('refreshJobs').onclick=action(refreshJobs);
-$('analyze').onclick=action(async()=>{const ids=[...$('experimentChecks').querySelectorAll('input:checked')].map(x=>x.value);if(!ids.length)throw Error('Experimentを1つ以上選択してください。');if(analysisBusy)return;analysisBusy=true;$('analyze').disabled=true;try{analysisData=await api('/api/analysis','POST',{experiment_ids:ids,tx_start:Number($('txStart').value),tx_end:$('txEnd').value?Number($('txEnd').value):null,include_mcu:$('includeMCU').checked,bins:Number($('bins').value),ed_count:$('edCount').value?Number($('edCount').value):null,modules:clone(moduleSelections)});renderAnalysis();notice(`${analysisData.runs.length} Runを集計しました。`);}finally{analysisBusy=false;$('analyze').disabled=false;}});
+$('analyze').onclick=action(async()=>{const ids=[...$('experimentChecks').querySelectorAll('input:checked')].map(x=>x.value);if(!ids.length)throw Error('Experimentを1つ以上選択してください。');if(analysisBusy)return;analysisBusy=true;const revision=analysisRevision;$('analyze').disabled=true;try{analysisData=await api('/api/analysis','POST',{experiment_ids:ids,tx_start:Number($('txStart').value),tx_end:$('txEnd').value?Number($('txEnd').value):null,include_mcu:$('includeMCU').checked,bins:Number($('bins').value),ed_count:$('edCount').value?Number($('edCount').value):null,modules:clone(moduleSelections)});renderAnalysis();analysisConsultant.setAnalysis(analysisData);if(revision!==analysisRevision)analysisChanged();notice(`${analysisData.runs.length} Runを集計しました。`);}finally{analysisBusy=false;$('analyze').disabled=false;}});
 $('exportAnalysis').onclick=()=>{if(analysisData)download('analysis.json',JSON.stringify(analysisData,null,2));};
 $('exportCSV').onclick=()=>{if(!analysisData)return;const rows=[['experiment','run_id','ed_count','eligible_ed_count','mean_ed_prr','jain','gini','cv','energy_j','mean_ed_j'],...analysisData.runs.map(r=>[r.experiment_name,r.id,r.ed_count,r.eligible_ed_count,r.mean_ed_prr,r.fairness?.jain,r.fairness?.gini,r.fairness?.cv,r.energy.measured?r.energy.total_j:null,r.energy.measured?r.energy.mean_ed_j:null])];download('analysis.csv',rows.map(row=>row.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv');};
 $('credentials').onclick=()=>{$('token').value=sessionStorage.getItem('lorasim-token')||'';$('connectDialog').showModal();};$('saveToken').onclick=()=>{sessionStorage.setItem('lorasim-token',$('token').value);setTimeout(()=>location.reload(),50);};
@@ -243,7 +243,7 @@ function spaceEditor(parent,selection,onChange,path,kind){
  parent.append(box);
 }
 let analysisModules={},moduleSelections=[];
-function analysisChanged(){if(analysisData)$('analysisState').textContent='条件変更あり・再分析してください';}
+function analysisChanged(){++analysisRevision;analysisConsultant.invalidate();if(analysisData)$('analysisState').textContent='条件変更あり・再分析してください';}
 function renderModuleEditor(){
  $('moduleChoices').replaceChildren(...Object.entries(analysisModules).filter(([k])=>!moduleSelections.some(x=>x.kind===k)).map(([k,m])=>el('option',{value:k},m.label)));
  $('moduleList').replaceChildren(...moduleSelections.map((item,index)=>{
@@ -306,6 +306,15 @@ function renderProfileAbstract(){
  }catch(e){root.append(el('p',{class:'diagnostic error'},e.message));}
 }
 
+
+window.aiSettings=new AISettingsDialog({api,el});
+const analysisConsultant=new AnalysisConsultant({root:$('analysisConsultant'),api,el});
+for(const [id,ai] of [['analysisPlotsTab',false],['analysisAITab',true]])$(id).onclick=()=>{
+ $('analysisPlots').hidden=ai;$('analysisConsultant').hidden=!ai;$('analysisView').classList.toggle('ai-active',ai);
+ $('analysisPlotsTab').setAttribute('aria-selected',String(!ai));$('analysisAITab').setAttribute('aria-selected',String(ai));
+ if(ai)analysisConsultant.chat.refreshConfig();
+};
+$('openAISettings').onclick=()=>{$('connectDialog').close();window.aiSettings.open();};
 
 action(async()=>{[schema,defaults]=await Promise.all([api('/api/schema'),api('/api/defaults')]);Object.assign(pluginSchemas,defaults.plugins);analysisModules=await api('/api/analysis/modules');moduleSelections=['abstract','outcomes','convergence','prr_by_count','fairness','energy'].map(kind=>({kind,enabled:true,options:clone(analysisModules[kind].defaults)}));renderModuleEditor();profile=clone(defaults.profile);modelSpec=newComponent('policy','fixed');await Promise.all([refreshCatalog(),refreshProfiles(),refreshExperiments()]);await loadSchemas();renderAll();await checkConfiguration();await runPreview();await poll();setInterval(poll,4000);})();
 

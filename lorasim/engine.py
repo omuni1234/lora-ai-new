@@ -12,6 +12,7 @@ from pathlib import Path
 import platform
 import time
 import numpy as np
+from . import __version__
 from .components import Observation, Feedback, Stationary, make
 from .config import Profile, Radio, dump_profile
 from .phy import NS, ns, airtime_ns, links, destroyed_by, GW_SENSITIVITY, ED_SENSITIVITY
@@ -258,7 +259,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":4,"simulator_version":"0.12.0",
+        atomic_json(self.output/"manifest.json",{"schema_version":4,"simulator_version":__version__,
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",

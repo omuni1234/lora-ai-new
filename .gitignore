@@ -9,3 +9,6 @@ runs/
 .env
 build/
 dist/
+
+# Server-side AI credentials (for custom data roots).
+ai-settings.json
