@@ -64,6 +64,14 @@ class Store:
             CREATE TABLE IF NOT EXISTS models (category TEXT NOT NULL, name TEXT NOT NULL,
               definition TEXT NOT NULL, updated REAL NOT NULL, PRIMARY KEY(category,name));
             CREATE TABLE IF NOT EXISTS profiles (name TEXT PRIMARY KEY, yaml TEXT NOT NULL, updated REAL NOT NULL);
+            CREATE TABLE IF NOT EXISTS tuning_studies (
+              id TEXT PRIMARY KEY, name TEXT NOT NULL, config TEXT NOT NULL, state TEXT NOT NULL,
+              status TEXT NOT NULL, created REAL NOT NULL, finished REAL, experiment_id TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS tuning_exports (
+              study_id TEXT NOT NULL, candidate INTEGER NOT NULL, category TEXT NOT NULL,
+              name TEXT NOT NULL, created REAL NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS worker_settings (
               id INTEGER PRIMARY KEY CHECK(id=1), workers INTEGER NOT NULL CHECK(workers BETWEEN 1 AND 256)
             );
@@ -375,6 +383,8 @@ def worker(root,workers=None,once=False):
         db.execute("UPDATE jobs SET status='interrupted',finished=?,error='Worker stopped; resubmit profile to restart' WHERE status='running' AND heartbeat<?",(time.time(),stale))
     ctx = mp.get_context("spawn")
     children = {}
+    from .tuning import advance as advance_tuning
+    last_tuning = 0.
     stopping = False
     def stop(*_):
         nonlocal stopping
@@ -400,6 +410,9 @@ def worker(root,workers=None,once=False):
                         process.join()
                 break
             workers = store.worker_limit(default_workers)
+            if time.monotonic()-last_tuning >= 1:
+                advance_tuning(store)
+                last_tuning = time.monotonic()
             while len(children)<workers:
                 jid = store.claim(max_running=workers)
                 if jid is None:
@@ -416,7 +429,8 @@ def worker(root,workers=None,once=False):
                         "processes":{jid:p.pid for jid,p in children.items()}})
             with store.connect() as db:
                 running = db.execute("SELECT count(*) FROM jobs WHERE status='running'").fetchone()[0]
-            if once and not children and not running:
+                tuning = db.execute("SELECT count(*) FROM tuning_studies WHERE status='running'").fetchone()[0]
+            if once and not children and not running and not tuning:
                 break
             time.sleep(.2)
     finally:

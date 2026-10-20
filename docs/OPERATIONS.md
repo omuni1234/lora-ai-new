@@ -84,3 +84,7 @@ API: `GET /api/worker`で状態とRun→PIDの`processes`、`PUT /api/worker/set
 上部の「ドキュメント」から同梱mdを検索・閲覧・保存できます。GET /api/documents（本文検索用一覧）とGET /api/documents/content?id=docs/INDEX.mdは既存Bearer認証に従います。任意パスの読み出しや外部HTML実行は許可しません。変更を配布する際はdocker compose up -d --buildでAPI/workerを更新してください。依存にmarkdown-it-pyを追加しています。過去の検証記録は現行版の検証結果ではありません。
 
 [操作ガイド](GUI.md) / [文書一覧](INDEX.md)
+
+## チューニングworker（v0.13）
+
+探索も通常workerの並列枠を使います。GUI・SSH切断後も継続し、探索状態はSQLiteに保存します。APIとworkerの両方を同じリリースへ更新してください。途中Runのチェックポイント復元はありません。中止は探索に属するRunだけを対象にします。詳細は [TUNING.md](TUNING.md)。

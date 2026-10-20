@@ -185,3 +185,7 @@ D-LoRaの独立した基底腕の実装例は `plugins/selector/d_lora.py`。現
 motion_stateは経験分布Calculatorだけでなく、実送信開始時の解析用記録でも呼びます。時刻を進めず乱数を使わない契約は同じです。選択器は任意のtrace_revision（変更時に増える整数）とpool_trace()を実装できます。現契約はSEMA型のarms / active_arms / experienceを返し、engineはrevisionが変わったときだけ記録します。初期状態は通番0です。
 
 [操作ガイド](GUI.md) / [文書一覧](INDEX.md)
+
+## 調整項目の公開（v0.13）
+
+Optionsで公開した数値・bool・enumにはモデルライブラリのチューニングから候補が提示されます。title/descriptionが日本語ラベルと説明になります。入れ子や配列要素はドット区切りでも登録可能です。相互制約は各候補のOptions検証で確認します。共通行動空間で無効になるspace_optionsは探索対象から除外します。[チューニング仕様](TUNING.md)を参照してください。

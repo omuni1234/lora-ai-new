@@ -73,13 +73,15 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.12.0")
+    app = FastAPI(title="LoRaSim Research",version="0.13.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
             raise HTTPException(401,"Authentication required")
     from .documents import mount_documents
     mount_documents(app, [Depends(auth)])
+    from .tuning import mount_tuning
+    mount_tuning(app, store, [Depends(auth)])
     def response_error(exc, status=422):
         diagnostics = exception_diagnostics(exc)
         return JSONResponse(status_code=status, content={"detail":diagnostics[0]["message"],"diagnostics":diagnostics})

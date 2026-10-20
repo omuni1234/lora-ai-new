@@ -1,0 +1,11 @@
+{
+  "version": "0.13.0",
+  "status": "completed",
+  "candidates": 5,
+  "evaluations": 12,
+  "runs": 24,
+  "winner": 4,
+  "sum_simulated_seconds": 16200.0,
+  "sum_run_wall_s": 3.1863774179655593,
+  "purpose": "12 ED smoke test, not an algorithm performance benchmark"
+}

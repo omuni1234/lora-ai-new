@@ -139,3 +139,7 @@ lorasim run examples/06-badr-mobility.yaml --output runs/badr
 分析はlorasim/analysis_modulesの独立クラス、共通描画はstatic/analysis-charts.jsです。新指標の追加はANALYSIS_PLUGINS.mdを参照してください。GUI文書はdocuments.pyがREADME.mdとdocs/*.mdを読み、MarkdownIt（HTML無効）で表示します。wheelにはshare/lorasim/docs、Dockerには/app/docsとして同梱します。編集元はdocs/*.mdだけで、生成コピーを直接編集しません。
 
 [操作ガイド](GUI.md) / [文書一覧](INDEX.md)
+
+## ハイパーパラメータ探索（v0.13）
+
+`lorasim/tuning.py` が通常のジョブ基盤の上で候補評価を管理します。モデル実装に専用の学習ループを追加する必要はありません。Optionsから公開される定数を指定し、最終結果は通常のライブラリComponentに変換します。[設計・API・指標](TUNING.md)を参照してください。

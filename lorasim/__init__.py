@@ -1,2 +1,2 @@
 """LoRaWAN research simulator. See docs/FIDELITY.md before interpreting results."""
-__version__ = "0.12.0"
+__version__ = "0.13.0"

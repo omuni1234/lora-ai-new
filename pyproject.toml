@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lorasim-research"
-version = "0.12.0"
+version = "0.13.0"
 description = "Source-traceable Class A LoRaWAN research simulator"
 requires-python = ">=3.10"
 license = {text = "GPL-2.0-only"}
