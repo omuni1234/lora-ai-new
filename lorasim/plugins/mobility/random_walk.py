@@ -29,6 +29,8 @@ class RandomWalk(Stationary):
             self.t += self.step
             self.v = self.velocity()
         return self.folded(t-self.t)
+    def motion_state(self,t):
+        return 'stationary' if self.speed==0 else 'moving'
 
 
 

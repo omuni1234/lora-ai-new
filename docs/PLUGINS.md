@@ -172,3 +172,10 @@ Optionsの型・Field制約による例外は、設定パスと日本語の説�
 `option_visibility = {'field':'mode', 'values':{'mode値':['表示するフィールド名', ...]}}` を宣言するとGUIは選択モードの定数のみ表示します。値は切替時にも保存されます。フォームの可視性であり、サーバのOptions検証を代替しません。`waypoints.py` が例です。
 
 D-LoRaの独立した基底腕の実装例は `plugins/selector/d_lora.py`。現在の実行環境では、EDから見えない真のUL成功を直接報酬にしないよう、ACKと未観測値を区別してください。
+
+
+## 経験分布Calculatorの移動状態公開（v0.11）
+
+副作用のないモデルは`preview_safe = True`を宣言すると、経験分布の事前確認で呼び出せます。Mobilityには任意の`motion_state(time_s)`を追加しました。Calculatorが同じ時刻の`position(time_s)`を呼んだ直後に、`stationary`、`moving`、`unknown`のいずれかを返してください。時間を進めたり、乱数を引いたり、モデル状態を変更したりしない読み取り専用メソッドです。独自クラス自身に実装がなければ、親クラスがStationaryでも`unknown`として扱います。サンプル間の同一座標から静止とは推測しません。
+
+独自モデルは`preview_cost(options, horizon)`で処理量の上界を返すこともできます。宣言はプロセス隔離・強制タイムアウトを意味しません。モデル内部の処理も有界にしてください。送信タイミングの観測にはACK/RSSI/SF/TPをNone、tx_countには生成回数を渡します。通信フィードバックが必要なモデルでは事前確認結果は本実験と異なります。仕様と出力は[EXPERIENCE_DISTRIBUTION.md](EXPERIENCE_DISTRIBUTION.md)を参照してください。

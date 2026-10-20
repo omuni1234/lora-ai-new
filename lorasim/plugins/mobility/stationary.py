@@ -6,6 +6,8 @@ class Stationary(Mobility):
         self.initial = np.array(initial,dtype=float)
     def position(self,t):
         return self.initial
+    def motion_state(self,t):
+        return 'stationary'
 
 
 

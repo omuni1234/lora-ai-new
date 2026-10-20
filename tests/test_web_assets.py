@@ -54,6 +54,7 @@ def test_changed_content_changes_url_even_with_preserved_mtime_and_size(tmp_path
 def test_shell_preserves_script_dependency_order(tmp_path):
     html = TestClient(create_app(tmp_path)).get('/').text
     assert html.index('/static/planning.js?') < html.index('/static/calculator.js?')
+    assert html.index('/static/experience.js?') < html.index('/static/calculator.js?')
     assert html.index('/static/calculator.js?') < html.index('/static/app.js?')
     assert html.index('/static/preview-map.js?') < html.index('/static/app.js?')
     assert 'id="mapViewport"' in html

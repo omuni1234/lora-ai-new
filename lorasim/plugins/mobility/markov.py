@@ -83,6 +83,8 @@ class Markov(Mobility):
         if t >= self.arrive: return self.target.copy()
         fraction = (t-self.depart)/(self.arrive-self.depart)
         return self.origin+fraction*(self.target-self.origin)
+    def motion_state(self,t):
+        return 'stationary' if t >= self.arrive else 'moving'
     @staticmethod
     def preview_cost(options,horizon):
         return horizon/options.get('decision_interval_s',60.)

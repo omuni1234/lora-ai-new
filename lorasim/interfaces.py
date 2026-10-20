@@ -70,6 +70,13 @@ class Policy(Plugin):
 class Mobility(Plugin):
     @abstractmethod
     def position(self, time_s: float): ...
+    def motion_state(self, time_s: float) -> str:
+        """Optional read-only diagnostic, called after position(time_s).
+
+        Return stationary/moving/unknown without advancing time or drawing RNGs.
+        Unknown is deliberate: equal sampled positions do not imply no movement.
+        """
+        return 'unknown'
 
 
 class Application(Plugin):

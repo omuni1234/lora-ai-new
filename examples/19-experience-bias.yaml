@@ -1,0 +1,31 @@
+name: same-stop-experience-bias
+seed: 1
+duration_s: 200
+area_m: [200, 100]
+groups:
+  - name: one-stop
+    count: 1
+    mobility:
+      kind: waypoints
+      options:
+        mode: timed
+        points: [[0, 0, 0, 1.5], [100, 0, 0, 1.5], [200, 100, 0, 1.5]]
+    timing:
+      kind: periodic
+      options:
+        interval_s: 1
+        start: {mode: fixed, at_s: 0.5}
+  - name: two-stops
+    count: 1
+    mobility:
+      kind: waypoints
+      options:
+        mode: timed
+        points: [[0, 0, 0, 1.5], [50, 0, 0, 1.5], [100, 50, 0, 1.5], [150, 50, 0, 1.5], [200, 100, 0, 1.5]]
+    timing:
+      kind: periodic
+      options:
+        interval_s: 1
+        start: {mode: fixed, at_s: 0.5}
+# Calculator→経験分布では両EDとも静止100・移動100生成。
+# 最大静止地点の全経験占有率は50%対25%。実送信はMAC/Duty等で遅れる。

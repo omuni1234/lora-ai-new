@@ -160,6 +160,24 @@ class Waypoints(Stationary):
                     if iterations > 100000:
                         raise ValueError('route exceeds per-query cycle budget')
         return np.array([np.interp(t,self.a[:,0],self.a[:,j]) for j in range(1,4)])
+    def motion_state(self,t):
+        if self.options.mode == 'random_waypoint':
+            return 'stationary' if self.resting else 'moving'
+        if self.options.mode=='route' and self.options.repeat and t==self.a[-1,0]:
+            # position() keeps the preceding cycle at exact boundaries. Inspect
+            # the next leg without drawing its speed/pause RNG or advancing it.
+            origin=self.a[-1,1:]
+            for target,pause in zip(self.targets,self.pauses):
+                if not np.array_equal(origin,target):return 'moving'
+                if pause-self.options.pause_jitter_s>0:return 'stationary'
+                if pause+self.options.pause_jitter_s>0:return 'unknown'
+                origin=target
+            return 'unknown'
+        # The active interpolation segment, not displacement between TX samples.
+        i = int(np.searchsorted(self.a[:,0],t,side='right'))-1
+        if i < 0 or i >= len(self.a)-1:
+            return 'stationary'
+        return 'stationary' if np.array_equal(self.a[i,1:],self.a[i+1,1:]) else 'moving'
     @staticmethod
     def preview_cost(options,horizon):
         if Settings.model_validate(options).mode == 'random_waypoint':

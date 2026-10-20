@@ -1,0 +1,16 @@
+✔ experience map preserves metric aspect ratio and includes empty/outside bins (0.772542ms)
+✔ timeline stacks states as counts and handles no transmissions (0.237333ms)
+✔ equal metric scale within 1200 x 300, area 2000,2000 (0.751333ms)
+✔ equal metric scale within 320 x 240, area 4000,1000 (0.079792ms)
+✔ equal metric scale within 800 x 450, area 1000,5000 (0.0635ms)
+✔ drawing and ED picking agree at pixel ratio 1 (30.796625ms)
+✔ drawing and ED picking agree at pixel ratio 2 (0.510791ms)
+✔ drawing and ED picking agree at pixel ratio 3 (0.459541ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.566833

@@ -70,3 +70,6 @@ macOS arm64 / Python 3.11.4：全 **259テスト通過**、11.28秒。[ログ](.
 今回はローカルGUI・Pythonテストで検証し、Ubuntu実機・GPU測定や稼働中サーバーへのデプロイは行っていません。
 
 ![Calculatorの画面](calculator-v091.png)
+
+
+v0.11.0では「経験分布」を追加しました。移動と送信タイミングが、各EDに偏った地点経験を与えるかを実験前に確認できます。[仕様・数値例・使い方](EXPERIENCE_DISTRIBUTION.md)。

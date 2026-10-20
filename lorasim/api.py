@@ -23,6 +23,7 @@ from .calculator import CalculatorRequest, calculate
 from .web_assets import mount_ui
 from .tradeoff import ForecastOptions, ForecastError, forecast
 from .consultant import configuration as ai_configuration, bounded_context, consult, ConsultantError
+from .experience import ExperienceOptions, ExperienceError, experience
 
 
 class YamlBody(BaseModel):
@@ -42,6 +43,9 @@ class PreviewBody(YamlBody):
 
 class ForecastBody(YamlBody):
     options: ForecastOptions = Field(default_factory=ForecastOptions)
+
+class ExperienceBody(YamlBody):
+    options: ExperienceOptions = Field(default_factory=ExperienceOptions)
 
 class ConsultantPreviewBody(YamlBody):
     job_id: str | None = Field(None,max_length=128)
@@ -69,7 +73,7 @@ class AnalysisBody(BaseModel):
 
 def create_app(root=None):
     store = Store(root or os.getenv("LORASIM_DATA","data"))
-    app = FastAPI(title="LoRaSim Research",version="0.10.1")
+    app = FastAPI(title="LoRaSim Research",version="0.11.0")
     token = os.getenv("LORASIM_API_TOKEN","")
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
@@ -282,6 +286,11 @@ def create_app(root=None):
     @app.get("/api/consultant/config",dependencies=[Depends(auth)])
     def consultant_config():
         return ai_configuration()
+    @app.post("/api/calculator/experience",dependencies=[Depends(auth)])
+    def experience_profile(body:ExperienceBody):
+        try: return experience(store.parse_profile(body.yaml),body.options)
+        except ExperienceError as exc: planning_error(exc,'EXPERIENCE')
+        except Exception as exc: bad(exc)
     @app.post("/api/consultant/preview",dependencies=[Depends(auth)])
     def consultant_preview(body:ConsultantPreviewBody):
         try:

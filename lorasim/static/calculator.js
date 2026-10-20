@@ -116,13 +116,13 @@ class LinkBudgetCalculator {
  }
 }
 
-// One Calculator entry, three independent preflight tools.
+// One Calculator entry, independent request-driven preflight tools.
 class PropagationCalculator {
  constructor(context){
   this.visible=false;this.selected='link';const {root,el}=context;
   this.panes={};this.buttons={};this.tools={};
   const tabs=el('div',{class:'preflight-tabs',role:'tablist','aria-label':'Calculatorの機能'});
-  for(const [key,label] of [['link','伝搬距離'],['forecast','トレードオフ予測'],['consultant','AIコンサルタント']]){
+  for(const [key,label] of [['link','伝搬距離'],['forecast','トレードオフ予測'],['experience','経験分布'],['consultant','AIコンサルタント']]){
    this.panes[key]=el('div',{role:'tabpanel',id:'planning-'+key,'aria-label':label,hidden:key!=='link'});
    this.buttons[key]=el('button',{type:'button',role:'tab','aria-controls':'planning-'+key,'aria-selected':String(key==='link'),onclick:()=>this.select(key)},label);
    tabs.append(this.buttons[key]);
@@ -130,6 +130,7 @@ class PropagationCalculator {
   root.append(tabs,...Object.values(this.panes));
   this.tools.link=new LinkBudgetCalculator({...context,root:this.panes.link});
   this.tools.forecast=new TradeoffCalculator({...context,root:this.panes.forecast});
+  this.tools.experience=new ExperienceCalculator({...context,root:this.panes.experience});
   this.tools.consultant=new ConsultantPanel({...context,root:this.panes.consultant,getForecastOptions:()=>this.tools.forecast.options()});
  }
  select(key){this.selected=key;for(const k of Object.keys(this.panes)){this.panes[k].hidden=k!==key;this.buttons[k].setAttribute('aria-selected',String(k===key));this.tools[k].setVisible(this.visible&&k===key);}}
