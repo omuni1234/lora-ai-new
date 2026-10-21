@@ -6,8 +6,6 @@ Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモ
 
 ## v0.14.0の追加
 
-TVT評価向けのExperiment YAML 76本と短い機能確認例を `examples/tvt/` に追加しました。GUIから同梱YAMLをプルダウンで読み込み、移動・送信・選択器の追加プラグインと、PRR・公平性・推論時間・移動遷移等の7分析モジュールを選べます。[設定・実行・評価手順](docs/TVT_GUI_EXPERIMENTS.md)。PHY/MACの計算は維持し、測定用にschema_version=5の列・表を追記しています。
-
 「比較・分析」にAIコンサルタントを追加。選択したRunの集計結果・モデル条件・分析範囲をもとに継続会話できます。OpenAIのエンドポイント・API形式・APIキー・モデル・出力上限・待機時間をGUIから保存し、回答をストリーミング表示します。Calculatorの既存相談も共通化しました。長い時系列は省略箇所を明示して標本化し、相談ごとに再集計しません。
 
 [接続・操作・データ仕様](docs/AI_CONSULTANT.md)、[検証記録](docs/VALIDATION-v014.md)。外部OpenAI APIへの実接続試験は未実施です。

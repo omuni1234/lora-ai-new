@@ -43,9 +43,6 @@ class Attempt:
     xyz: tuple = (0.,0.,0.)
     link_report: tuple | None = None
     motion_state: str = "unknown"
-    motion_epoch_start_ns: int | None = None
-    selected_algorithm: str | None = None
-    detected_motion_state: str | None = None
 
 
 @dataclass(slots=True)
@@ -64,7 +61,6 @@ class Device:
     mcu_last: int = 0
     mcu_total: float = 0.
     pending_compute: list = field(default_factory=list)
-    pending_timing: list = field(default_factory=list)
     window: int = 0
     frequency: int = 0
     sf: int = 7
@@ -210,22 +206,10 @@ class Simulation:
             self.listening.discard(d.id)
 
     def _compute(self,d,operation,callback,arg,ordinal):
-        timed = self.p.tracking.policy_diagnostics
-        if hasattr(d.policy,"measure_meta_cpu"):
-            d.policy.measure_meta_cpu = timed
-            d.policy.meta_cpu_ns = 0
-        cpu_start = time.process_time_ns() if timed else 0
         begin = time.perf_counter() if d.mcu.enabled and d.mcu.mode=="measured" else 0.
         result = callback(arg)
-        measured = time.perf_counter()-begin if begin else 0.
-        if timed:
-            row = dict(device_id=d.id,tx_index=ordinal,time_ns=self.now,operation=operation,
-                       cpu_ns=time.process_time_ns()-cpu_start,meta_cpu_ns=getattr(d.policy,"meta_cpu_ns",0))
-            if operation=="inference":
-                d.pending_timing.append(row)
-            else:
-                self.tracker.write("policy_timing",**row)
         if d.mcu.enabled:
+            measured = time.perf_counter()-begin if begin else 0.
             duration = compute_duration(d.mcu,d.policy,operation,measured)
             # Active energy is an increment above the always-on idle baseline.
             power = max(0.,d.mcu.active_power_w-d.mcu.idle_power_w)
@@ -254,8 +238,7 @@ class Simulation:
         self.tracker.write("uplinks",packet_id=ctx.packet_id,message_id=ctx.message_id,device_id=ctx.ed,
                            tx_index=ctx.tx_index,attempt=ctx.number,time_ns=ctx.start,policy=d.policy_label,
                            outcome=outcome,received=outcome=="Received",gw_outcomes=json.dumps(ctx.outcomes),
-                           x_m=ctx.xyz[0],y_m=ctx.xyz[1],z_m=ctx.xyz[2],motion_state=ctx.motion_state,motion_epoch_start_ns=ctx.motion_epoch_start_ns,
-                           selected_algorithm=ctx.selected_algorithm,detected_motion_state=ctx.detected_motion_state)
+                           x_m=ctx.xyz[0],y_m=ctx.xyz[1],z_m=ctx.xyz[2],motion_state=ctx.motion_state)
 
     def _selector_trace(self, d):
         """Optional read-only change trace. No per-packet learner snapshots."""
@@ -276,7 +259,7 @@ class Simulation:
         text = dump_profile(self.p)
         (self.output/"profile.yaml").write_text(text)
         upstream = json.loads(Path(__file__).with_name("upstream.json").read_text())
-        atomic_json(self.output/"manifest.json",{"schema_version":5,"simulator_version":__version__,
+        atomic_json(self.output/"manifest.json",{"schema_version":4,"simulator_version":__version__,
                     "profile_sha256":hashlib.sha256(text.encode()).hexdigest(),"upstream":upstream,
                     "python":platform.python_version(),"platform":platform.platform(),"numpy":np.__version__,
                     "time_resolution":"ns", "rng":"NumPy PCG64, SeedSequence(seed,device_id,component)",
@@ -324,10 +307,6 @@ class Simulation:
                     row['tx_index'],row['state'] = 0,'inference_untransmitted'
                     self.tracker.write("energy",**row)
                 d.pending_compute.clear()
-                for row in d.pending_timing:
-                    row["tx_index"] = 0  # selection never reached the air
-                    self.tracker.write("policy_timing",**row)
-                d.pending_timing.clear()
                 if d.context and not d.context.done:
                     self.event("AttemptTruncated",d.context,status)
                     self.stats["attempts_truncated"] += 1
@@ -378,10 +357,6 @@ class Simulation:
         if ctx.radio is None:
             selector = (lambda obs:d.policy.select_attempt(obs,ctx.number==1)) if isinstance(d.policy,NetworkPolicy) else d.policy.select
             ctx.radio = Radio.model_validate(self._compute(d,"inference",selector,self.observation(d),d.tx_count+1))
-            if self.p.tracking.policy_diagnostics:
-                trace = getattr(d.policy,"decision_trace",lambda:{})()
-                ctx.selected_algorithm = trace.get("algorithm",d.policy_label)
-                ctx.detected_motion_state = trace.get("motion_state")
         p = ctx.radio
         if hasattr(d.policy,'action_keys') and (p.sf,p.frequency_hz,p.tp_dbm,p.cr) not in d.policy.action_keys:
             raise ValueError(f"ED {d.id}: selector returned an action outside the common SF×CH×CR×TP / ED action space")
@@ -407,10 +382,6 @@ class Simulation:
             row['tx_index'] = d.tx_count
             self.tracker.write("energy",**row)
         d.pending_compute.clear()
-        for row in d.pending_timing:
-            row["tx_index"] = d.tx_count
-            self.tracker.write("policy_timing",**row)
-        d.pending_timing.clear()
         d.last_radio = p
         ctx.adr_ack_req = isinstance(d.policy,NetworkPolicy) and d.policy.ack_requested
         self.stats["uplinks_sent"] += 1
@@ -461,7 +432,7 @@ class Simulation:
         f = Feedback(self.now/NS,known_ack,rssi,ctx.duration/NS,ctx.radio.tp_dbm,ctx.number,downlink_received,*report)
         self._compute(d,"training",d.policy.observe,f,d.tx_count)
         self._selector_trace(d)
-        self.tracker.write("feedback",tx_index=ctx.tx_index,packet_id=ctx.packet_id,message_id=ctx.message_id,device_id=d.id,
+        self.tracker.write("feedback",packet_id=ctx.packet_id,message_id=ctx.message_id,device_id=d.id,
                            time_ns=self.now,attempt=ctx.number,ack=known_ack,dl_rssi_dbm=rssi,
                            airtime_s=f.airtime_s,tx_power_dbm=f.tx_power_dbm,
                            ul_rssi_dbm=f.ul_rssi_dbm,ul_snr_db=f.ul_snr_db,ul_tx_power_dbm=f.ul_tx_power_dbm)
@@ -489,8 +460,6 @@ class Simulation:
             mobility = self.devices[source].mobility
             state = mobility.motion_state(self.now/NS) if "motion_state" in type(mobility).__dict__ else "unknown"
             ctx.motion_state = state if state in ("stationary", "moving") else "unknown"
-            epoch = getattr(mobility,"motion_epoch_start",lambda:None)()
-            ctx.motion_epoch_start_ns = ns(epoch) if epoch is not None else None
         power,loss,distance,delay = self.geometry.links(source,p.tp_dbm) if self.geometry else links(xyz,self.positions,p.tp_dbm,self.p.channel,self.p.channel_backend)
         flight = Flight(next(self.packet_seq),ctx,source,direction,self.now,airtime_ns(phy_bytes,p),p,power,loss,distance,delay)
         if len(self.flights) >= self.p.tracking.max_air_signals or self.air_bytes+flight.nbytes > self.p.tracking.max_air_bytes:
@@ -512,10 +481,7 @@ class Simulation:
                            sf=p.sf,cr=p.cr,bandwidth_hz=p.bandwidth_hz,frequency_hz=p.frequency_hz,
                            tx_power_dbm=p.tp_dbm,phy_bytes=phy_bytes,preamble_symbols=p.preamble_symbols,
                            implicit_header=p.implicit_header,crc=p.crc,x_m=xyz[0],y_m=xyz[1],z_m=xyz[2],
-                           motion_state=ctx.motion_state if direction=="UL" else None,
-                           motion_epoch_start_ns=ctx.motion_epoch_start_ns if direction=="UL" else None,
-                           selected_algorithm=ctx.selected_algorithm if direction=="UL" else None,
-                           detected_motion_state=ctx.detected_motion_state if direction=="UL" else None)
+                           motion_state=ctx.motion_state if direction=="UL" else None)
         for gi in range(len(self.p.gateways)):
             rid = self.n+gi
             if rid != source:
