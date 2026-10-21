@@ -146,7 +146,7 @@ def test_simulation_records_states_and_sema_trace_without_changing_outcomes(tmp_
     states=pq.read_table(tmp_path/'traced/selector_states').to_pylist()
     assert len(states)>=2 and all(x['tx_index']==0 for x in states[:2])
     assert all(x['motion_state']=='stationary' for x in pq.read_table(tmp_path/'traced/uplinks').to_pylist())
-    assert json.loads((tmp_path/'traced/manifest.json').read_text())['schema_version']==4
+    assert json.loads((tmp_path/'traced/manifest.json').read_text())['schema_version']==5
     # Read-only diagnostics must not alter RNGs, radio events or learning.
     reference=Simulation(p,tmp_path/'reference');reference._selector_trace=lambda d:None
     reference.run()

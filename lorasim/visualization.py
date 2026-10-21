@@ -4,10 +4,11 @@ import math
 import numpy as np
 import pyarrow.parquet as pq
 from .components import make, Stationary, Waypoints, RandomWalk
+from .plugins.mobility.asset_waypoint import AssetWaypoint
 from .mobility_environment import MobilityEnvironment, MobilityPreviewLimit
 
 _MOBILITY_ALIASES = {cls.__module__+':'+cls.__name__:key for key,cls in
-                    [('stationary',Stationary),('waypoints',Waypoints),('random_walk',RandomWalk)]}
+                    [('stationary',Stationary),('waypoints',Waypoints),('random_walk',RandomWalk),('asset_waypoint',AssetWaypoint)]}
 
 
 def layout(profile, at_s=0., limit=500):
@@ -41,7 +42,7 @@ def layout(profile, at_s=0., limit=500):
                 kind = _MOBILITY_ALIASES.get(spec.kind,spec.kind)
                 xyz,known = initial,at_s==0
                 # Do not execute user Python in a visualization request.
-                if kind in {'stationary','waypoints','random_walk'}:
+                if kind in {'stationary','waypoints','random_walk','asset_waypoint'}:
                     steps = at_s/spec.options.get('step_s',10.) if kind=='random_walk' else 0
                     if steps <= 10000:
                         try:
