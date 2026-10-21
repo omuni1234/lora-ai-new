@@ -10,6 +10,7 @@ from lorasim.mobility_environment import MobilityEnvironment
 
 class Settings(Options):
     mode: Literal['random_waypoint','timed','route'] = Field('random_waypoint', title='移動の方式', description='random_waypoint：共通の有限地点集合上で、EDごとに移動先・速度・到着後の静止時間を毎回抽選。timed：旧時刻指定。route：旧順路巡回。')
+    initial_pause: bool = Field(False, title="初期地点で静止", description="random_waypointで初期静止時間を通常の静止時間分布から抽選。既定は直ちに移動。")
     waypoint_count: int = Field(100, ge=1, le=10000, title='共通ウェイポイント数', description='random_waypoint用。エリア内に一様ランダム配置する地点数。各EDはこの集合の1点から開始し、現在地点以外を等確率で選びます。1点なら静止します。')
     waypoint_seed: int = Field(0, ge=0, le=2**32-1, title='地点配置の乱数シード', description='実験シードと組み合わせて共通地点集合を生成。同じ値・地点数・エリア・高さならグループ間でも同一集合。EDの移動判断用乱数とは独立です。')
     waypoint_height_m: float = Field(1.5, title='共通地点の高さ [m]', description='random_waypoint用。各地点の高さ。グループの初期配置は使わず、各EDを共通地点のいずれかに配置します。')
@@ -57,7 +58,7 @@ class Waypoints(Stationary):
     option_visibility = {
         'field':'mode',
         'values':{
-            'random_waypoint':['mode','waypoint_count','waypoint_seed','waypoint_height_m','speed_min_m_s','speed_max_m_s','pause_min_s','pause_max_s'],
+            'random_waypoint':['mode','initial_pause','waypoint_count','waypoint_seed','waypoint_height_m','speed_min_m_s','speed_max_m_s','pause_min_s','pause_max_s'],
             'timed':['mode','points'],
             'route':['mode','destinations','random_count','random_seed','speed_m_s','speed_jitter_m_s','pause_mode','pause_s','pause_min_s','pause_max_s','pause_jitter_s','repeat'],
         },
@@ -78,7 +79,11 @@ class Waypoints(Stationary):
             self.leave = math.inf
             self.resting = len(self.targets) == 1
             if not self.resting:
-                self._depart(0.)
+                if o.initial_pause:
+                    self.resting = True
+                    self.leave = float(rng.uniform(o.pause_min_s,o.pause_max_s))
+                else:
+                    self._depart(0.)
             return
         self.rng = np.random.default_rng(o.random_seed) if o.random_seed is not None else rng
         self.last_query = 0.
@@ -160,6 +165,12 @@ class Waypoints(Stationary):
                     if iterations > 100000:
                         raise ValueError('route exceeds per-query cycle budget')
         return np.array([np.interp(t,self.a[:,0],self.a[:,j]) for j in range(1,4)])
+    def motion_epoch_start(self):
+        """Diagnostic only; position(t) must have advanced the trajectory first."""
+        if self.options.mode == "random_waypoint":
+            return self.arrive if self.resting else self.depart
+        return None
+
     def motion_state(self,t):
         if self.options.mode == 'random_waypoint':
             return 'stationary' if self.resting else 'moving'
