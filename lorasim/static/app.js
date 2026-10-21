@@ -183,6 +183,9 @@ function renderAnalysis(){
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 $('validate').onclick=action(async()=>{profile=await validatedProfile(JSON.stringify(profile));renderAll();notice(configDiagnostics.length?'設定の検証が完了しました。表示されたWarningの理由とヒントを確認してください。':'設定とモデルの初期化の検証に成功しました。');});
 $('run').onclick=action(async()=>{const r=await api('/api/jobs','POST',{yaml:JSON.stringify(profile),experiment_id:$('experiment').value||null});setConfigDiagnostics(r.diagnostics||[],true);await refreshExperiments();await selectJob(r.id);notice('Runをキューに登録しました。workerがバックグラウンドで実行します。');});
+async function refreshExamples(){const entries=await api('/api/examples');$('exampleProfiles').replaceChildren(el('option',{value:''},'examplesから選択'));for(const item of entries)$('exampleProfiles').append(el('option',{value:item.id},item.id+' — '+item.name));$('loadExample').disabled=true;}
+$('exampleProfiles').onchange=()=>{$('loadExample').disabled=!$('exampleProfiles').value;};
+$('loadExample').onclick=action(async()=>{const id=$('exampleProfiles').value;if(!id)return;const item=await api('/api/examples/content?id='+encodeURIComponent(id));const loaded=await validatedProfile(item.yaml);profile=loaded;$('profiles').value='';$('experiment').value='';await loadSchemas();renderAll();dirty();notice('同梱YAMLを読み込みました。設定を確認してから実行してください。');});
 $('profiles').onchange=action(async()=>{const p=savedProfiles[Number($('profiles').value)];if(!p)return;profile=await validatedProfile(p.yaml);await loadSchemas();renderAll();dirty();notice('プロファイルを読み込みました。');});
 $('saveProfile').onclick=action(async()=>{await api('/api/profiles/'+encodeURIComponent(profile.name),'PUT',{yaml:JSON.stringify(profile)});await refreshProfiles();notice('プロファイルを保存しました。');});
 $('applyYaml').onclick=action(async()=>{profile=await validatedProfile($('yaml').value);await loadSchemas();renderAll();dirty();notice('YAMLをGUIへ反映しました。');});
@@ -316,7 +319,7 @@ for(const [id,ai] of [['analysisPlotsTab',false],['analysisAITab',true]])$(id).o
 };
 $('openAISettings').onclick=()=>{$('connectDialog').close();window.aiSettings.open();};
 
-action(async()=>{[schema,defaults]=await Promise.all([api('/api/schema'),api('/api/defaults')]);Object.assign(pluginSchemas,defaults.plugins);analysisModules=await api('/api/analysis/modules');moduleSelections=['abstract','outcomes','convergence','prr_by_count','fairness','energy'].map(kind=>({kind,enabled:true,options:clone(analysisModules[kind].defaults)}));renderModuleEditor();profile=clone(defaults.profile);modelSpec=newComponent('policy','fixed');await Promise.all([refreshCatalog(),refreshProfiles(),refreshExperiments()]);await loadSchemas();renderAll();await checkConfiguration();await runPreview();await poll();setInterval(poll,4000);})();
+action(async()=>{[schema,defaults]=await Promise.all([api('/api/schema'),api('/api/defaults')]);Object.assign(pluginSchemas,defaults.plugins);analysisModules=await api('/api/analysis/modules');moduleSelections=['abstract','outcomes','convergence','prr_by_count','fairness','energy'].map(kind=>({kind,enabled:true,options:clone(analysisModules[kind].defaults)}));renderModuleEditor();profile=clone(defaults.profile);modelSpec=newComponent('policy','fixed');await Promise.all([refreshCatalog(),refreshProfiles(),refreshExperiments(),refreshExamples()]);await loadSchemas();renderAll();await checkConfiguration();await runPreview();await poll();setInterval(poll,4000);})();
 
 $('map').onclick=event=>{if(!mapData)return;const nearest=mapRenderer.pick(event.clientX,event.clientY,mapData.devices);if(nearest)inspectDevice(nearest);};
 

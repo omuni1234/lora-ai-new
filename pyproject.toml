@@ -30,3 +30,8 @@ testpaths = ["tests"]
 [tool.setuptools.data-files]
 "share/lorasim" = ["README.md"]
 "share/lorasim/docs" = ["docs/*.md", "docs/*.png"]
+
+"share/lorasim/examples" = ["examples/*.yaml", "examples/*.py"]
+"share/lorasim/examples/models" = ["examples/models/*.yaml"]
+"share/lorasim/examples/custom" = ["examples/custom/*.yaml"]
+"share/lorasim/examples/tvt" = ["examples/tvt/*.yaml"]

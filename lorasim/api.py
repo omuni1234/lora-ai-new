@@ -90,6 +90,8 @@ def create_app(root=None):
     def auth(request: Request):
         if token and not hmac.compare_digest(request.headers.get("Authorization",""),f"Bearer {token}"):
             raise HTTPException(401,"Authentication required")
+    from .example_profiles import mount_examples
+    mount_examples(app, [Depends(auth)])
     from .documents import mount_documents
     mount_documents(app, [Depends(auth)])
     from .tuning import mount_tuning
