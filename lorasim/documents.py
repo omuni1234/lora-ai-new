@@ -34,7 +34,7 @@ def catalogue(root):
     for name,p in files(root).items():
         source=p.read_text(encoding='utf-8')
         title=next((line[2:] for line in source.splitlines() if line.startswith('# ')),p.stem)
-        historical='VALIDATION' in name and name!='docs/VALIDATION-v014.md'
+        historical='VALIDATION' in name and name!='docs/VALIDATION-v0141.md'
         result.append(dict(id=name,title=title,category=category(name),historical=historical,
                            search_text=source,version=__version__))
     return result
@@ -76,7 +76,7 @@ def read_document(root, name):
     walk(tokens)
     return dict(id=name,title=next((x['title'] for x in headings),'ドキュメント'),source=source,
                 html=md.renderer.render(tokens,md.options,{}),headings=headings,version=__version__,
-                historical='VALIDATION' in name and name!='docs/VALIDATION-v014.md')
+                historical='VALIDATION' in name and name!='docs/VALIDATION-v0141.md')
 
 
 def mount_documents(app, dependencies, root=None):

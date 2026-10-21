@@ -2,7 +2,13 @@
 
 Class A LoRaWAN研究用のPythonシミュレーターです。ns-3のLoRaWANモジュールを読み、伝搬・送信時間・SF間干渉・PHY受信制約を移植し、プログラマブルなED、管理GUI、独立ワーカー、ストリーミング出力を組み合わせています。
 
-**v0.14.0。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+**v0.14.1。ns-3全体との完全互換を保証するものではありません。** 対象はEU868 / BW 125 kHz / LogDistance / GoursaudまたはALOHA干渉モデルです。適用範囲と上流との差分を [FIDELITY.md](docs/FIDELITY.md) に記載しています。実験で使う前に、この条件が研究目的に合うことを確認してください。
+
+## v0.14.1の追加
+
+ED数リスト×選択アルゴリズムリストの直積を一括でキューへ登録できます。保存モデルの定数を保持し、アルゴリズムごとのExperimentへ整理。全件検証・原子的登録・再送時の重複防止に対応します。
+
+[一括実行の使い方](docs/BATCH_RUNS.md) / [workerを止めずにAPI・GUIを更新する方法](docs/OPERATIONS.md) / [検証記録](docs/VALIDATION-v0141.md)
 
 ## v0.14.0の追加
 

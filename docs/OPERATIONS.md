@@ -10,6 +10,41 @@ GUIはFastAPIへ入力を送り、SQLiteの永続キューへ登録します。�
 
 SQLiteは同一ホストのローカルディスク／Docker named volumeで使います。NFS共有上で複数ホストから並列ワーカーを起動する分散キューではありません。停止後の再開チェックポイント、自動再試行、複数ホストへまたがる実行管理は未実装です。
 
+## workerを止めずにAPI・GUIを更新する（v0.14.1）
+
+今回の[一括実行](BATCH_RUNS.md)はAPI側で通常のプロファイル・Runへ展開するため、**v0.14.0のworkerを稼働させたままAPIだけをv0.14.1へ更新**できます。イベントエンジン・選択器・移動モデル・Runスキーマは変更していません。
+
+新しいソースを現在のプロジェクトディレクトリに反映後、次を実行します。既存と同じComposeプロジェクト名・`.env`・データvolumeを使ってください。
+
+```bash
+# 更新前のworkerコンテナIDを確認
+docker compose ps -q worker
+
+# apiだけをビルド・再作成。実行中workerはそのまま
+docker compose up -d --build --no-deps api
+
+# workerのIDが変わらないことと、APIの起動を確認
+docker compose ps
+docker compose ps -q worker
+docker compose logs --tail=30 api
+```
+
+GPU版で起動した環境では、同じ構成ファイルを指定します。
+
+```bash
+docker compose -f compose.yaml -f compose.gpu.yaml up -d --build --no-deps api
+```
+
+API再作成中はGUI接続が一時的に切れます。復帰後にブラウザを再読み込みし、一括実行ボタンと既存Runの進捗を確認してください。APIとworkerは別コンテナで同じデータvolumeを参照します。ビルドで同じイメージタグが更新されても、動作中workerは元のイメージを使い続けます。
+
+**`docker compose down`、`restart worker`、サービス未指定の `up -d --build` はこの手順では実行しません。** 現在のworkerは停止要求で実行中の子プロセスを終了します。途中Runのチェックポイント復元や、worker自体の無停止コード差し替えはありません。
+
+この互換性は今回の一括実行と通常Runについてです。**新しいハイパーパラメータ探索の開始はAPIとworkerのバージョンを揃えてから**行ってください。探索は作成時のバージョンを検査します。旧workerで進行中の旧版の探索は継続します。
+
+workerも更新する場合は、実行中・待機中Runと探索がすべて完了し、新しい投入がないことを確認してから `docker compose up -d --build worker` を実行します。GPU版は同じ `-f` 指定を付けます。将来のシミュレーション仕様変更では互換性を別途確認してください。ソースや独自プラグインをworkerへbind mountした独自構成では、ファイル変更がworkerへ即時に見えるため、このコンテナ分離の前提は成立しません。
+
+Composeのサービス指定・`--build`・`--no-deps` は [Docker公式リファレンス](https://docs.docker.com/reference/cli/docker/compose/up/) を参照してください。
+
 ## 進捗と通知
 
 進捗はsimulation time / duration。イベントを処理しながら、実時間0.25秒または整数%進行のタイミングで更新し、最終状態を必ず保存します。GUIは表示中だけ4秒間隔で取得します。ETAは表示していません。高負荷区間でsimulation timeと実時間の比率が変わるためです。
@@ -38,7 +73,7 @@ curlの終了コードとエラーをジョブ内`notifications.jsonl`へ追記�
 
 Python拡張を許可すると、指定モジュールのconstructorが設定検証時にも実行されます。自身で管理するプラグインを使用し、constructorでは軽い初期化だけを行い、重いモデルロードはselect時に遅延してください。通知URLも利用者が管理する宛先のみ設定してください。
 
-`GET /api/jobs`は最新100件、`GET /api/jobs/{id}`は個別詳細。`/files`で結果一覧、`/files/{path}`でファイルを取得します。profile.yamlに保存する値には秘密情報を含めないでください。ノード座標や観測結果を外部へ自動送信する実装はなく、通知本文は集計のみです。
+`GET /api/jobs`は最新500件、`GET /api/jobs/{id}`は個別詳細。`/files`で結果一覧、`/files/{path}`でファイルを取得します。profile.yamlに保存する値には秘密情報を含めないでください。ノード座標や観測結果を外部へ自動送信する実装はなく、通知本文は集計のみです。
 
 ## Docker / GPU
 
@@ -81,7 +116,7 @@ API: `GET /api/worker`で状態とRun→PIDの`processes`、`PUT /api/worker/set
 
 ## v0.12の更新
 
-上部の「ドキュメント」から同梱mdを検索・閲覧・保存できます。GET /api/documents（本文検索用一覧）とGET /api/documents/content?id=docs/INDEX.mdは既存Bearer認証に従います。任意パスの読み出しや外部HTML実行は許可しません。変更を配布する際はdocker compose up -d --buildでAPI/workerを更新してください。依存にmarkdown-it-pyを追加しています。過去の検証記録は現行版の検証結果ではありません。
+上部の「ドキュメント」から同梱mdを検索・閲覧・保存できます。GET /api/documents（本文検索用一覧）とGET /api/documents/content?id=docs/INDEX.mdは既存Bearer認証に従います。任意パスの読み出しや外部HTML実行は許可しません。更新方法は本書の「workerを止めずにAPI・GUIを更新する」を参照してください。workerも更新する場合はRunと探索の完了後に行います。依存にmarkdown-it-pyを追加しています。過去の検証記録は現行版の検証結果ではありません。
 
 [操作ガイド](GUI.md) / [文書一覧](INDEX.md)
 

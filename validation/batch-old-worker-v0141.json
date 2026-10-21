@@ -1,0 +1,12 @@
+{
+  "api_version": "0.14.1",
+  "worker_version": "0.14.0",
+  "same_supervisor_pid": 72299,
+  "api_restart_existing_run_status": "running",
+  "existing_run_completed": true,
+  "new_batch_runs_completed": 6,
+  "new_experiments": 2,
+  "manifest_versions": [
+    "0.14.0"
+  ]
+}

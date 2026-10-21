@@ -1,0 +1,32 @@
+✔ ED count lists support commas, Japanese commas, spaces and newlines (2.165417ms)
+✔ bad or duplicate ED counts cannot become a batch (0.205209ms)
+✔ SSE framing handles arbitrary chunks and Japanese text (2.3965ms)
+✔ SSE catches malformed and unfinished responses (0.17075ms)
+✔ UTF-8 decoding survives multibyte splits before SSE parsing (0.352292ms)
+✔ experience map preserves metric aspect ratio and includes empty/outside bins (1.9245ms)
+✔ timeline stacks states as counts and handles no transmissions (0.491792ms)
+✔ equal metric scale within 1200 x 300, area 2000,2000 (0.84625ms)
+✔ equal metric scale within 320 x 240, area 4000,1000 (0.063709ms)
+✔ equal metric scale within 800 x 450, area 1000,5000 (0.055958ms)
+✔ drawing and ED picking agree at pixel ratio 1 (13.897292ms)
+✔ drawing and ED picking agree at pixel ratio 2 (0.511791ms)
+✔ drawing and ED picking agree at pixel ratio 3 (0.481709ms)
+✔ continuous cumulative area, grids and per-endpoint hover are present (17.957292ms)
+✔ lines show gaps, ranges, sample counts and safely escaped labels (0.659875ms)
+✔ spatial map reports counts and uses equal distance scales (1.086583ms)
+✔ profile name uses effective assignments, Japan clock and explicit unique suffix (4.3535ms)
+✔ summary flatten preserves nested values, booleans, null and leaf labels (0.912083ms)
+✔ three preflight panels and dedicated chart assets are wired (1.405959ms)
+✔ SEMA survival separates overlapping algorithms into labelled rows (0.500667ms)
+✔ generated profile names fit the stored-profile name limit for custom classes (0.185125ms)
+✔ linear/log candidates include endpoints, are finite and can be discrete (3.280125ms)
+✔ registered options are parsed as JSON, never executable expressions (0.1695ms)
+✔ default horizons are capped while preserving short profiles (0.144625ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 129.494708

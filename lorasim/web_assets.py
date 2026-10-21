@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 
-ASSETS = ('style.css', 'planning.js', 'consultant.js', 'experience.js', 'calculator.js', 'preview-map.js', 'analysis-charts.js', 'profile-summary.js', 'documents.js', 'tuning.js', 'app.js')
+ASSETS = ('style.css', 'planning.js', 'consultant.js', 'experience.js', 'calculator.js', 'preview-map.js', 'analysis-charts.js', 'profile-summary.js', 'documents.js', 'tuning.js', 'batches.js', 'app.js')
 
 
 class RevalidatingStaticFiles(StaticFiles):

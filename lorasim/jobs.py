@@ -75,6 +75,9 @@ class Store:
             CREATE TABLE IF NOT EXISTS worker_settings (
               id INTEGER PRIMARY KEY CHECK(id=1), workers INTEGER NOT NULL CHECK(workers BETWEEN 1 AND 256)
             );
+            CREATE TABLE IF NOT EXISTS batch_submissions (
+              id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, created REAL NOT NULL
+            );
             """)
             # API and worker may start together against the same old database.
             db.execute("BEGIN IMMEDIATE")

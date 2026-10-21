@@ -57,7 +57,7 @@ let previewDirty=false, tooltipSeq=0;
 function info(textOrLoad,label='設定の説明'){
  const button=el('button',{type:'button',class:'info','aria-label':label},'i');
  let tip=null,active=false;
- const show=async()=>{if(active)return;active=true;tip=el('div',{class:'tooltip',role:'tooltip',id:'tip-'+(++tooltipSeq)},'読み込み中…');document.body.append(tip);button.setAttribute('aria-describedby',tip.id);const r=button.getBoundingClientRect();tip.style.left=Math.min(window.innerWidth-330,Math.max(8,r.left))+'px';tip.style.top=Math.min(window.innerHeight-230,r.bottom+8)+'px';try{const text=typeof textOrLoad==='function'?await textOrLoad():textOrLoad;if(active){tip.textContent=text;tip.style.top=Math.max(8,Math.min(r.bottom+8,window.innerHeight-tip.offsetHeight-12))+'px';}}catch(e){if(active)tip.textContent=e.message;}};
+ const show=async()=>{if(active)return;active=true;tip=el('div',{class:'tooltip',role:'tooltip',id:'tip-'+(++tooltipSeq)},'読み込み中…');(button.closest('dialog')||document.body).append(tip);button.setAttribute('aria-describedby',tip.id);const r=button.getBoundingClientRect();tip.style.left=Math.min(window.innerWidth-330,Math.max(8,r.left))+'px';tip.style.top=Math.min(window.innerHeight-230,r.bottom+8)+'px';try{const text=typeof textOrLoad==='function'?await textOrLoad():textOrLoad;if(active){tip.textContent=text;tip.style.top=Math.max(8,Math.min(r.bottom+8,window.innerHeight-tip.offsetHeight-12))+'px';}}catch(e){if(active)tip.textContent=e.message;}};
  const hide=()=>{active=false;tip?.remove();tip=null;button.removeAttribute('aria-describedby');};
  button.addEventListener('mouseenter',show);button.addEventListener('mouseleave',hide);button.addEventListener('focus',show);button.addEventListener('blur',hide);button.onclick=e=>{e.preventDefault();e.stopPropagation();active?hide():show();};button.onkeydown=e=>{if(e.key==='Escape')hide();};return button;
 }
@@ -338,4 +338,21 @@ function tuningSource(){
  const p=clone(profile);p.models=p.models||{};
  for(const category of ['policy','mobility','timing'])p.models[category]={...clone(catalog[category]||{}),...(p.models[category]||{})};
  return {category:$('modelCategory').value,definition:clone(componentValue(modelSpec,$('modelCategory').value)),name:$('modelName').value,profile:p,timings:profile.groups.map(g=>componentValue(g.timing,'timing'))};
+}
+
+const batchPanel=new BatchPanel({api,el,info,getSource:batchSource,onQueued:async result=>{
+ await refreshExperiments();await refreshJobs();notice(`${result.run_count} Runを一括登録しました。比較・分析では作成したExperimentを選択してください。`);
+}});
+$('batchRun').onclick=action(async()=>{await refreshExperiments();await refreshCatalog();batchPanel.open();});
+function batchSource(){
+ if(yamlDraft)throw Error('YAMLの未反映の編集があります。「GUIに反映・検証」を先に実行してください。');
+ if(!profile.groups?.length)throw Error('EDグループを設定してください。');
+ const p=clone(profile);p.models=p.models||{};
+ for(const category of ['policy','mobility','timing'])p.models[category]={...clone(catalog[category]||{}),...(p.models[category]||{})};
+ const choices=[];
+ for(const [i,g] of profile.groups.entries())choices.push({key:'group:'+i,name:g.policy.ref||`${g.policy.kind}-${g.name}`,
+  label:`現在の設定：${g.name} · ${g.policy.ref||g.policy.kind}`,definition:clone(componentValue(g.policy,'policy'))});
+ for(const [name,spec] of Object.entries(p.models.policy||{}))choices.push({key:'model:'+name,name,label:'保存定義：'+name,definition:clone(componentValue(spec,'policy'))});
+ for(const [kind,meta] of Object.entries(pluginSchemas.policy))if(!meta.deprecated)choices.push({key:'builtin:'+kind,name:kind,label:`内蔵：${meta.label} (${kind})`,definition:newComponent('policy',kind)});
+ return {profile:p,choices,experiments:clone(experiments)};
 }
