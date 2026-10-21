@@ -82,3 +82,8 @@ main.documents-open{grid-template-columns:260px minmax(0,1fr)}main.documents-ope
 .batch-dialog>.sectiontitle{position:sticky;top:-24px;padding:14px 0;background:#fff;z-index:2;border-bottom:1px solid var(--line)}.batch-preview{scroll-margin-top:70px}.batch-footer{position:sticky;bottom:-24px;background:#fff;padding:12px 0;border-top:1px solid var(--line);z-index:1}@media(max-width:760px){.batch-dialog>.sectiontitle{top:-16px}.batch-footer{bottom:-16px}}
 
 .batch-preview td{padding:9px 10px}.batch-preview th{padding:8px 10px}.batch-preview{scroll-margin-top:70px}.batch-dialog .diagnostic{scroll-margin-top:70px}
+
+.example-picker{margin:12px 0;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.example-picker h3{font-size:13px}.example-picker .actions{flex-wrap:wrap}.example-list{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fff;padding:6px}
+.example-list .example-choice{display:flex;align-items:flex-start;gap:10px;margin:0;padding:9px;cursor:pointer;border-radius:4px}.example-choice:hover{background:#edf5f8}.example-choice:has(input:checked){background:#e7f2f8}.example-choice input[type=checkbox]{flex:0 0 auto;width:auto;margin:3px 0}.example-choice span{min-width:0;overflow-wrap:anywhere}.example-choice strong,.example-choice small{display:block;font-size:11px}.example-choice small{color:var(--muted);margin-top:3px}
+.example-results{max-height:190px;overflow:auto}.example-result{font-size:11px;overflow-wrap:anywhere;margin:7px 0}.example-result.error{color:#a23930}#exampleQueueStatus{font-size:12px;overflow-wrap:anywhere}
