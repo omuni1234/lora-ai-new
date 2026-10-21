@@ -209,6 +209,7 @@ class Mac(Model):
 
 
 class Tracking(Model):
+    policy_diagnostics: bool = Field(False, title="方策CPU時間・選択履歴を記録", description="推論・学習のホストCPU時間、選択アルゴリズムと判定状態を記録。シミュレーション時刻・無線・MCU電力設定を変更しません。")
     batch_rows: int = Field(4096, ge=1, le=1000000)
     max_air_signals: int = Field(100000, ge=1)
     max_air_bytes: int = Field(536870912, ge=1024)

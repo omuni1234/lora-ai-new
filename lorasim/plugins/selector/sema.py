@@ -1,6 +1,7 @@
 """Thesis Algorithm 1, Eq.4.3–4.14 and 5.5–5.6; see docs/SEMA.md."""
 from itertools import product
 import math
+import time
 import numpy as np
 from pydantic import Field
 from ._dqn import DQNSettings, Learner, reward
@@ -15,6 +16,8 @@ class Settings(DQNSettings):
 
 
 class SEMA(DQN):
+    measure_meta_cpu = False
+    meta_cpu_ns = 0
     Options = Settings
     requires_position = True
     label = 'SEMA（逐次消去メタエージェント）'
@@ -83,15 +86,23 @@ class SEMA(DQN):
         x,a,arm,name,moving = self.pending
         if f.ack and f.dl_rssi_dbm is not None: self.rssi = f.dl_rssi_dbm
         r = reward(self.options,f.ack,self.actions[a].sf)
+        begin = time.process_time_ns() if self.measure_meta_cpu else None
         self.counts[arm] += 1
         self.rewards[arm] += float(f.ack)
         self.eliminate()
+        if begin is not None:
+            self.meta_cpu_ns = time.process_time_ns()-begin
         for key in ('A','C' if moving else 'B'):
             self.learners[key].learn(x,a,r,self.state())
         if name == 'epsilon':
             self.greedy_q[a] += r
             self.greedy_steps += 1
         self.pending = None
+    def decision_trace(self):
+        if self.pending is None:
+            return {}
+        return dict(algorithm=self.pending[3],motion_state="moving" if self.pending[4] else "stationary")
+
     def snapshot(self):
         return dict(last_ack_rssi_dbm=self.rssi,arms=self.arms,active_arms=self.active,
             arm_counts=self.counts.tolist(),arm_rewards=self.rewards.tolist(),eliminated=self.eliminated,

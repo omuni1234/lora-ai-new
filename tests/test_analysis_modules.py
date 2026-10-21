@@ -118,7 +118,8 @@ class Broken(AnalysisModule):
 
 def test_registry_schemas_and_invalid_options():
     modules=inventory()
-    assert {'outcomes','convergence','fairness','energy','reliability','airtime','efficiency','abstract','prr_by_count','spatial_sf','sema_pool','stationary_distance','channel_distribution','channel_js','mobility_outcomes'} == set(modules)
+    assert {'outcomes','convergence','fairness','energy','reliability','airtime','efficiency','abstract','prr_by_count','spatial_sf','sema_pool','stationary_distance','channel_distribution','channel_js','mobility_outcomes',
+            'tvt_quality','tvt_cpu','tvt_learning','tvt_seed_comparison','tvt_settlement','tvt_transitions','tvt_selection'} == set(modules)
     from lorasim.analysis_modules import prepare
     with pytest.raises(ValueError):prepare([{'kind':'reliability','options':{'threshold':1.1}}])
     with pytest.raises(ValueError):prepare([{'kind':'outcomes'},{'kind':'outcomes'}])

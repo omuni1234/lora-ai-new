@@ -9,6 +9,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 SCHEMAS = {
+    "policy_timing": pa.schema([( "device_id",pa.int64()),("tx_index",pa.int64()),
+        ("time_ns",pa.int64()),("operation",pa.string()),("cpu_ns",pa.int64()),("meta_cpu_ns",pa.int64())]),
     "transmissions": pa.schema([
         ("packet_id",pa.int64()),("message_id",pa.int64()),("direction",pa.string()),
         ("device_id",pa.int64()),("gateway_id",pa.string()),("attempt",pa.int32()),
@@ -19,7 +21,8 @@ SCHEMAS = {
         ("bandwidth_hz",pa.int64()),("frequency_hz",pa.int64()),("tx_power_dbm",pa.float64()),
         ("preamble_symbols",pa.int32()),("implicit_header",pa.bool_()),("crc",pa.bool_()),
         ("phy_bytes",pa.int32()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64()),
-        ("motion_state",pa.string())]),
+        ("motion_state",pa.string()),("motion_epoch_start_ns",pa.int64()),
+        ("selected_algorithm",pa.string()),("detected_motion_state",pa.string())]),
     "receptions": pa.schema([
         ("packet_id",pa.int64()),("message_id",pa.int64()),("direction",pa.string()),
         ("device_id",pa.int64()),("receiver_kind",pa.string()),("receiver_id",pa.string()),
@@ -30,7 +33,7 @@ SCHEMAS = {
         # Variable-list physical type avoids Arrow/Parquet null fixed-list roundtrip issues.
         # Non-null records always contain exactly six SF7..SF12 entries.
         ("destroyed_by_sf",pa.int32()),("interference_j",pa.list_(pa.float64()))]),
-    "feedback": pa.schema([
+    "feedback": pa.schema([("tx_index",pa.int64()),
         ("packet_id",pa.int64()),("message_id",pa.int64()),("device_id",pa.int64()),
         ("time_ns",pa.int64()),("attempt",pa.int32()),("ack",pa.bool_()),
         ("dl_rssi_dbm",pa.float64()),("airtime_s",pa.float64()),("tx_power_dbm",pa.float64()),
@@ -46,7 +49,8 @@ SCHEMAS = {
         ("tx_index",pa.int64()),("attempt",pa.int32()),("time_ns",pa.int64()),
         ("policy",pa.string()),("outcome",pa.string()),("received",pa.bool_()),
         ("gw_outcomes",pa.string()),("x_m",pa.float64()),("y_m",pa.float64()),("z_m",pa.float64()),
-        ("motion_state",pa.string())]),
+        ("motion_state",pa.string()),("motion_epoch_start_ns",pa.int64()),
+        ("selected_algorithm",pa.string()),("detected_motion_state",pa.string())]),
     "selector_states": pa.schema([
         ("device_id",pa.int64()),("time_ns",pa.int64()),("tx_index",pa.int64()),
         ("experience",pa.int64()),("arms",pa.string()),("active_arms",pa.list_(pa.int32()))]),
