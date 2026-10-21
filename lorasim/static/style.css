@@ -77,8 +77,3 @@ main.documents-open{grid-template-columns:260px minmax(0,1fr)}main.documents-ope
 .ai-conversation{max-height:clamp(180px,28vh,360px)}
 #analysisView.ai-active .analysis-output{height:75%;min-height:400px}#analysisView.ai-active .analysis-editor{min-height:150px}
 @media(max-width:760px){#analysisView.ai-active .analysis-output{height:auto;min-height:0;max-height:80vh}}
-
-.example-picker{margin:12px 0;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.example-picker h3{font-size:13px}.example-picker .actions{flex-wrap:wrap}.example-list{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fff;padding:6px}
-.example-list .example-choice{display:flex;align-items:flex-start;gap:10px;margin:0;padding:9px;cursor:pointer;border-radius:4px}.example-choice:hover{background:#edf5f8}.example-choice:has(input:checked){background:#e7f2f8}.example-choice input[type=checkbox]{flex:0 0 auto;width:auto;margin:3px 0}.example-choice span{min-width:0;overflow-wrap:anywhere}.example-choice strong,.example-choice small{display:block;font-size:11px}.example-choice small{color:var(--muted);margin-top:3px}
-.example-results{max-height:190px;overflow:auto}.example-result{font-size:11px;overflow-wrap:anywhere;margin:7px 0}.example-result.error{color:#a23930}#exampleQueueStatus{font-size:12px;overflow-wrap:anywhere}

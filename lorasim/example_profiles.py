@@ -33,13 +33,9 @@ def catalogue(root):
 def read_example(root,name):
     root=Path(root).resolve()
     path=files(root).get(name)
-    if path is None:
+    if path is None or name not in {r['id'] for r in catalogue(root)}:
         raise HTTPException(404,'Experiment example not found')
     data=yaml.safe_load(path.read_text(encoding='utf-8'))
-    # Check only this file: batch queueing must not parse the whole catalogue
-    # again for every selected Experiment.
-    if not isinstance(data,dict) or not isinstance(data.get('groups'),list):
-        raise HTTPException(404,'Experiment example not found')
     # Resolve trusted bundled model files only inside the examples directory.
     for ref in data.get('model_files',[]):
         target=(path.parent/ref).resolve()
