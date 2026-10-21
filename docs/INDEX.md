@@ -8,7 +8,6 @@
 - [README](../README.md): 導入、Docker、CLI、これまでの変更。
 - [運用](OPERATIONS.md): バックグラウンド実行、並列Run、通知、接続。
 - [設定仕様](CONFIGURATION.md): YAMLと各モデルの設定。
-- [TVT実験設定とGUI評価](TVT_GUI_EXPERIMENTS.md): 76本のExperiment、移動・対照手法、PRR・公平性・CPU時間・遷移評価。
 - [理論の適用範囲](FIDELITY.md): ns-3との対応、再現する範囲と差分。
 
 ## 分析する
@@ -16,7 +15,7 @@
 - [ExperimentとPRRの分母](ANALYSIS.md)
 - [v0.12の比較・分析](RESEARCH_ANALYSIS.md): 数値一覧、位置SF、SEMA残存、距離別PRR、KL/JS。
 - [評価指標と文献](METRICS.md)
-- [Parquetトラッキング仕様](TRACKING.md): 新規Runはschema_version=5。
+- [Parquetトラッキング仕様](TRACKING.md): 新規Runはschema_version=4。
 - [分析モジュールを開発する](ANALYSIS_PLUGINS.md)
 
 ## 実験前に確認する

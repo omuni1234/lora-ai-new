@@ -189,14 +189,3 @@ motion_stateは経験分布Calculatorだけでなく、実送信開始時の解�
 ## 調整項目の公開（v0.13）
 
 Optionsで公開した数値・bool・enumにはモデルライブラリのチューニングから候補が提示されます。title/descriptionが日本語ラベルと説明になります。入れ子や配列要素はドット区切りでも登録可能です。相互制約は各候補のOptions検証で確認します。共通行動空間で無効になるspace_optionsは探索対象から除外します。[チューニング仕様](TUNING.md)を参照してください。
-
-
-## 任意のTVT診断フック（schema 5）
-
-既存プラグインへの必須メソッド追加はありません。次のフックは学習や物理処理とは独立した読み取り専用です。
-
-- 選択器の `decision_trace()` はselect直後に `{"algorithm": "B", "motion_state": "stationary"}` 等を返せます。`tracking.policy_diagnostics=true` の時だけ呼びます。RNG・学習状態を変更しないでください。
-- 移動モデルの `motion_epoch_start()` はposition更新後の物理状態が始まった秒数を返します。初期状態は0、未対応はNone。新しい `asset_waypoint` が実装しています。Observationに渡しません。
-- SEMAは `measure_meta_cpu` 有効時に、直近observeのメタ更新時間を `meta_cpu_ns` へ保存します。engineは計測直前に値を0へ戻し、任意の他プラグインはこの計測を実装する必要はありません。
-
-新しいモデルも通常のPLUGIN/Options契約で自動登録されます。独立の分析モジュールは [ANALYSIS_PLUGINS.md](ANALYSIS_PLUGINS.md)、追加したモデル・分析の定義は [TVT_GUI_EXPERIMENTS.md](TVT_GUI_EXPERIMENTS.md)を参照してください。

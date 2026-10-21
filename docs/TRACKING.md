@@ -1,6 +1,6 @@
-# トラッキング仕様（schema 5）
+# トラッキング仕様（v0.12 / schema 4）
 
-現行Runのmanifest.schema_versionは5です。以下の基本表に加え、末尾に記載するTVT診断用の列・表を使用します。旧版への対応を確認できるよう、導入版を節名に残しています。
+現行Runのmanifest.schema_versionは4です。以下の基本表に加え、v0.2以降の追記列と末尾のv0.12追加表を使用します。旧版への対応を確認できるよう、導入版を節名に残しています。
 
 ## 出力構成
 
@@ -22,7 +22,7 @@ runs/<job-id>/
 
 `packet_id`は実際に空中へ送信したUL/DLのID（ジョブ内連番）。`message_id`はアプリケーションメッセージID。再送ULとそのACKはmessage_idを共有し、packet_idは毎回異なります。`attempt`は初回1。ED IDはプロファイルのgroups記載順に0から割り当てます。これらのIDはジョブを跨いで一意ではないため、複数実験を結合する際はjob_idを外側のキーにしてください。
 
-時刻はsimulation timeです。例外として`policy_timing.cpu_ns/meta_cpu_ns`はホストの処理CPU時間です。`*_ns`は符号付き64bit整数のナノ秒、`*_s`は秒。場所m、電力dBm、損失dB、干渉エネルギーJ。欠損値はArrow null（0やNaNで代用しません）。JSONにNaN/Infinityを書き込みません。
+全時間はsimulation timeです。`*_ns`は符号付き64bit整数のナノ秒、`*_s`は秒。場所m、電力dBm、損失dB、干渉エネルギーJ。欠損値はArrow null（0やNaNで代用しません）。JSONにNaN/Infinityを書き込みません。
 
 ## transmissions：空中送信1回につき1行
 
@@ -224,26 +224,3 @@ SEMAの消去履歴は最大5件、DQNの再生配列は容量制限付きです
 SEMAは初期状態＋消去のある時点だけ出力します（内蔵6アームはEDあたり最大6行）。同じ時点で複数アームを消去した場合は結果を1行にまとめます。最大送信回数に比例したスナップショット保存を行いません。空表は非対応選択器のRunでも生成されます。旧`policy_state.jsonl`は引き続き最終状態の保存用です。旧Runに過去の時刻を捏造する移行は行いません。
 
 新表も既存Trackerのバッチ/バックプレッシャーを使用します。分析は[RESEARCH_ANALYSIS.md](RESEARCH_ANALYSIS.md)。
-
-
-## TVT診断の追記（manifest.schema_version=5）
-
-`tracking.policy_diagnostics`は既定falseです。trueにすると、CPU時間と実際の選択モデル・局所移動判定を記録します。従来の列・表と読み出し契約を維持し、旧Runにない値は分析側でN/Aにします。
-
-| 表 / 列 | 型 | 定義 |
-|---|---|---|
-| policy_timing.device_id, tx_index | int64 | EDと実送信通番。未送信の選択は通番0 |
-| policy_timing.time_ns | int64 | コールバック開始時のsimulation time |
-| policy_timing.operation | string | inference / training |
-| policy_timing.cpu_ns | int64 | process_time_nsで測ったselect / observe全体。Parquet書き込みは含まない |
-| policy_timing.meta_cpu_ns | int64 | SEMAのメタ報酬・回数更新と消去。trainingの内数。他手法・inferenceでは0 |
-| uplinks / transmissions.motion_epoch_start_ns | int64/null | 真の物理状態が始まったsimulation time。asset_waypointが読み取り専用で提供。初期静止0、未対応モデルはnull、DLはnull |
-| uplinks / transmissions.selected_algorithm | string/null | 選択時の下位モデル。SEMAはA/B/C/epsilon、固定B/C対照はB/C。フックがない選択器は既存policyラベル。診断無効・DLはnull |
-| uplinks / transmissions.detected_motion_state | string/null | 選択時の局所位置差判定。真の移動状態とは独立。未対応・無効・DLはnull |
-| feedback.tx_index | int64 | 対応する実送信通番。診断スイッチによらず記録 |
-
-状態開始時刻は対応移動モデルなら診断スイッチによらず保存します。初回の状態と状態遷移後を区別し、複数の状態区間を跨いだ送信窓を作らないための記録です。これらの診断情報はObservation/Feedbackに加えません。
-
-CPU計測値はホスト上の処理時間であり、simulated MCUの時間・エネルギー計算には使用しません。従来のmeasured MCUモードは従来どおりコールバックのwall timeを計測します。CPU計測の追加自体の小さな実行負荷はあるため、実時間の完全一致を要求する指標ではありません。
-
-大きな解析ではParquetを8192行ずつ読み、一時SQLiteで順序整列・分位点を計算します。[TVTの集計定義](TVT_GUI_EXPERIMENTS.md)を参照してください。
