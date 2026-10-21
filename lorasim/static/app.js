@@ -15,7 +15,7 @@ async function api(path,method='GET',body){
  const token=sessionStorage.getItem('lorasim-token')||'';let r;
  try{r=await fetch(path,{method,headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});}
  catch(e){throw new DiagnosticError([{severity:'error',code:'CONNECTION',message:'APIサーバーに接続できません。',hint:'ネットワーク、APIプロセス、接続先URLを確認してください。接続断だけではバックグラウンド実験は停止しません。',detail:e.message}]);}
- if(!r.ok){let data;const raw=await r.text();try{data=JSON.parse(raw);}catch{}throw new DiagnosticError(data?.diagnostics||[{severity:'error',code:'HTTP_'+r.status,message:`サーバーがリクエストを処理できませんでした（HTTP ${r.status}）。`,hint:'接続設定、API・プロキシのログを確認してください。',detail:typeof data?.detail==='string'?data.detail:raw.slice(0,8000)}]);}
+ if(!r.ok){let data;const raw=await r.text();try{data=JSON.parse(raw);}catch{}const error=new DiagnosticError(data?.diagnostics||[{severity:'error',code:'HTTP_'+r.status,message:`サーバーがリクエストを処理できませんでした（HTTP ${r.status}）。`,hint:'接続設定、API・プロキシのログを確認してください。',detail:typeof data?.detail==='string'?data.detail:raw.slice(0,8000)}]);error.status=r.status;throw error;}
  try{return await r.json();}catch(e){throw new DiagnosticError([{severity:'error',code:'RESPONSE_FORMAT',message:'APIからの応答を読み取れません。',hint:'APIと画面のバージョン、接続先URL、プロキシ設定を確認してください。',detail:e.message}]);}
 }
 function reportError(e){if(currentView==='experiment'&&e.diagnostics?.some(d=>d.path))setConfigDiagnostics(e.diagnostics);renderDiagnostics('notice',e.diagnostics||[localDiagnostic(e)],true);$('notice').className='diagnostic-notice';$('notice').style.display='block';$('notice').setAttribute('role','alert');}
@@ -183,9 +183,83 @@ function renderAnalysis(){
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 $('validate').onclick=action(async()=>{profile=await validatedProfile(JSON.stringify(profile));renderAll();notice(configDiagnostics.length?'設定の検証が完了しました。表示されたWarningの理由とヒントを確認してください。':'設定とモデルの初期化の検証に成功しました。');});
 $('run').onclick=action(async()=>{const r=await api('/api/jobs','POST',{yaml:JSON.stringify(profile),experiment_id:$('experiment').value||null});setConfigDiagnostics(r.diagnostics||[],true);await refreshExperiments();await selectJob(r.id);notice('Runをキューに登録しました。workerがバックグラウンドで実行します。');});
-async function refreshExamples(){const entries=await api('/api/examples');$('exampleProfiles').replaceChildren(el('option',{value:''},'examplesから選択'));for(const item of entries)$('exampleProfiles').append(el('option',{value:item.id},item.id+' — '+item.name));$('loadExample').disabled=true;}
-$('exampleProfiles').onchange=()=>{$('loadExample').disabled=!$('exampleProfiles').value;};
-$('loadExample').onclick=action(async()=>{const id=$('exampleProfiles').value;if(!id)return;const item=await api('/api/examples/content?id='+encodeURIComponent(id));const loaded=await validatedProfile(item.yaml);profile=loaded;$('profiles').value='';$('experiment').value='';await loadSchemas();renderAll();dirty();notice('同梱YAMLを読み込みました。設定を確認してから実行してください。');});
+let exampleEntries=[], selectedExamples=new Set(), exampleBusy=false;
+function visibleExamples(){const query=$('exampleSearch').value.trim().toLowerCase();return exampleEntries.filter(item=>(item.id+' '+item.name).toLowerCase().includes(query));}
+function updateExampleSelection(){
+ const shown=visibleExamples(),hidden=[...selectedExamples].filter(id=>!shown.some(item=>item.id===id)).length;
+ $('exampleSelection').textContent=`${selectedExamples.size}件選択 / 全${exampleEntries.length}件（表示${shown.length}件${hidden?'、表示外の選択'+hidden+'件':''}）`;
+ $('selectExamples').disabled=exampleBusy||!shown.length;
+ $('clearExamples').disabled=exampleBusy||!selectedExamples.size;
+ $('exampleSearch').disabled=exampleBusy;
+ $('loadExample').disabled=exampleBusy||selectedExamples.size!==1;
+ $('queueExamples').disabled=exampleBusy||!selectedExamples.size;
+ $('queueExamples').textContent=exampleBusy?'処理中…':`選択したYAMLを一括実行（${selectedExamples.size}件）`;
+}
+function renderExamples(){
+ const shown=visibleExamples();
+ $('exampleProfiles').replaceChildren(...shown.map(item=>{
+  const checkbox=el('input',{type:'checkbox',checked:selectedExamples.has(item.id),onchange:event=>{
+   if(exampleBusy)return;
+   if(event.target.checked)selectedExamples.add(item.id);else selectedExamples.delete(item.id);
+   updateExampleSelection();
+  }});
+  checkbox.disabled=exampleBusy;
+  return el('label',{class:'example-choice'},checkbox,el('span',{},el('strong',{},item.id),el('small',{},item.name)));
+ }));
+ if(!shown.length)$('exampleProfiles').append(el('p',{class:'hint'},'一致するYAMLはありません。'));
+ updateExampleSelection();
+}
+async function refreshExamples(){exampleEntries=await api('/api/examples');selectedExamples=new Set([...selectedExamples].filter(id=>exampleEntries.some(item=>item.id===id)));renderExamples();}
+$('exampleSearch').oninput=renderExamples;
+$('selectExamples').onclick=()=>{if(exampleBusy)return;for(const item of visibleExamples())selectedExamples.add(item.id);renderExamples();};
+$('clearExamples').onclick=()=>{if(exampleBusy)return;selectedExamples.clear();renderExamples();};
+$('loadExample').onclick=async()=>{
+ if(exampleBusy||selectedExamples.size!==1)return;
+ const id=[...selectedExamples][0];exampleBusy=true;renderExamples();
+ try{
+  const item=await api('/api/examples/content?id='+encodeURIComponent(id));
+  const loaded=await validatedProfile(item.yaml);profile=loaded;
+  $('profiles').value='';$('experiment').value='';await loadSchemas();renderAll();dirty();
+  notice('同梱YAMLを読み込みました。編集後は「エディタの設定を実行」を押してください。');
+ }catch(e){reportError(e);}finally{exampleBusy=false;renderExamples();}
+};
+$('queueExamples').onclick=async()=>{
+ if(exampleBusy||!selectedExamples.size)return;
+ const ids=exampleEntries.filter(item=>selectedExamples.has(item.id)).map(item=>item.id);
+ let added=0,failed=0,uncertain=0;
+ exampleBusy=true;renderExamples();$('exampleQueueResults').replaceChildren();
+ try{
+  for(const [index,id] of ids.entries()){
+   $('exampleQueueStatus').textContent=`キュー登録中：${index+1} / ${ids.length}件（登録済み${added}件）。登録完了までこの画面を開いておいてください。`;
+   let submitting=false;
+   try{
+    const item=await api('/api/examples/content?id='+encodeURIComponent(id));
+    submitting=true;
+    // Reuse normal validation and durable queue insertion, one YAML at a time.
+    const job=await api('/api/jobs','POST',{yaml:item.yaml,experiment_id:null});
+    if(typeof job?.id!=='string'||!job.id)throw Error('Run IDを含む登録応答を取得できませんでした。');
+    added++;selectedExamples.delete(id);
+    $('exampleQueueResults').append(el('p',{class:'example-result'},el('span',{},id+'：登録済み '),el('button',{class:'small quiet',onclick:action(()=>selectJob(job.id))},'Run '+job.id.slice(0,8))));
+   }catch(e){
+    const rejected=e.status>=400&&e.status<500&&e.status!==408;
+    if(submitting&&!rejected){
+     uncertain++;selectedExamples.delete(id);
+     $('exampleQueueResults').append(el('p',{class:'example-result error'},id+'：登録状況を確認できません。Run一覧を確認してから再選択してください。 '+e.message));
+     break; // A lost POST response may already have queued the Run; never retry it.
+    }
+    failed++;
+    $('exampleQueueResults').append(el('p',{class:'example-result error'},id+'：未登録。 '+e.message));
+    if(e.diagnostics?.some(d=>d.code==='CONNECTION')||e.status===401||e.status===403)break;
+   }
+   updateExampleSelection();
+  }
+ }finally{
+  exampleBusy=false;renderExamples();
+  $('exampleQueueStatus').textContent=`キュー登録：${added} / ${ids.length}件、失敗${failed}件${uncertain?'、登録状況不明'+uncertain+'件':''}、未処理${ids.length-added-failed-uncertain}件。登録済みRunはworkerが順次実行します。`;
+ }
+ const refreshed=await Promise.allSettled([refreshExperiments(),refreshJobs()]);
+ for(const result of refreshed)if(result.status==='rejected')reportError(result.reason);
+};
 $('profiles').onchange=action(async()=>{const p=savedProfiles[Number($('profiles').value)];if(!p)return;profile=await validatedProfile(p.yaml);await loadSchemas();renderAll();dirty();notice('プロファイルを読み込みました。');});
 $('saveProfile').onclick=action(async()=>{await api('/api/profiles/'+encodeURIComponent(profile.name),'PUT',{yaml:JSON.stringify(profile)});await refreshProfiles();notice('プロファイルを保存しました。');});
 $('applyYaml').onclick=action(async()=>{profile=await validatedProfile($('yaml').value);await loadSchemas();renderAll();dirty();notice('YAMLをGUIへ反映しました。');});
