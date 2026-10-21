@@ -12,3 +12,6 @@ dist/
 
 # Server-side AI credentials (for custom data roots).
 ai-settings.json
+
+# Experiment plans, raw traces and reports (recreate with documented commands).
+results/
