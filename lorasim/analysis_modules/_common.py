@@ -9,6 +9,16 @@ CAUSES = ['Received','Interference','LostBecauseTx','UnderSensitivity','NoMoreRe
 CAUSE_LABELS = ['受信成功','干渉','GW送信中','感度未満','復調器不足','複合損失','周波数不一致']
 
 
+def network_loss_notes(fractions):
+    """Explain the stored network classification without reallocating failures."""
+    if not any(row.get('MixedLoss', 0) for row in fractions):
+        return []
+    return ['複合損失（MixedLoss）は、全GWが受信に失敗し、GWごとの理由が異なるULの集約分類です。'
+            '例：GW0は干渉、GW1は感度未満。新しいPHY損失要因ではなく、PR #10以前からの分類です。'
+            '「GW別の受信結果・複合損失の内訳」モジュール、または保存済みuplinks.gw_outcomes / receptionsで理由を確認できます。'
+            'いずれか1 GWで受信できれば、他GWの失敗にかかわらずネットワーク全体では受信成功です。']
+
+
 def profile(c, r):
     return c.cached(('profile',r['id']), lambda: load_profile(c.roots[r['id']]/'profile.yaml'))
 

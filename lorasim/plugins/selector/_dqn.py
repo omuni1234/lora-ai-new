@@ -70,44 +70,39 @@ class Network:
 
 
 class Learner:
-    def __init__(self,rng,k,options,input_dim=1):
+    def __init__(self,rng,k,options):
         self.rng,self.k,self.o = rng,k,options
-        self.input_dim = input_dim
-        self.net = Network(rng,[input_dim,*options.hidden_sizes,k])
+        self.net = Network(rng,[1,*options.hidden_sizes,k])
         self.target = [p.copy() for p in self.net.params]
         self.m = [np.zeros_like(p) for p in self.net.params]
         self.v = [np.zeros_like(p) for p in self.net.params]
         self.size = self.seen = self.updates = 0
         self.loss = None
-        self.data = np.empty((min(128,options.replay_capacity),2*input_dim+2),dtype=float)
+        self.data = np.empty((min(128,options.replay_capacity),4),dtype=float)
     def choose(self,x):
         o = self.o
         epsilon = o.epsilon_end+(o.epsilon_start-o.epsilon_end)*math.exp(-self.seen/o.epsilon_decay)
         if self.rng.random() < epsilon:
             return int(self.rng.integers(self.k))
-        return int(np.argmax(self.net.forward(np.asarray(x,dtype=float).reshape(1,self.input_dim))[0]))
+        return int(np.argmax(self.net.forward(np.array([[x]]))[0]))
     def learn(self,x,a,r,y):
         o = self.o
         if self.size == len(self.data) and self.size < o.replay_capacity:
-            new = np.empty((min(o.replay_capacity,2*len(self.data)),2*self.input_dim+2))
+            new = np.empty((min(o.replay_capacity,2*len(self.data)),4))
             new[:self.size] = self.data
             self.data = new
-        if self.input_dim == 1:
-            self.data[self.seen % o.replay_capacity] = x,a,r,y
-        else:
-            self.data[self.seen % o.replay_capacity] = np.r_[x,a,r,y]
+        self.data[self.seen % o.replay_capacity] = x,a,r,y
         self.seen += 1
         self.size = min(self.seen,o.replay_capacity)
         if self.size < o.batch_size or self.seen % o.train_every:
             return
         b = self.data[self.rng.choice(self.size,o.batch_size,replace=False)]
-        n = self.input_dim
-        nxt = b[:,n+2:]
+        nxt = b[:,3:4]
         for i in range(0,len(self.target),2):
             nxt = nxt@self.target[i]+self.target[i+1]
             if i+2 < len(self.target): nxt = np.maximum(nxt,0.)
-        target = b[:,n+1]+o.discount*nxt.max(axis=1)
-        self.loss,grads = self.net.gradients(b[:,:n],b[:,n].astype(int),target)
+        target = b[:,2]+o.discount*nxt.max(axis=1)
+        self.loss,grads = self.net.gradients(b[:,:1],b[:,1].astype(int),target)
         if not math.isfinite(self.loss):
             raise FloatingPointError('DQN loss is non-finite; review learning rate and RSSI normalization')
         self.updates += 1

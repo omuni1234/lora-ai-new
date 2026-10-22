@@ -51,7 +51,7 @@ class TVTTransitions(AnalysisModule):
                         while len(prefix)<min(tx-first,max_h):prefix.append(None)
                         if len(prefix)<max_h:prefix.append(ok)
                 finish()
-            if missing:notes.append(f"{r['id']}: 状態開始時刻がないUL {missing} 件を対象外にしました。asset_waypointの新規Runで記録できます。")
+            if missing:notes.append(f"{r['id']}: 状態開始時刻がないUL {missing} 件を対象外にしました。waypoints（random_waypoint）またはasset_waypointの対応版で新しく実行したRunで記録できます。旧Runの値は推測しません。")
             for state in ('stationary','moving'):
                 for h in sorted(o.horizons):
                     complete,incomplete,loss=counts[(state,h)]

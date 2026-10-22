@@ -237,13 +237,13 @@ SEMAは初期状態＋消去のある時点だけ出力します（内蔵6アー
 | policy_timing.operation | string | inference / training |
 | policy_timing.cpu_ns | int64 | process_time_nsで測ったselect / observe全体。Parquet書き込みは含まない |
 | policy_timing.meta_cpu_ns | int64 | SEMAのメタ報酬・回数更新と消去。trainingの内数。他手法・inferenceでは0 |
-| uplinks / transmissions.motion_epoch_start_ns | int64/null | 真の物理状態が始まったsimulation time。asset_waypointが読み取り専用で提供。初期静止0、未対応モデルはnull、DLはnull |
+| uplinks / transmissions.motion_epoch_start_ns | int64/null | 真の物理状態が始まったsimulation time。既存waypoints（random_waypoint）とasset_waypointのarrive/departを読み取り専用で取得。初期状態は0、timed/route・未対応モデル・DLはnull |
 | uplinks / transmissions.selected_algorithm | string/null | 選択時の下位モデル。SEMAはA/B/C/epsilon、固定B/C対照はB/C。フックがない選択器は既存policyラベル。診断無効・DLはnull |
 | uplinks / transmissions.detected_motion_state | string/null | 選択時の局所位置差判定。真の移動状態とは独立。未対応・無効・DLはnull |
 | feedback.tx_index | int64 | 対応する実送信通番。診断スイッチによらず記録 |
 
-状態開始時刻は対応移動モデルなら診断スイッチによらず保存します。初回の状態と状態遷移後を区別し、複数の状態区間を跨いだ送信窓を作らないための記録です。これらの診断情報はObservation/Feedbackに加えません。
+状態開始時刻は対応移動モデルなら診断スイッチによらず保存します。既存の`position(t)`呼び出し後に既存変数を読むだけで、再度の移動更新や乱数抽選は行いません。初回の状態と状態遷移後を区別し、複数の状態区間を跨いだ送信窓を作らないための記録です。これらの診断情報はObservation/Feedbackに加えません。旧Runにない時刻は補完せずN/Aのまま扱います。
 
-CPU計測値はホスト上の処理時間であり、simulated MCUの時間・エネルギー計算には使用しません。従来のmeasured MCUモードは従来どおりコールバックのwall timeを計測します。CPU計測の追加自体の小さな実行負荷はあるため、実時間の完全一致を要求する指標ではありません。
+CPU計測値はホスト上の処理時間であり、simulated MCUの時間・エネルギー計算には使用しません。従来のmeasured MCUモードは従来どおりコールバックのwall timeを計測します。SEMA内部の診断計測もこのwall timeに含まれるため、measuredモードのMCU消費量は診断の有無や実行環境で変動し、完全一致を保証しません。固定時間モードでは診断の有無による無線結果・MCU消費量の一致を回帰テストしています。
 
 大きな解析ではParquetを8192行ずつ読み、一時SQLiteで順序整列・分位点を計算します。[TVTの集計定義](TVT_GUI_EXPERIMENTS.md)を参照してください。

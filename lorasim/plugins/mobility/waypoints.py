@@ -178,6 +178,15 @@ class Waypoints(Stationary):
         if i < 0 or i >= len(self.a)-1:
             return 'stationary'
         return 'stationary' if np.array_equal(self.a[i,1:],self.a[i+1,1:]) else 'moving'
+    def motion_epoch_start(self):
+        """Read existing state after position(t); never step or draw random values.
+
+        Timed/route paths do not retain a general contiguous-state epoch. Leave
+        those unknown instead of inferring transitions from TX samples.
+        """
+        if self.options.mode == 'random_waypoint':
+            return self.arrive if self.resting else self.depart
+        return None
     @staticmethod
     def preview_cost(options,horizon):
         if Settings.model_validate(options).mode == 'random_waypoint':
