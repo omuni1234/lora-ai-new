@@ -139,7 +139,59 @@ async function refreshCatalog(){catalog=await api('/api/models');renderLibrary()
 const experimentInfoCache=new Map();
 async function experimentText(id){let item=experimentInfoCache.get(id);if(!item||Date.now()-item.at>10000){item={at:Date.now(),data:await api('/api/experiments/'+id+'/info')};experimentInfoCache.set(id,item);}const e=item.data,r=e.latest_run,env=e.environment,fmt=v=>v?new Date(v*1000).toLocaleString('ja-JP'):'未実行';return [e.name,'ID: '+e.id,e.description,`作成: ${fmt(e.created)}`,`開始: ${fmt(e.first_started)} / 最終終了: ${fmt(e.last_finished)}`,`実行時間の合計: ${num(e.wall_total_s)} s`,Object.entries(e.statuses).map(([k,v])=>k+': '+v).join(' · '),r?`最新Run: ${r.ed_count} ED / ${r.gw_count} GW / 仮想時間 ${r.duration_s} s / seed ${r.seed}`:'Runなし',r?Object.entries(r.models).slice(0,4).map(([k,v])=>k+': '+Object.values(v).join(' / ')).join('\n'):'',env?`最後に実行した環境 (${e.environment_run_id.slice(0,8)}):\n${env.platform}\nPython ${env.python} / NumPy ${env.numpy} / LoRaSim ${env.simulator_version}`:'実行環境: 記録なし'].filter(Boolean).join('\n');}
 async function refreshProfiles(){savedProfiles=await api('/api/profiles');const current=$('profiles').value;$('profiles').replaceChildren(el('option',{value:''},'新しいプロファイル'),...savedProfiles.map((p,i)=>el('option',{value:String(i)},p.name)));$('profiles').value=current;}
-async function refreshExperiments(){experiments=await api('/api/experiments');const chosen=$('experiment').value,checked=new Set([...$('experimentChecks').querySelectorAll('input:checked')].map(x=>x.value));$('experiment').replaceChildren(el('option',{value:''},'新規作成（プロファイル名）'),...experiments.map(e=>el('option',{value:e.id},e.name+' · '+e.runs+' Runs · '+e.id.slice(0,6))));$('experiment').value=chosen;$('experimentChecks').replaceChildren(...experiments.map(e=>el('label',{class:'check experimentcheck'},el('input',{type:'checkbox',value:e.id,checked:checked.has(e.id),onchange:analysisChanged}),el('span',{},e.name,el('small',{class:'hint'},` · ${e.completed}/${e.runs} 完了 · ${e.id.slice(0,6)}`)),info(()=>experimentText(e.id),e.name+'の実験情報'))));}
+// Selection is independent of the filtered DOM: hidden selections still belong to the analysis.
+let selectedAnalysisExperiments=new Set();
+function selectedExperimentIds(){return experiments.filter(e=>selectedAnalysisExperiments.has(e.id)).map(e=>e.id);}
+function matchingExperiments(){
+ const query=$('experimentSearch').value;
+ try{
+  const pattern=query?new RegExp(query,'i'):null;
+  $('experimentSearch').setAttribute('aria-invalid','false');
+  $('experimentSearchError').hidden=true;
+  return pattern?experiments.filter(e=>pattern.test(e.name)||pattern.test(e.id)):experiments;
+ }catch{
+  $('experimentSearch').setAttribute('aria-invalid','true');
+  $('experimentSearchError').textContent='正規表現が正しくありません。ヒント：括弧や角括弧の閉じ忘れを確認してください。例：sema|dqn。選択済みの実験は保持されています。';
+  $('experimentSearchError').hidden=false;
+  return null;
+ }
+}
+function updateExperimentSelection(shown){
+ const selectedShown=(shown||[]).filter(e=>selectedAnalysisExperiments.has(e.id)).length;
+ const hidden=selectedAnalysisExperiments.size-selectedShown;
+ $('experimentSelection').textContent=`${selectedAnalysisExperiments.size}件選択 / 全${experiments.length}件（${shown===null?'検索式エラー':'表示'+shown.length+'件'}${hidden?'、表示外の選択'+hidden+'件':''}）。表示外も分析対象です。`;
+ $('selectExperiments').disabled=!shown?.length||selectedShown===shown.length;
+ $('clearExperiments').disabled=!selectedAnalysisExperiments.size;
+}
+function renderExperimentChecks(){
+ const shown=matchingExperiments();
+ $('experimentChecks').replaceChildren(...(shown||[]).map(e=>el('label',{class:'check experimentcheck'},el('input',{type:'checkbox',value:e.id,checked:selectedAnalysisExperiments.has(e.id),onchange:event=>{
+  if(event.target.checked)selectedAnalysisExperiments.add(e.id);else selectedAnalysisExperiments.delete(e.id);
+  updateExperimentSelection(shown);analysisChanged();
+ }}),el('span',{},e.name,el('small',{class:'hint'},` · ${e.completed}/${e.runs} 完了 · ${e.id.slice(0,6)}`)),info(()=>experimentText(e.id),e.name+'の実験情報'))));
+ if(shown&&!shown.length)$('experimentChecks').append(el('p',{class:'hint'},experiments.length?'一致するExperimentはありません。':'Experimentはまだ登録されていません。'));
+ updateExperimentSelection(shown);
+}
+$('experimentSearch').oninput=renderExperimentChecks;
+$('selectExperiments').onclick=()=>{
+ const shown=matchingExperiments();if(!shown)return;
+ const before=selectedAnalysisExperiments.size;
+ for(const e of shown)selectedAnalysisExperiments.add(e.id);
+ if(before!==selectedAnalysisExperiments.size)analysisChanged();
+ renderExperimentChecks();
+};
+$('clearExperiments').onclick=()=>{
+ if(!selectedAnalysisExperiments.size)return;
+ selectedAnalysisExperiments.clear();analysisChanged();renderExperimentChecks();
+};
+async function refreshExperiments(){
+ experiments=await api('/api/experiments');
+ const chosen=$('experiment').value,before=selectedAnalysisExperiments.size;
+ selectedAnalysisExperiments=new Set(selectedExperimentIds());
+ if(before!==selectedAnalysisExperiments.size)analysisChanged();
+ $('experiment').replaceChildren(el('option',{value:''},'新規作成（プロファイル名）'),...experiments.map(e=>el('option',{value:e.id},e.name+' · '+e.runs+' Runs · '+e.id.slice(0,6))));
+ $('experiment').value=chosen;renderExperimentChecks();
+}
 function switchView(view){currentView=view;calculator?.setVisible(view==='experiment'&&preflightTab==='calculator');$('runActions').hidden=view!=='experiment';$('resultHeading').textContent=view==='analysis'?'選択中の個別Run結果':'結果・アブストラクト';for(const id of ['experiment','analysis','models','documents']){$(id==='experiment'?'settingsPane':id+'Pane').hidden=view!==id;$(id+'View').hidden=view!==id;}document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===view));document.querySelector('.pagehead p').textContent=view==='documents'?'左で本文を検索・選択し、中央で仕様と使い方を確認できます。':view==='analysis'?'左でExperimentを選択し、下で分析モジュールを構成します。上に結果が表示されます。':'左で項目を選び、中央で編集・確認。進捗と結果は右側で確認できます。';$('pageTitle').textContent={experiment:'実験ワークスペース',analysis:'比較・分析',models:'モデルライブラリ',documents:'ドキュメント'}[view];if(view==='analysis')action(refreshExperiments)();if(view==='models'){renderLibrary();action(()=>tuningPanel.refreshList())();}document.querySelector('main').classList.toggle('documents-open',view==='documents');if(view==='documents')action(()=>documents.open())();}
 const statusLabel={queued:'待機中',running:'実行中',completed:'完了',failed:'失敗',cancelled:'停止済み',interrupted:'中断'};
 async function refreshJobs(){const jobs=await api('/api/jobs');$('jobs').replaceChildren(...jobs.slice(0,50).map(j=>el('article',{class:'job-item'+(j.id===selectedJob?' selected':'')},el('div',{class:'job-top'},el('button',{class:'quiet',onclick:action(()=>selectJob(j.id))},j.name),el('span',{class:'status '+j.status},statusLabel[j.status]||j.status)),el('div',{class:'job-bottom'},el('span',{},j.id.slice(0,8)+' · '+(100*j.progress).toFixed(1)+'%'),['queued','running'].includes(j.status)?el('button',{class:'small',onclick:action(async()=>{await api('/api/jobs/'+j.id+'/cancel','POST');await refreshJobs();})},'停止'):el('button',{class:'small',onclick:action(()=>selectJob(j.id))},j.status==='failed'||j.status==='interrupted'?'原因を確認':'結果を表示')))));
@@ -275,7 +327,7 @@ $('mapTime').oninput=()=>{$('mapTimeValue').textContent=$('mapTime').value+' s';
 $('previewDevices').onchange=()=>inspectDevice(mapData?.devices.find(d=>d.id===Number($('previewDevices').value)));
 $('experimentInfo').append(info(()=> $('experiment').value?experimentText($('experiment').value):'実行時にプロファイル名で新規Experimentを作成します。','選択したExperimentの情報'));
 $('refreshJobs').onclick=action(refreshJobs);
-$('analyze').onclick=action(async()=>{const ids=[...$('experimentChecks').querySelectorAll('input:checked')].map(x=>x.value);if(!ids.length)throw Error('Experimentを1つ以上選択してください。');if(analysisBusy)return;analysisBusy=true;const revision=analysisRevision;$('analyze').disabled=true;try{analysisData=await api('/api/analysis','POST',{experiment_ids:ids,tx_start:Number($('txStart').value),tx_end:$('txEnd').value?Number($('txEnd').value):null,include_mcu:$('includeMCU').checked,bins:Number($('bins').value),ed_count:$('edCount').value?Number($('edCount').value):null,modules:clone(moduleSelections)});renderAnalysis();analysisConsultant.setAnalysis(analysisData);if(revision!==analysisRevision)analysisChanged();notice(`${analysisData.runs.length} Runを集計しました。`);}finally{analysisBusy=false;$('analyze').disabled=false;}});
+$('analyze').onclick=action(async()=>{const ids=selectedExperimentIds();if(!ids.length)throw Error('Experimentを1つ以上選択してください。');if(analysisBusy)return;analysisBusy=true;const revision=analysisRevision;$('analyze').disabled=true;try{analysisData=await api('/api/analysis','POST',{experiment_ids:ids,tx_start:Number($('txStart').value),tx_end:$('txEnd').value?Number($('txEnd').value):null,include_mcu:$('includeMCU').checked,bins:Number($('bins').value),ed_count:$('edCount').value?Number($('edCount').value):null,modules:clone(moduleSelections)});renderAnalysis();analysisConsultant.setAnalysis(analysisData);if(revision!==analysisRevision)analysisChanged();notice(`${analysisData.runs.length} Runを集計しました。`);}finally{analysisBusy=false;$('analyze').disabled=false;}});
 $('exportAnalysis').onclick=()=>{if(analysisData)download('analysis.json',JSON.stringify(analysisData,null,2));};
 $('exportCSV').onclick=()=>{if(!analysisData)return;const rows=[['experiment','run_id','ed_count','eligible_ed_count','mean_ed_prr','jain','gini','cv','energy_j','mean_ed_j'],...analysisData.runs.map(r=>[r.experiment_name,r.id,r.ed_count,r.eligible_ed_count,r.mean_ed_prr,r.fairness?.jain,r.fairness?.gini,r.fairness?.cv,r.energy.measured?r.energy.total_j:null,r.energy.measured?r.energy.mean_ed_j:null])];download('analysis.csv',rows.map(row=>row.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv');};
 $('credentials').onclick=()=>{$('token').value=sessionStorage.getItem('lorasim-token')||'';$('connectDialog').showModal();};$('saveToken').onclick=()=>{sessionStorage.setItem('lorasim-token',$('token').value);setTimeout(()=>location.reload(),50);};
