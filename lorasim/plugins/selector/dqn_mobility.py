@@ -2,7 +2,8 @@
 import math
 from pydantic import Field
 from .dqn import DQN
-from ._dqn import DQNSettings, Learner
+from ._dqn import DQNSettings
+from ._dqn_vector import VectorLearner
 
 
 class Settings(DQNSettings):
@@ -18,7 +19,7 @@ class MobilityDQN(DQN):
     def __init__(self,rng,action_space,**options):
         self.options = Settings.model_validate(options)
         self.actions = action_space.radios()
-        self.learner = Learner(rng,len(self.actions),self.options,input_dim=2)
+        self.learner = VectorLearner(rng,len(self.actions),self.options,input_dim=2)
         self.rssi = self.options.initial_rssi_dbm
         self.previous_position = None
         self.moving = False

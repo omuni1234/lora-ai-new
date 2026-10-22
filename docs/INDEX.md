@@ -16,6 +16,7 @@
 ## 分析する
 
 - [ExperimentとPRRの分母](ANALYSIS.md)
+- [PR #10の範囲監査](PR10_SCOPE_AUDIT.md): 複合損失の導入時期、GW別分析、既存計算と観測ログの境界。
 - [v0.12の比較・分析](RESEARCH_ANALYSIS.md): 数値一覧、位置SF、SEMA残存、距離別PRR、KL/JS。
 - [評価指標と文献](METRICS.md)
 - [Parquetトラッキング仕様](TRACKING.md): 新規Runはschema_version=5。

@@ -1,5 +1,5 @@
 from .base import AnalysisModule
-from ._common import profile, identities, table, CAUSES, CAUSE_LABELS
+from ._common import profile, identities, table, CAUSES, CAUSE_LABELS, network_loss_notes
 
 
 class Abstract(AnalysisModule):
@@ -22,6 +22,7 @@ class Abstract(AnalysisModule):
                              r['fairness'].get('jain'),r['fairness'].get('gini'),
                              r['energy']['mean_ed_j'] if r['energy']['measured'] else None])
             views.append(table(f'{n} ED · Run別比較',columns,rows))
-        return dict(views=views,notes=['同じアルゴリズム名でも設定・移動・負荷が異なる場合があります。Runと保存プロファイルを確認してください。'])
+        return dict(views=views,notes=['同じアルゴリズム名でも設定・移動・負荷が異なる場合があります。Runと保存プロファイルを確認してください。']
+                    +network_loss_notes(r['fractions'] for r in c.runs))
 
 PLUGIN=Abstract
